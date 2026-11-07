@@ -1,0 +1,23 @@
+# Initial instruments. Add instruments here; avoid hard-coding the list in UI components.
+instruments:
+  MNQ:
+    name: Micro E-mini Nasdaq-100
+    asset_class: equity_index_future
+    enabled: true
+    analysis_profile: mnq
+    session_profile: us_index_futures
+    risk_profile: mnq
+  MES:
+    name: Micro E-mini S&P 500
+    asset_class: equity_index_future
+    enabled: true
+    analysis_profile: mes
+    session_profile: us_index_futures
+    risk_profile: mes
+  MGC:
+    name: Micro Gold
+    asset_class: metal_future
+    enabled: true
+    analysis_profile: mgc
+    session_profile: metals_futures
+    risk_profile: mgc
