@@ -107,16 +107,17 @@ async def main() -> None:
     from mcp import Client
     from mcp.client.streamable_http import streamable_http_client
 
-    async with httpx2.AsyncClient(auth=oauth, timeout=httpx2.Timeout(30.0, read=90.0)) as http:
-        transport = streamable_http_client("https://mcp.tradingview.com/mcp", http_client=http)
-        async with Client(transport) as client:
-            tools = await client.list_tools()
-            readonly = sorted(
-                tool.name for tool in tools.tools
-                if tool.name in {"get_ohlcv", "get_symbol_data_batch", "get_news", "get_economic_calendar"}
-            )
-            print("TradingView MCP authorization successful.")
-            print("Read-only tools available:", ", ".join(readonly) or "none")
+    try:
+        async with httpx2.AsyncClient(auth=oauth, timeout=httpx2.Timeout(30.0, read=90.0)) as http:
+            transport = streamable_http_client("https://mcp.tradingview.com/mcp", http_client=http)
+            async with Client(transport) as client:
+                tools = await client.list_tools()
+                readonly = sorted(
+                    tool.name for tool in tools.tools
+                    if tool.name in {"get_ohlcv", "get_symbol_data_batch", "get_news", "get_economic_calendar"}
+                )
+                print("TradingView MCP authorization successful.")
+                print("Read-only tools available:", ", ".join(readonly) or "none")
     finally:
         callback_server.shutdown()
         callback_server.server_close()
