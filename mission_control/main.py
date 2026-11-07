@@ -66,7 +66,7 @@ async def tradingview_status() -> dict[str, Any]:
 
 
 @app.get("/api/market-data")
-async def market_data(interval: str = Query(default="1m")) -> dict[str, Any]:
+async def market_data(interval: str = Query(default="1m", pattern="^(1m|5m|15m|1h|4h|1D)$")) -> dict[str, Any]:
     if not await tradingview_authorized():
         raise HTTPException(
             status_code=503,
