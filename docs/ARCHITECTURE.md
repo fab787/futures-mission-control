@@ -2,19 +2,38 @@
 
 ## High-level flow
 
-Market/data adapters -> schema validation and freshness checks -> isolated instrument agents and shared specialists -> Chief Decision Agent -> independent Master Risk Engine -> human approval queue -> paper-trading adapter (only after explicit authorization and verification).
+TradingView MCP (OAuth 2.1 / Streamable HTTP) -> read-only adapter -> schema normalization and freshness checks -> instrument workspaces and, later, analysis agents. No market-data adapter may place orders.
 
-The Master Risk Engine is a separate control boundary. It can reject any proposal. No AI agent may change risk limits, approve its own proposal, or submit orders.
+The Master Risk Engine remains a separate control boundary. No AI agent may change risk limits, approve its own proposal, or submit orders.
 
 ## Workspaces
 
-- Overview: instrument watchlist, service health and market snapshot.
-- Charts: TradingView hosted chart embed with instrument and timeframe selection.
-- News & Events: source-linked headlines and scheduled catalyst calendar.
+- Overview: instrument watchlist, source health and market snapshot.
+- Charts: authenticated TradingView launch plus locally rendered historical bars when the MCP adapter is authorized.
+- News & Events: source-linked headlines and scheduled catalyst calendar (adapter wiring is a later step).
 - AI Desk: instrument agents, shared specialists, Chief Decision Agent and audit stream.
 - Risk & Approvals: deterministic risk checks, veto state and human review queue.
-- Integrations: provider capabilities, connection state and adapter health.
+- Integrations: provider capabilities, OAuth state and adapter health.
 - Expansion: reserved modules and future instrument/plugin bays.
+
+## TradingView direct MCP integration
+
+Mission Control connects independently to the official endpoint `https://mcp.tradingview.com/mcp` using Streamable HTTP and OAuth 2.1. It does not reuse Claude Desktop's OAuth session or credentials. The one-time authorization command is:
+
+```powershell
+python -m mission_control.tradingview_auth
+```
+
+The authorization flow opens TradingView sign-in in the browser and stores OAuth tokens and client registration in the operating system keyring. No token is written to the repository, dashboard HTML, or `.env`. If keyring storage is unavailable, authorization fails rather than falling back to plaintext files.
+
+The initial adapter allow-lists only read-only tools: `get_ohlcv`, `get_symbol_data_batch`, `get_news`, and `get_economic_calendar`. Tool access is not a blanket permission: watchlist mutation, alerts, account actions and all write tools are excluded. The current market snapshot requests 120 one-minute bars for configured MNQ, MES and MGC continuous futures symbols. This is historical-bar polling, not a streaming quote subscription. Symbol coverage, exchange permissions, delay and returned payload shape must be verified against the user's TradingView account.
+
+Endpoints:
+- `GET /api/tradingview/status`: local OAuth authorization state.
+- `GET /api/market-data`: on-demand read-only one-minute history for MNQ/MES/MGC.
+- `GET /api/integrations`: integration status and permitted capabilities.
+
+TradingView MCP is beta and rate-limited. Do not poll aggressively. The initial UI should refresh manually or at a conservative interval and show the source and timestamp. If a symbol cannot be resolved or returned data cannot be normalized, display unavailable rather than fabricating a price.
 
 ## Instrument agents
 
@@ -39,13 +58,11 @@ The Chief Decision Agent compares instrument and specialist reports, highlights 
 
 The risk engine validates permissions, account state, instrument/session limits, exposure, proposed size, stop distance, loss limits and data-health gates. Missing or stale critical inputs must fail closed. Numerical limits must be explicitly configured before simulated trading is enabled.
 
-## Integration boundaries
-
-The TradingView chart in the dashboard is a hosted third-party embed. It is not a connection to the user's Claude Desktop TradingView MCP and does not feed the local API or AI agents. Quote access and delay are controlled by TradingView.
-
-Claude Desktop MCP servers are not automatically available to a standalone FastAPI application. A separate local adapter and capability tests are required before MCP data can be consumed. Treat chart display, quote/history reads, study values, news, account reads and simulated order submission as separate capabilities.
+## Other integration boundaries
 
 Yahoo Finance/news is supplementary context, not a guaranteed real-time futures feed. Every news item must retain publisher, published time, received time and source URL. Do not fabricate headlines or silently substitute stale data.
+
+TradingView chart display, market-history reads, news reads, calendar reads, account reads and simulated order submission are separate capabilities. This adapter enables only a narrow set of read-only market-data calls. No account or order capability is enabled.
 
 ## Expansion
 
