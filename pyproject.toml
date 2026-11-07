@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "futures-mission-control"
-version = "0.1.0"
+version = "0.2.0"
 description = "Modular futures market intelligence and paper-trading research dashboard"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -14,6 +14,8 @@ dependencies = [
   "pydantic>=2.8,<3.0",
   "pydantic-settings>=2.4,<3.0",
   "PyYAML>=6.0,<7.0",
+  "mcp>=1.26,<2.0",
+  "keyring>=25,<26",
 ]
 
 [project.optional-dependencies]
