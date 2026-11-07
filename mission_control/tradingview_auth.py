@@ -8,6 +8,7 @@ OAuth tokens and client registration are stored in the operating system keyring.
 from __future__ import annotations
 
 import asyncio
+import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
@@ -44,6 +45,10 @@ class KeyringTokenStorage(TokenStorage):
 class CallbackServer(HTTPServer):
     callback: AuthorizationCodeResult | None = None
 
+    def __init__(self, server_address: tuple[str, int], handler: type[BaseHTTPRequestHandler]) -> None:
+        super().__init__(server_address, handler)
+        self.callback_event = threading.Event()
+
 
 class CallbackHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
@@ -54,6 +59,7 @@ class CallbackHandler(BaseHTTPRequestHandler):
                 state=query["state"][0],
                 iss=query.get("iss", [None])[0],
             )
+            self.server.callback_event.set()
             body = b"TradingView authorization received. You can close this browser tab."
             self.send_response(200)
         else:
@@ -73,19 +79,18 @@ async def _open_browser(url: str) -> None:
     webbrowser.open(url)
 
 
-async def _wait_for_callback() -> AuthorizationCodeResult:
-    server = CallbackServer((CALLBACK_HOST, CALLBACK_PORT), CallbackHandler)
-    server.timeout = 300
-    try:
-        await asyncio.to_thread(server.handle_request)
-        if server.callback is None:
-            raise RuntimeError("Timed out waiting for TradingView OAuth callback.")
-        return server.callback
-    finally:
-        server.server_close()
+async def _wait_for_callback(server: CallbackServer) -> AuthorizationCodeResult:
+    received = await asyncio.to_thread(server.callback_event.wait, 300)
+    if not received or server.callback is None:
+        raise RuntimeError("Timed out waiting for TradingView OAuth callback.")
+    return server.callback
 
 
 async def main() -> None:
+    # Start the loopback listener before opening the browser to avoid a callback race.
+    callback_server = CallbackServer((CALLBACK_HOST, CALLBACK_PORT), CallbackHandler)
+    callback_thread = threading.Thread(target=callback_server.serve_forever, daemon=True)
+    callback_thread.start()
     oauth = OAuthClientProvider(
         server_url="https://mcp.tradingview.com/mcp",
         client_metadata=OAuthClientMetadata(
@@ -96,7 +101,7 @@ async def main() -> None:
         ),
         storage=KeyringTokenStorage(),
         redirect_handler=_open_browser,
-        callback_handler=_wait_for_callback,
+        callback_handler=lambda: _wait_for_callback(callback_server),
     )
     import httpx2
     from mcp import Client
@@ -112,6 +117,10 @@ async def main() -> None:
             )
             print("TradingView MCP authorization successful.")
             print("Read-only tools available:", ", ".join(readonly) or "none")
+    finally:
+        callback_server.shutdown()
+        callback_server.server_close()
+        callback_thread.join(timeout=2)
 
 
 if __name__ == "__main__":
