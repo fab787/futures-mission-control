@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Local data and runtime
+data/
+logs/
+*.log
+*.sqlite
+*.db
+.cache/
+
+# Editors / operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
