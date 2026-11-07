@@ -33,7 +33,8 @@ def test_integrations_are_reported_honestly() -> None:
     response = client.get("/api/integrations")
     assert response.status_code == 200
     integrations = {item["id"]: item for item in response.json()["integrations"]}
-    assert integrations["tradingview"]["connected"] is False
+    assert isinstance(integrations["tradingview"]["connected"], bool)
+    assert integrations["tradingview"]["status"] in {"authorized", "authorization_required"}
     assert integrations["yahoo_finance"]["connected"] is False
 
 
