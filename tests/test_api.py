@@ -42,3 +42,17 @@ def test_news_does_not_fabricate_headlines() -> None:
     assert response.status_code == 200
     assert response.json()["items"] == []
     assert response.json()["status"] == "not_connected"
+
+
+def test_tradingview_status_endpoint_is_read_only() -> None:
+    response = client.get("/api/tradingview/status")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["endpoint"] == "https://mcp.tradingview.com/mcp"
+    assert payload["mode"] == "read-only"
+    assert payload["authentication"] == "OAuth 2.1"
+
+
+def test_market_data_rejects_unsupported_interval() -> None:
+    response = client.get("/api/market-data?interval=10m")
+    assert response.status_code == 422
