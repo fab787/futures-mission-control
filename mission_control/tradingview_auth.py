@@ -86,7 +86,7 @@ async def _wait_for_callback() -> AuthorizationCodeResult:
 
 async def main() -> None:
     oauth = OAuthClientProvider(
-        server_url="https://mcp.tradingview.com",
+        server_url="https://mcp.tradingview.com/mcp",
         client_metadata=OAuthClientMetadata(
             client_name="Futures Mission Control",
             redirect_uris=[f"http://{CALLBACK_HOST}:{CALLBACK_PORT}/callback"],
