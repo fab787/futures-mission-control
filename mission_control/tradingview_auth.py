@@ -98,22 +98,19 @@ async def main() -> None:
         callback_handler=_wait_for_callback,
     )
     import httpx2
-    from mcp import ClientSession
+    from mcp import Client
     from mcp.client.streamable_http import streamable_http_client
 
     async with httpx2.AsyncClient(auth=oauth, timeout=httpx2.Timeout(30.0, read=90.0)) as http:
-        async with streamable_http_client(
-            "https://mcp.tradingview.com/mcp", http_client=http
-        ) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                tools = await session.list_tools()
-                readonly = sorted(
-                    tool.name for tool in tools.tools
-                    if tool.name in {"get_ohlcv", "get_symbol_data_batch", "get_news", "get_economic_calendar"}
-                )
-                print("TradingView MCP authorization successful.")
-                print("Read-only tools available:", ", ".join(readonly) or "none")
+        transport = streamable_http_client("https://mcp.tradingview.com/mcp", http_client=http)
+        async with Client(transport) as client:
+            tools = await client.list_tools()
+            readonly = sorted(
+                tool.name for tool in tools.tools
+                if tool.name in {"get_ohlcv", "get_symbol_data_batch", "get_news", "get_economic_calendar"}
+            )
+            print("TradingView MCP authorization successful.")
+            print("Read-only tools available:", ", ".join(readonly) or "none")
 
 
 if __name__ == "__main__":
