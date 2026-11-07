@@ -44,4 +44,14 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/SAFETY.md](docs/SAFET
 
 ## Current status
 
-**Stage 0 — Repository foundation.** No market-data connection, AI agent, broker adapter, or order execution is implemented yet.
+**Stage 1 — TradingView MCP adapter scaffold.** Direct OAuth 2.1 authorization, OS-keyring token storage, and a read-only historical OHLCV API for MNQ/MES/MGC are implemented on a feature branch. The user must authorize this local app and verify symbol coverage before prices appear. Data is polled, not streamed. AI agents, broker adapter and order execution remain disabled.
+
+## TradingView connection
+
+After pulling the approved update and installing dependencies, run:
+
+```powershell
+python -m mission_control.tradingview_auth
+```
+
+Approve the OAuth request in TradingView. Tokens are stored in the OS keyring. Then restart Mission Control. The Overview and Charts workspaces request historical bars through `/api/market-data`. This is a separate authorization from Claude Desktop. Only read-only market history is enabled; no watchlist changes, alerts, account access or order tools are allowed.
