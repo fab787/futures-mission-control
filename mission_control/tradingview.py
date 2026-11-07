@@ -1,7 +1,6 @@
 """Read-only TradingView MCP adapter for Mission Control."""
 from __future__ import annotations
 
-import asyncio
 import json
 from typing import Any
 
@@ -127,5 +126,8 @@ async def market_snapshot(interval: str = "1m") -> dict[str, Any]:
                 "latest": None,
             }
 
-    results = await asyncio.gather(*(one(key, value) for key, value in SYMBOLS.items()))
+    # Keep calls sequential to avoid simultaneous OAuth refresh attempts from one user session.
+    results = []
+    for symbol, tv_symbol in SYMBOLS.items():
+        results.append(await one(symbol, tv_symbol))
     return {"source": "TradingView MCP", "read_only": True, "interval": interval, "instruments": results}
