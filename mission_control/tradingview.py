@@ -6,7 +6,7 @@ import json
 from typing import Any
 
 import httpx2
-from mcp import ClientSession
+from mcp import Client
 from mcp.client.auth import OAuthClientProvider
 from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.auth import OAuthClientMetadata
@@ -88,13 +88,12 @@ async def call_readonly_tool(name: str, arguments: dict[str, Any]) -> Any:
         raise ValueError(f"Tool is not enabled by Mission Control: {name}")
     oauth = _oauth_provider()
     async with httpx2.AsyncClient(auth=oauth, timeout=httpx2.Timeout(30.0, read=90.0)) as http:
-        async with streamable_http_client(MCP_URL, http_client=http) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                result = await session.call_tool(name, arguments)
-                if result.isError:
-                    raise RuntimeError(f"TradingView MCP returned an error for {name}")
-                return _decode_content(result.content)
+        transport = streamable_http_client(MCP_URL, http_client=http)
+        async with Client(transport) as client:
+            result = await client.call_tool(name, arguments)
+            if result.is_error:
+                raise RuntimeError(f"TradingView MCP returned an error for {name}")
+            return result.structured_content or _decode_content(result.content)
 
 
 async def market_snapshot(interval: str = "1m") -> dict[str, Any]:
