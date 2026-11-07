@@ -14,7 +14,7 @@ from mcp.shared.auth import OAuthClientMetadata
 from mission_control.tradingview_auth import KeyringTokenStorage
 
 MCP_URL = "https://mcp.tradingview.com/mcp"
-AUTH_SERVER_URL = "https://mcp.tradingview.com"
+AUTH_SERVER_URL = "https://mcp.tradingview.com/mcp"
 SYMBOLS = {
     "MNQ": "CME_MINI:MNQ1!",
     "MES": "CME_MINI:MES1!",
