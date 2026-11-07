@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
 from mission_control.tradingview import AuthorizationRequired, market_snapshot
@@ -66,7 +66,7 @@ async def tradingview_status() -> dict[str, Any]:
 
 
 @app.get("/api/market-data")
-async def market_data() -> dict[str, Any]:
+async def market_data(interval: str = Query(default="1m")) -> dict[str, Any]:
     if not await tradingview_authorized():
         raise HTTPException(
             status_code=503,
@@ -76,7 +76,7 @@ async def market_data() -> dict[str, Any]:
             },
         )
     try:
-        return await market_snapshot()
+        return await market_snapshot(interval)
     except AuthorizationRequired as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
