@@ -4,16 +4,19 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
+
+from mission_control.tradingview import AuthorizationRequired, market_snapshot
+from mission_control.tradingview_auth import KeyringTokenStorage
 
 ROOT = Path(__file__).resolve().parent.parent
 INSTRUMENTS_FILE = ROOT / "config" / "instruments.yaml"
 
 app = FastAPI(
     title="Futures Mission Control",
-    version="0.2.0",
-    description="Read-only futures intelligence dashboard foundation.",
+    version="0.3.0",
+    description="Read-only futures intelligence dashboard with optional TradingView MCP data.",
 )
 
 
@@ -29,6 +32,13 @@ def load_instruments() -> dict[str, Any]:
     }
 
 
+async def tradingview_authorized() -> bool:
+    try:
+        return await KeyringTokenStorage().get_tokens() is not None
+    except Exception:
+        return False
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "mode": "read-only", "execution": "disabled"}
@@ -39,22 +49,56 @@ def instruments() -> dict[str, list[dict[str, Any]]]:
     return {"instruments": list(load_instruments().values())}
 
 
+@app.get("/api/tradingview/status")
+async def tradingview_status() -> dict[str, Any]:
+    authorized = await tradingview_authorized()
+    return {
+        "id": "tradingview",
+        "name": "TradingView MCP",
+        "connected": authorized,
+        "status": "authorized" if authorized else "authorization_required",
+        "endpoint": "https://mcp.tradingview.com/mcp",
+        "transport": "Streamable HTTP",
+        "authentication": "OAuth 2.1",
+        "mode": "read-only",
+        "authorization_command": "python -m mission_control.tradingview_auth",
+    }
+
+
+@app.get("/api/market-data")
+async def market_data() -> dict[str, Any]:
+    if not await tradingview_authorized():
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "authorization_required",
+                "message": "Authorize TradingView first: python -m mission_control.tradingview_auth",
+            },
+        )
+    try:
+        return await market_snapshot()
+    except AuthorizationRequired as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
 @app.get("/api/integrations")
-def integrations() -> dict[str, Any]:
-    """Report honest integration readiness; desktop MCPs are not local adapters."""
+async def integrations() -> dict[str, Any]:
+    """Report connection state from the local OS keyring, not Claude Desktop."""
+    authorized = await tradingview_authorized()
     return {
         "integrations": [
             {
                 "id": "tradingview",
-                "name": "TradingView",
-                "role": "Interactive chart embed and future MCP market-data adapter",
-                "status": "embed_available_adapter_not_connected",
-                "connected": False,
-                "capabilities": ["public_chart_embed"],
+                "name": "TradingView MCP",
+                "role": "Read-only market data, history, news and economic calendar",
+                "status": "authorized" if authorized else "authorization_required",
+                "connected": authorized,
+                "capabilities": ["get_ohlcv", "get_symbol_data_batch", "get_news", "get_economic_calendar"],
                 "limitations": [
-                    "The embedded chart is separate from the user's TradingView MCP.",
-                    "Quote availability and delay depend on TradingView permissions.",
-                    "No MCP data is consumed by this local application yet.",
+                    "This is a separate OAuth connection; Claude Desktop authorization is not reused.",
+                    "Market history is polled on demand; no continuous streaming feed is promised.",
+                    "TradingView symbol coverage and exchange permissions apply.",
+                    "TradingView MCP is beta and rate-limited.",
                 ],
             },
             {
@@ -75,12 +119,12 @@ def integrations() -> dict[str, Any]:
 
 @app.get("/api/news")
 def news() -> dict[str, Any]:
-    """Empty until a source-backed news adapter is connected."""
+    """Empty until the news workspace adapter is wired to a source."""
     return {
         "status": "not_connected",
         "source": None,
         "items": [],
-        "message": "News adapter not connected. No headlines are being fabricated.",
+        "message": "News workspace adapter is not yet enabled. No headlines are being fabricated.",
     }
 
 
