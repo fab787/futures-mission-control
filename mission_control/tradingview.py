@@ -97,12 +97,14 @@ async def call_readonly_tool(name: str, arguments: dict[str, Any]) -> Any:
                 return _decode_content(result.content)
 
 
-async def market_snapshot() -> dict[str, Any]:
-    """Fetch the latest available 1-minute bars; no streaming claim is made."""
+async def market_snapshot(interval: str = "1m") -> dict[str, Any]:
+    """Fetch historical bars at a supported interval; this is polling, not streaming."""
+    if interval not in {"1m", "5m", "15m", "1h", "4h", "1D"}:
+        raise ValueError("Unsupported interval")
     async def one(symbol: str, tv_symbol: str) -> dict[str, Any]:
         try:
             payload = await call_readonly_tool(
-                "get_ohlcv", {"symbol": tv_symbol, "interval": "1m", "count": 120}
+                "get_ohlcv", {"symbol": tv_symbol, "interval": interval, "count": 120}
             )
             bars = _find_bars(payload)
             return {
@@ -112,6 +114,7 @@ async def market_snapshot() -> dict[str, Any]:
                 "bars": bars,
                 "latest": bars[-1] if bars else None,
                 "source": "TradingView MCP",
+                "interval": interval,
             }
         except AuthorizationRequired:
             raise
@@ -126,4 +129,4 @@ async def market_snapshot() -> dict[str, Any]:
             }
 
     results = await asyncio.gather(*(one(key, value) for key, value in SYMBOLS.items()))
-    return {"source": "TradingView MCP", "read_only": True, "instruments": results}
+    return {"source": "TradingView MCP", "read_only": True, "interval": interval, "instruments": results}
