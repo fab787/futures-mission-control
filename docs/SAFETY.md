@@ -3,10 +3,21 @@
 ## Initial operating mode
 
 - Read-only research by default.
+- TradingView MCP access is restricted to an explicit allow-list of read-only tools.
 - Paper trading only; no live brokerage connection.
 - Human approval is mandatory for every proposed paper trade.
 - No autonomous order execution.
 - No agent may edit risk limits or grant itself additional permissions.
+
+## TradingView MCP permissions
+
+- OAuth 2.1 is authorized separately for this local Mission Control application; Claude Desktop's login is not reused.
+- OAuth tokens and client registration are stored in the OS keyring, never in source control, dashboard HTML, or plaintext project files.
+- Only historical OHLCV, symbol quote batches, news and economic-calendar read tools are allow-listed.
+- Watchlist writes, alert creation/modification/deletion, paper-account actions and order submission are not exposed by the adapter.
+- A successful OAuth login does not prove that every futures symbol is available or real-time.
+- Market data is polled, not streamed. Every display must preserve source and timestamp/freshness information.
+- If authentication, symbol mapping, parsing or data freshness fails, show unavailable and block dependent analysis.
 
 ## Fail-safe behavior
 
@@ -21,7 +32,7 @@ Existing positions must never be represented as flat merely because a data sourc
 
 ## Secrets
 
-Never commit API keys, access tokens, passwords, account identifiers, or populated environment files. Use environment variables or a local untracked `.env` file. Rotate any credential that is accidentally exposed.
+Never commit API keys, access tokens, passwords, account identifiers, or populated environment files. Use OS credential storage or a dedicated secret manager. Rotate any credential that is accidentally exposed.
 
 ## TradingView Paper Trading
 
