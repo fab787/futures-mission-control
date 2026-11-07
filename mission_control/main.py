@@ -3,9 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import yaml
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
+import yaml
 
 from mission_control.tradingview import AuthorizationRequired, market_snapshot
 from mission_control.tradingview_auth import KeyringTokenStorage
