@@ -75,10 +75,11 @@ async def _open_browser(url: str) -> None:
 
 async def _wait_for_callback() -> AuthorizationCodeResult:
     server = CallbackServer((CALLBACK_HOST, CALLBACK_PORT), CallbackHandler)
+    server.timeout = 300
     try:
         await asyncio.to_thread(server.handle_request)
         if server.callback is None:
-            raise RuntimeError("TradingView OAuth callback did not contain an authorization code.")
+            raise RuntimeError("Timed out waiting for TradingView OAuth callback.")
         return server.callback
     finally:
         server.server_close()
