@@ -1,6 +1,6 @@
 # Centralized Market Data Request Policy
 
-Mission Control must route every TradingView market-data request through
+FAB787 QUANTUM must route every TradingView market-data request through
 `mission_control.market_data_manager.market_data_manager`. Dashboard panels,
 instrument agents, GEX, and future analysis modules must not call the TradingView
 adapter directly.
@@ -28,7 +28,7 @@ calls while a timeframe is still fresh.
 
 ## Important deployment note
 
-The cache and cooldown are in-process memory. Run a single Mission Control API
+The cache and cooldown are in-process memory. Run a single FAB787 QUANTUM API
 worker for this initial version. Multiple workers would each have independent
 caches and could multiply provider requests. A shared persistent coordinator
 would be required before enabling multi-worker deployment.
