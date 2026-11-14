@@ -229,6 +229,69 @@ def store_signal(signal: TradingViewSignal, db_path: str | Path | None = None) -
         connection.close()
 
 
+
+def get_signal(alert_id: str, db_path: str | Path | None = None) -> dict[str, Any] | None:
+    """Fetch one safe inbox record for explicit operator review."""
+    if not isinstance(alert_id, str) or not alert_id.strip() or len(alert_id) > 160:
+        raise ValueError("alert_id must be a non-empty string of at most 160 characters")
+    path = Path(db_path or os.getenv(
+        "FAB787_WEBHOOK_DB", str(ROOT / "data" / "fab787_tradingview_webhooks.sqlite3")
+    ))
+    if not path.exists():
+        return None
+    connection = sqlite3.connect(path, timeout=5)
+    connection.row_factory = sqlite3.Row
+    try:
+        row = connection.execute(
+            """SELECT alert_id, received_at, event_timestamp, symbol, action, quantity,
+                      order_type, entry_price, stop_loss, take_profit, strategy_id,
+                      route_key, status
+               FROM tradingview_webhook_inbox WHERE alert_id=?""",
+            (alert_id.strip(),),
+        ).fetchone()
+        return dict(row) if row else None
+    finally:
+        connection.close()
+
+
+def claim_signal_for_review(alert_id: str, db_path: str | Path | None = None) -> bool:
+    """Atomically prevent duplicate proposal creation from the same alert."""
+    path = Path(db_path or os.getenv(
+        "FAB787_WEBHOOK_DB", str(ROOT / "data" / "fab787_tradingview_webhooks.sqlite3")
+    ))
+    if not path.exists():
+        return False
+    connection = sqlite3.connect(path, timeout=5)
+    try:
+        cursor = connection.execute(
+            "UPDATE tradingview_webhook_inbox SET status='review_requested' "
+            "WHERE alert_id=? AND status='received'",
+            (alert_id,),
+        )
+        connection.commit()
+        return cursor.rowcount == 1
+    finally:
+        connection.close()
+
+
+def set_signal_status(alert_id: str, status: str, db_path: str | Path | None = None) -> None:
+    """Update a local workflow label; this does not change or execute an order."""
+    allowed = {"received", "review_requested", "proposal_created", "review_blocked"}
+    if status not in allowed:
+        raise ValueError("Unsupported webhook inbox status")
+    path = Path(db_path or os.getenv(
+        "FAB787_WEBHOOK_DB", str(ROOT / "data" / "fab787_tradingview_webhooks.sqlite3")
+    ))
+    connection = sqlite3.connect(path, timeout=5)
+    try:
+        connection.execute(
+            "UPDATE tradingview_webhook_inbox SET status=? WHERE alert_id=?",
+            (status, alert_id),
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
 def list_signals(limit: int = 50, db_path: str | Path | None = None) -> dict[str, Any]:
     """Return recent inbox records for a local operator review screen."""
     if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 200:
