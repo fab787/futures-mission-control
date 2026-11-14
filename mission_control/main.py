@@ -11,6 +11,7 @@ from mission_control.analysis_agents import analyze_instruments
 from mission_control.chief_decision_agent import compose_chief_decision
 from mission_control.account_protection import assess_account_protection
 from mission_control.account_registry import create_account, list_account_events, list_accounts, update_account
+from mission_control.broker_capabilities import list_broker_capabilities, upsert_broker_capability
 from mission_control.account_registry_ui import build_dashboard
 from mission_control.gex import GexUnavailable, gex_service
 from mission_control.market_data_manager import market_data_manager
@@ -375,6 +376,24 @@ def trading_account_update(account_id: str, payload: dict[str, Any]) -> dict[str
     try:
         actor = payload.pop("actor", "local_operator")
         return update_account(account_id, payload, actor)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/broker-capabilities")
+def broker_capabilities() -> dict[str, Any]:
+    """List per-account provider/platform permissions; never enables execution."""
+    return list_broker_capabilities()
+
+
+@app.put("/api/accounts/{account_id}/broker-capability")
+def broker_capability_update(account_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """Record an operator-verified connection path for one registered account."""
+    try:
+        actor = payload.pop("actor", "local_operator")
+        return upsert_broker_capability(account_id, payload, actor)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
