@@ -4,8 +4,10 @@ import json
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from fastapi.testclient import TestClient
 
 from mission_control.tradingview_webhook import (
+    app,
     TradingViewSignal,
     WebhookValidationError,
     list_signals,
@@ -162,3 +164,39 @@ def test_empty_inbox_is_safe_when_database_does_not_exist(tmp_path):
     result = list_signals(db_path=tmp_path / "missing.sqlite3")
     assert result["signals"] == []
     assert result["execution_enabled"] is False
+
+
+
+def test_http_webhook_accepts_once_and_returns_duplicate_without_leaking_secret(tmp_path, monkeypatch):
+    from mission_control import tradingview_webhook
+
+    monkeypatch.setenv("FAB787_TRADINGVIEW_WEBHOOK_SECRET", SECRET)
+    monkeypatch.setenv("FAB787_WEBHOOK_DB", str(tmp_path / "http-inbox.sqlite3"))
+    client = TestClient(app)
+    payload = _payload(timestamp=datetime.now(timezone.utc).isoformat())
+
+    first = client.post("/webhook/tradingview", json=payload)
+    second = client.post("/webhook/tradingview", json=payload)
+
+    assert first.status_code == 202
+    assert first.json()["status"] == "accepted"
+    assert first.json()["execution_enabled"] is False
+    assert second.status_code == 202
+    assert second.json()["status"] == "duplicate"
+
+    inbox = tradingview_webhook.list_signals(db_path=tmp_path / "http-inbox.sqlite3")
+    assert inbox["count"] == 1
+    assert SECRET not in json.dumps(inbox)
+    assert inbox["signals"][0]["alert_id"] == payload["alert_id"]
+
+
+def test_http_webhook_rejects_bad_secret(tmp_path, monkeypatch):
+    monkeypatch.setenv("FAB787_TRADINGVIEW_WEBHOOK_SECRET", SECRET)
+    monkeypatch.setenv("FAB787_WEBHOOK_DB", str(tmp_path / "http-inbox.sqlite3"))
+    client = TestClient(app)
+    payload = _payload(secret="not-the-secret", timestamp=datetime.now(timezone.utc).isoformat())
+
+    response = client.post("/webhook/tradingview", json=payload)
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "webhook authentication failed"
