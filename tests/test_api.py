@@ -229,3 +229,40 @@ def test_sentiment_comparison_endpoint_accepts_empty_payload_without_provider_ca
     assert payload["provider_requests_triggered"] == 0
     assert payload["market_data_requests_triggered"] == 0
     assert payload["trade_authority"] == "none"
+
+
+def test_account_protection_endpoint_fails_closed_without_account_state() -> None:
+    response = client.post("/api/agents/account-protection", json={})
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "blocked"
+    assert payload["new_trade_proposals_allowed"] is False
+    assert payload["provider_requests_triggered"] == 0
+    assert payload["account_connections_triggered"] == 0
+    assert payload["risk_settings_modified"] is False
+
+
+def test_account_protection_endpoint_evaluates_supplied_snapshot_only() -> None:
+    response = client.post(
+        "/api/agents/account-protection",
+        json={
+            "risk_limits": {
+                "max_daily_loss": 500,
+                "max_session_loss": 200,
+                "max_drawdown": 2000,
+                "max_contracts": 10,
+            },
+            "account_state": {
+                "daily_pnl": -500,
+                "session_pnl": -10,
+                "drawdown_from_high_water": 100,
+                "open_contracts": 0,
+                "position_state": "flat",
+            },
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "breached"
+    assert payload["new_trade_proposals_allowed"] is False
+    assert any(item["name"] == "daily_loss" for item in payload["breaches"])
