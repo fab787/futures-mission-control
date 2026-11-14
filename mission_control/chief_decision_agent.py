@@ -33,19 +33,33 @@ def compose_chief_decision(
         blockers.append("Account protection is blocked or a configured risk limit is breached.")
     elif account_status == "warning":
         warnings.append("Account protection reported one or more risk warnings.")
+        blockers.append("Account Protection warnings must be resolved before Master Risk Engine review.")
     elif account_status != "within_limits":
         blockers.append("A verified account-protection assessment is required.")
+    if account_protection.get("new_trade_proposals_allowed") is not True:
+        blockers.append("Account Protection has not explicitly permitted new trade proposals.")
 
     if sentiment.get("status") == "awaiting_reviews":
         warnings.append("Claude/ChatGPT reviews are not available; no AI consensus is claimed.")
-    for item in sentiment.get("instruments", []):
+    elif sentiment.get("status") not in {"ready", "partial", "awaiting_reviews"}:
+        warnings.append("Sentiment review comparison is unavailable or invalid.")
+    sentiment_items = sentiment.get("instruments", [])
+    if not isinstance(sentiment_items, list):
+        warnings.append("Sentiment comparison payload is malformed; model context is unavailable.")
+        sentiment_items = []
+    for item in sentiment_items:
+        if not isinstance(item, dict):
+            warnings.append("A malformed sentiment item was ignored.")
+            continue
         if item.get("status") == "disagreement":
             warnings.append(
                 f"Claude and ChatGPT disagree on {item.get('symbol', 'an instrument')}; both views are preserved."
             )
     if news_catalyst.get("status") in {"blocked", "stale_context"}:
         warnings.append("News and catalyst context is unavailable or stale.")
-    if news_catalyst.get("calendar", {}).get("status") == "page_link_only":
+    if not isinstance(news_catalyst.get("calendar", {}), dict):
+        warnings.append("Economic-calendar context is malformed and unavailable.")
+    elif news_catalyst.get("calendar", {}).get("status") == "page_link_only":
         warnings.append("Structured economic-calendar events are not verified in this phase.")
 
     ready_for_risk = not blockers
