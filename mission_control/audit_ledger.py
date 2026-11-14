@@ -4,13 +4,14 @@ import json
 import os
 import sqlite3
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from mission_control.master_risk_engine import evaluate_master_risk
 
-DEFAULT_DB = Path(os.environ.get("FAB787_AUDIT_DB", "data/fab787_quantum_audit.sqlite3"))
+DEFAULT_DB = Path(os.environ.get("FAB787_AUDIT_DB", str(Path(__file__).resolve().parent.parent / "data" / "fab787_quantum_audit.sqlite3"))))
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -46,7 +47,7 @@ def _connect(db_path: str | Path | None = None) -> sqlite3.Connection:
     """)
     return conn
 
-def _event(conn: sqlite3.Connection, event_type: str, proposal_id: str | None,
+@contextmanager\ndef _session(db_path: str | Path | None = None):\n    conn = _connect(db_path)\n    try:\n        with conn:\n            yield conn\n    finally:\n        conn.close()\n\ndef _event(conn: sqlite3.Connection, event_type: str, proposal_id: str | None,
            actor: str, details: dict[str, Any]) -> None:
     conn.execute(
       "INSERT INTO audit_events(event_type,proposal_id,actor,occurred_at,details_json) VALUES(?,?,?,?,?)",
@@ -63,7 +64,7 @@ def create_proposal(payload: Any, actor: str, db_path: str | Path | None = None)
     risk = evaluate_master_risk(payload)
     proposal_id = str(uuid.uuid4())
     status = "vetoed" if risk["veto"] else "pending"
-    with _connect(db_path) as conn:
+    with _session(db_path) as conn:
         conn.execute(
           "INSERT INTO proposals(proposal_id,created_at,payload_json,risk_json,status) VALUES(?,?,?,?,?)",
           (proposal_id,_now(),json.dumps(payload,sort_keys=True),json.dumps(risk,sort_keys=True),status),
@@ -76,7 +77,7 @@ def create_proposal(payload: Any, actor: str, db_path: str | Path | None = None)
 def decide_proposal(proposal_id: str, decision: str, actor: str, reason: str,
                     db_path: str | Path | None = None) -> dict[str, Any]:
     actor = _clean_actor(actor)
-    if decision not in {"approve","reject"}:
+    if not isinstance(decision, str) or decision not in {"approve","reject"}:
         raise ValueError("Decision must be approve or reject.")
     if not isinstance(reason,str) or not reason.strip() or len(reason.strip())>1000:
         raise ValueError("A decision reason of 1–1000 characters is required.")
