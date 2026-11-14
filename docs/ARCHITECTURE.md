@@ -10,6 +10,7 @@ The Master Risk Engine remains a separate control boundary. No AI agent may chan
 
 - Overview: instrument watchlist, source health and market snapshot.
 - Charts: authenticated TradingView launch plus locally rendered historical bars when the MCP adapter is authorized.
+- GEX: on-demand Cboe delayed NDX options estimates mapped to MNQ/NQ futures levels; no TradingView request is made by this workspace.
 - News & Events: source-linked headlines and scheduled catalyst calendar (adapter wiring is a later step).
 - AI Desk: instrument agents, shared specialists, Chief Decision Agent and audit stream.
 - Risk & Approvals: deterministic risk checks, veto state and human review queue.
@@ -34,6 +35,27 @@ Endpoints:
 - `GET /api/integrations`: integration status and permitted capabilities.
 
 TradingView MCP is beta and rate-limited. Do not poll aggressively. The initial UI should refresh manually or at a conservative interval and show the source and timestamp. If a symbol cannot be resolved or returned data cannot be normalized, display unavailable rather than fabricating a price.
+
+## GEX data path
+
+The GEX workspace uses the Cboe delayed NDX options-chain endpoint as its
+current and only options-data provider. It is on-demand, not polled at dashboard
+startup. Raw options-chain data is cached for 15 minutes; repeated calculations
+with a different MNQ/NQ mapping price reuse the cached chain. Failed refreshes
+use clearly labeled stale data when available and apply a five-minute retry
+cooldown.
+
+The futures mapping price is taken from the already cached 1-minute MNQ
+snapshot only through the cache-only `peek_snapshot()` accessor. That accessor
+never calls the TradingView adapter. If no fresh MNQ snapshot exists, the user
+must supply a manual MNQ/NQ price. GEX must never call the normal market-data
+loader to obtain a mapping price.
+
+The initial implementation supports NDX options mapped to MNQ/NQ. It labels
+Cboe's approximately 15-minute delay, prior-session open-interest limitations,
+and the calls-positive / puts-negative dealer-positioning assumption. Outputs
+are estimates for context, not trade signals. No MES or MGC GEX levels are
+claimed by this integration.
 
 ## Instrument agents
 
