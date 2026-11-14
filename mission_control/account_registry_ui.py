@@ -165,6 +165,6 @@ registryLoad();
 })();
 </script>
 '''
-    if "</body>" in html and "registry-create-form" not in html:
+    if "</body>" in html and "function registryLoad()" not in html:
         html = html.replace("</body>", script + "\n</body>", 1)
     return html
