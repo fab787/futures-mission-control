@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from mission_control.account_registry import list_accounts
+
 DB = Path(os.environ.get(
     "FAB787_AUDIT_DB",
     Path(__file__).resolve().parent.parent / "data" / "fab787_quantum_audit.sqlite3",
@@ -74,6 +76,7 @@ def upsert_broker_capability(account_id: str, payload: Any, actor: str = "local_
     if permission == "prohibited" and method != "manual_only":
         raise ValueError("Prohibited automation must use manual_only; no automated integration is allowed.")
     now = datetime.now(timezone.utc).isoformat()
+    list_accounts(db_path=db_path, include_inactive=True)  # ensure the canonical account table exists
     with _connect(db_path) as conn:
         conn.execute("BEGIN IMMEDIATE")
         account = conn.execute(
@@ -105,6 +108,7 @@ def upsert_broker_capability(account_id: str, payload: Any, actor: str = "local_
 
 
 def list_broker_capabilities(db_path: str | Path | None = None) -> dict[str, Any]:
+    list_accounts(db_path=db_path, include_inactive=True)  # ensure the canonical account table exists
     with _connect(db_path) as conn:
         rows = conn.execute(
             """SELECT a.account_id,a.firm,a.nickname,a.account_mode,a.status AS account_status,
