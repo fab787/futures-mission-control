@@ -120,6 +120,29 @@ reviews only after stable report contracts and provider boundaries are tested.
 
 
 
+
+
+### Opportunity Scout
+
+The Opportunity Scout endpoint, `GET /api/agents/opportunity-scout`, combines
+the existing instrument-agent reports, Market Structure results and cache-only
+News & Catalyst context. It reads the existing 1-minute TradingView snapshot
+once through `peek_snapshot()` and Yahoo headlines once through
+`peek_news()`. It does not call either provider's refresh method.
+
+Eligible instruments receive a transparent 0-80 deterministic confluence
+score: directional agreement (0-30), confirmed swing agreement (0-25),
+relative-volume context (0-15), and proximity to a confirmed support/resistance
+level within one ATR (0-10). Missing evidence earns no points. The score is
+not a probability, forecast, expected return, win rate, or backtest result.
+Ranks compare descriptive context across the enabled watchlist; they do not
+identify actionable entries.
+
+The Scout never generates entry/exit prices, stops, targets, contract sizing,
+or trade proposals. It has no risk or trade authority. Any future proposal
+workflow must remain separate, pass the independent Master Risk Engine, and
+require explicit human approval.
+
 ### News & Catalyst Intelligence
 
 The specialist reads only the existing Yahoo Finance RSS cache through
