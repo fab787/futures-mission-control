@@ -6,7 +6,7 @@ FAB787 QUANTUM supports a three-stage, indicator-owned signal lifecycle. The web
 - `approaching_buy`: early warning that the selected strategy reports a developing long setup. Informational only; no entry proposal can be created.
 - `approaching_sell`: early warning that the selected strategy reports a developing short setup. Informational only; no entry proposal can be created.
 - `buy` / `sell`: the strategy's actual entry trigger. The strategy supplies its own entry, stop-loss, take-profit, quantity, and order type. These enter the existing account-specific Master Risk review; a human still decides whether to execute manually.
-- `invalidated`: the strategy says the developing setup is no longer valid. The dashboard visibly cancels the earlier warning.
+- `invalidated`: the strategy says a developing setup is no longer valid. The event appears as a separate warning in the inbox; automatic matching to a prior approach event is not implemented in this phase.
 - `close` / `flatten`: exit/position-management notifications; review-only in this phase.
 
 ## Required fields
@@ -14,7 +14,7 @@ Every event includes `secret`, unique `alert_id`, timezone-aware `timestamp`, su
 
 For `buy` and `sell`, additionally provide `quantity`, `entry_price`, `stop_loss`, and `take_profit`. BUY bracket orientation is stop < entry < target; SELL is target < entry < stop.
 
-For early warnings and invalidation events, order quantity and bracket prices are omitted. Use a unique alert ID for each event so an early warning and its later trigger are recorded independently.
+For early warnings and invalidation events, order quantity and bracket prices are omitted. Use a unique alert ID for each event so an early warning and its later trigger are recorded independently. The receiver does not infer that two events belong to the same setup.
 
 ## Safety / truthfulness
 - An early warning is not an entry trigger.
