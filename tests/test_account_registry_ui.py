@@ -14,7 +14,7 @@ def test_registry_workspace_is_injected_into_existing_dashboard() -> None:
 
 
 def test_registry_workspace_injection_is_idempotent() -> None:
-    source = '<nav><button data-tab="risk">Risk</button></nav><section class="section" id="integrations"></section></body>'
+    source = '<nav><button data-tab="risk">Risk & Approvals</button></nav><section class="section" id="integrations"></section></body>'
     once = build_dashboard(source)
     twice = build_dashboard(once)
 
