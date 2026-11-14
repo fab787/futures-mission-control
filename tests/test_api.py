@@ -491,3 +491,124 @@ def test_signal_workspace_is_read_only_and_uses_local_inbox_api() -> None:
     assert 'id="signals"' in response.text
     assert 'fetch("/api/webhooks/tradingview/inbox?limit=100")' in response.text
     assert "not verified or authorized" in response.text
+
+
+
+def test_webhook_alert_creates_account_specific_risk_proposal_not_order(monkeypatch) -> None:
+    from datetime import datetime, timezone, timedelta
+    from mission_control import main
+
+    now = datetime.now(timezone.utc)
+    signal = {
+        "alert_id": "tv-test-account-route",
+        "event_timestamp": (now - timedelta(seconds=5)).isoformat(),
+        "symbol": "MNQ",
+        "action": "buy",
+        "quantity": 2,
+        "entry_price": 20000.0,
+        "stop_loss": 19990.0,
+        "take_profit": 20020.0,
+        "strategy_id": "test-strategy",
+        "route_key": "eval-a",
+        "status": "received",
+    }
+    account = {
+        "account_id": "registered-account-1",
+        "nickname": "Phidias Eval A",
+        "firm": "Phidias",
+        "account_mode": "evaluation",
+        "status": "active",
+        "risk_profile_id": "risk-profile-1",
+    }
+    captured = {}
+    monkeypatch.setattr(main, "get_tradingview_signal", lambda alert_id: signal)
+    monkeypatch.setattr(main, "list_accounts", lambda include_inactive=True: {"accounts": [account]})
+    monkeypatch.setattr(main, "claim_signal_for_review", lambda alert_id: True)
+    monkeypatch.setattr(main, "set_signal_status", lambda alert_id, status: captured.update(status=status))
+
+    def fake_create_proposal(payload, actor):
+        captured["payload"] = payload
+        captured["actor"] = actor
+        return {"proposal_id": "proposal-1", "status": "pending", "execution": "disabled", "orders_created": 0}
+
+    monkeypatch.setattr(main, "create_proposal", fake_create_proposal)
+    response = client.post(
+        "/api/approvals/proposals/from-webhook/tv-test-account-route",
+        json={
+            "account_id": "registered-account-1",
+            "submitted_by": "operator-test",
+            "account_state": {
+                "snapshot_at": now.isoformat(),
+                "current_session": "NY",
+                "daily_pnl": 100,
+                "session_pnl": 50,
+                "drawdown_from_high_water": 0,
+                "open_contracts": 0,
+                "position_state": "flat",
+            },
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["proposal_id"] == "proposal-1"
+    assert result["selected_account"]["account_id"] == "registered-account-1"
+    assert result["route_key_used_for_authorization"] is False
+    assert result["human_approval_required"] is True
+    assert result["execution"] == "disabled"
+    assert result["orders_created"] == 0
+    assert captured["payload"]["risk_profile_id"] == "risk-profile-1"
+    assert captured["payload"]["proposal"]["side"] == "long"
+    assert captured["payload"]["proposal"]["session"] == "NY"
+    assert captured["status"] == "proposal_created"
+
+
+def test_webhook_close_alert_cannot_create_entry_proposal(monkeypatch) -> None:
+    from datetime import datetime, timezone
+    from mission_control import main
+
+    signal = {
+        "alert_id": "tv-close-only",
+        "event_timestamp": datetime.now(timezone.utc).isoformat(),
+        "symbol": "MES",
+        "action": "close",
+        "status": "received",
+    }
+    monkeypatch.setattr(main, "get_tradingview_signal", lambda alert_id: signal)
+    response = client.post(
+        "/api/approvals/proposals/from-webhook/tv-close-only",
+        json={"account_id": "registered-account-1", "account_state": {}},
+    )
+    assert response.status_code == 400
+    assert "remain review-only" in response.json()["detail"]
+
+
+def test_webhook_alert_requires_active_registered_account(monkeypatch) -> None:
+    from datetime import datetime, timezone
+    from mission_control import main
+
+    signal = {
+        "alert_id": "tv-inactive-account",
+        "event_timestamp": datetime.now(timezone.utc).isoformat(),
+        "symbol": "MES",
+        "action": "sell",
+        "quantity": 1,
+        "entry_price": 5000.0,
+        "stop_loss": 5010.0,
+        "take_profit": 4980.0,
+        "strategy_id": "test",
+        "status": "received",
+    }
+    monkeypatch.setattr(main, "get_tradingview_signal", lambda alert_id: signal)
+    monkeypatch.setattr(main, "list_accounts", lambda include_inactive=True: {
+        "accounts": [{
+            "account_id": "inactive-account", "status": "inactive",
+            "risk_profile_id": "profile-x", "nickname": "Inactive",
+            "firm": "Lucid", "account_mode": "funded",
+        }]
+    })
+    response = client.post(
+        "/api/approvals/proposals/from-webhook/tv-inactive-account",
+        json={"account_id": "inactive-account", "account_state": {}},
+    )
+    assert response.status_code == 409
+    assert "inactive or completed" in response.json()["detail"]
