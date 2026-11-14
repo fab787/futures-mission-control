@@ -196,3 +196,24 @@ def test_quota_detector_recognizes_transport_429_and_payloads() -> None:
     assert is_quota_error("HTTP 429 from upstream")
     assert not is_quota_error("symbol not found")
 
+
+def test_peek_snapshot_only_reads_existing_cache() -> None:
+    manager = MarketDataRequestManager()
+    calls = 0
+
+    async def loader(_interval: str) -> dict:
+        nonlocal calls
+        calls += 1
+        return snapshot(789)
+
+    assert manager.peek_snapshot("1m") is None
+
+    async def run() -> None:
+        await manager.get_snapshot("1m", loader)
+
+    asyncio.run(run())
+    cached = manager.peek_snapshot("1m")
+    assert cached is not None
+    assert cached["cache"]["status"] == "hit"
+    assert calls == 1
+
