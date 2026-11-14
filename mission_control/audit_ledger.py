@@ -103,7 +103,7 @@ def decide_proposal(proposal_id: str, decision: str, actor: str, reason: str,
         if row["status"] != "pending":
             raise ValueError(f"Proposal is already finalized: {row['status']}.")
         payload=json.loads(row["payload_json"])
-        history_record = get_current_history(db_path)
+        history_record = get_current_history(db_path, conn)
         payload["account_history"] = history_record.get("account_history") if history_record.get("status") == "available" else None
         payload["account_history_revision"] = history_record.get("revision", 0)
         fresh_risk=evaluate_master_risk(payload, require_saved_profile=True)

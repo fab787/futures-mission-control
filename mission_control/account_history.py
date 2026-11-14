@@ -184,9 +184,12 @@ def save_history_snapshot(payload: Any, actor: Any, source_label: Any, db_path: 
             "provider_requests_triggered": 0, "broker_connections_triggered": 0, "orders_created": 0}
 
 
-def get_current_history(db_path: str | Path | None = None) -> dict[str, Any]:
-    with _connect(db_path) as conn:
-        row = conn.execute("SELECT * FROM account_history_snapshots ORDER BY revision DESC LIMIT 1").fetchone()
+def get_current_history(db_path: str | Path | None = None, connection: sqlite3.Connection | None = None) -> dict[str, Any]:
+    if connection is None:
+        with _connect(db_path) as conn:
+            row = conn.execute("SELECT * FROM account_history_snapshots ORDER BY revision DESC LIMIT 1").fetchone()
+    else:
+        row = connection.execute("SELECT * FROM account_history_snapshots ORDER BY revision DESC LIMIT 1").fetchone()
     if row is None:
         return {"status": "not_configured", "revision": 0, "account_history": None,
                 "summary": None, "provider_requests_triggered": 0, "orders_created": 0}
