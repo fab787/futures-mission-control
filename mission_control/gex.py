@@ -28,7 +28,7 @@ MAX_DAYS = 45.0
 STRIKE_BAND = 0.15
 CONTRACT_MULTIPLIER = 100.0
 ET = ZoneInfo("America/New_York")
-OCC = re.compile(r"^(.+?)(\\d{6})([CP])(\\d{8})$")
+OCC = re.compile(r"^(.+?)(\d{6})([CP])(\d{8})$")
 
 
 class GexUnavailable(RuntimeError):
