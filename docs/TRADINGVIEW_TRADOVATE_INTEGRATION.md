@@ -53,6 +53,19 @@ The receiver rejects unknown instruments, malformed fields, bad secrets, timesta
 
 Mission Control also adds a **Signals** workspace with a read-only view of the latest 100 alerts. It shows action, symbol, quantity, bracket values, strategy, received time and the unverified route alias. It explicitly labels alerts as signals rather than orders or fills. The dashboard never approves or executes them.
 
+### Explicit account-to-risk-review workflow
+
+Mission Control's Signals workspace lets the operator select one exact active account from the local Account Registry and submit a BUY/SELL alert to `POST /api/approvals/proposals/from-webhook/{alert_id}`.
+
+- The selected account's own saved risk profile is attached server-side; the TradingView `route_key` is informational only and never authorizes or selects an account.
+- The operator must enter the actual account snapshot timestamp, current session, daily/session P&L, drawdown, open contracts and position state. Snapshots older than the Account Protection limit (120 seconds) are vetoed.
+- The alert must still be within the 15-minute signal freshness window and must not already have been submitted.
+- The existing Master Risk Engine re-evaluates the account-specific risk profile. A result can be vetoed or become pending human review; neither result submits an order.
+- CLOSE/FLATTEN alerts remain visible for review but cannot create a new entry proposal.
+- Tradovate and NinjaTrader are not connected. No broker position or account values are assumed to be synchronized.
+
+This is intentionally operator-selected account routing, not automatic execution routing. Broker-derived account snapshots and persistent route-alias administration are future work after secure broker authentication is implemented.
+
 ### Response behavior
 
 A valid first delivery returns HTTP 202 and `status: accepted`. A repeat delivery returns `status: duplicate`. The response always states:
