@@ -137,3 +137,29 @@ def test_market_structure_endpoint_uses_cache_only(monkeypatch) -> None:
     assert payload["provider_requests_triggered"] == 0
     assert payload["trade_authority"] == "none"
     assert calls == {"peek": 1, "refresh": 0}
+
+
+
+def test_news_catalyst_endpoint_reads_cache_without_rss_fetch(monkeypatch) -> None:
+    from mission_control import main
+
+    calls = {"peek": 0, "fetch": 0}
+
+    def fake_peek():
+        calls["peek"] += 1
+        return {"status": "not_loaded", "items": []}
+
+    async def forbidden_fetch():
+        calls["fetch"] += 1
+        raise AssertionError("News Catalyst must not fetch Yahoo RSS")
+
+    monkeypatch.setattr(main.yahoo_news_service, "peek_news", fake_peek)
+    monkeypatch.setattr(main.yahoo_news_service, "get_news", forbidden_fetch)
+    response = client.get("/api/agents/news-catalyst")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "blocked"
+    assert payload["provider_requests_triggered"] == 0
+    assert payload["calendar"]["events"] == []
+    assert calls == {"peek": 1, "fetch": 0}
