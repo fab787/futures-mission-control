@@ -33,7 +33,7 @@ def test_registry_rejects_reused_profile_and_mismatched_firm_mode(tmp_path):
     create_account(payload, "operator", resolver, db)
     payload["nickname"] = "Account B"
     import pytest
-    with pytest.raises(ValueError, match="UNIQUE"):
+    with pytest.raises(ValueError, match="distinct risk profile"):
         create_account(payload, "operator", resolver, db)
 
     with pytest.raises(ValueError, match="must match"):
