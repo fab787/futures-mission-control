@@ -44,7 +44,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/SAFETY.md](docs/SAFET
 
 ## Current status
 
-**Foundation and provider-protection phase.** The isolated working branch includes read-only TradingView history for MNQ/MES/MGC behind a centralized five-minute cache, cross-timeframe request serialization, quota cooldowns, stale-data handling, and conservative dashboard polling. The native GEX workspace uses Cboe delayed NDX options data on demand, cached for 15 minutes, and maps levels to MNQ/NQ using an already cached MNQ price or a manual price. GEX does not make TradingView requests. AI agents, broker adapter and order execution remain disabled. All changes are under draft PR review; nothing has been merged.
+**Foundation and provider-protection phase.** The isolated working branch includes read-only TradingView history for MNQ/MES/MGC behind a centralized five-minute cache, cross-timeframe request serialization, quota cooldowns, stale-data handling, and conservative dashboard polling. The native GEX workspace uses Cboe delayed NDX options data on demand, cached for 15 minutes, and maps levels to MNQ/NQ using an already cached MNQ price or a manual price. GEX does not make TradingView requests. News uses one combined Yahoo Finance ticker RSS request with a ten-minute cache and failure cooldown; Yahoo's economic calendar is linked externally until its structured event feed is verified. TradingView is excluded from news and calendar retrieval. AI agents, broker adapter and order execution remain disabled. All changes are under draft PR review; nothing has been merged.
 
 ## TradingView connection
 
