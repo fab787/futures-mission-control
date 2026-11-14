@@ -126,3 +126,37 @@ def test_consistency_waits_for_positive_net_profit_without_blocking_safe_progres
     assert result["status"] == "in_progress"
     assert result["new_trade_proposals_allowed"] is True
     assert any("cannot be evaluated" in item for item in result["progress_notes"])
+
+
+def test_rules_evaluator_blocks_unenforced_daily_profit_share_setting():
+    profile = sample_profile()
+    profile["effective_limits"]["max_daily_profit_share"] = 40
+    result = evaluate_prop_firm_rules(profile, history(), state())
+    assert result["status"] == "blocked"
+    assert result["new_trade_proposals_allowed"] is False
+    assert any("max_daily_profit_share is not an enforced rule" in item for item in result["blockers"])
+
+
+def test_rules_evaluator_rejects_invalid_session_calendar_date():
+    data = history()
+    data["session_results"][0]["date"] = "2026-02-30"
+    result = evaluate_prop_firm_rules(sample_profile(), data, state())
+    assert result["status"] == "blocked"
+    assert result["new_trade_proposals_allowed"] is False
+    assert any("Session result 1 date must be a real calendar date" in item for item in result["blockers"])
+
+
+def test_rules_evaluator_rejects_noncanonical_session_date():
+    data = history()
+    data["session_results"][0]["date"] = "2026-2-03"
+    result = evaluate_prop_firm_rules(sample_profile(), data, state())
+    assert result["status"] == "blocked"
+    assert any("Session result 1 date must be a real calendar date" in item for item in result["blockers"])
+
+
+def test_rules_evaluator_rejects_invalid_daily_calendar_date():
+    data = history()
+    data["daily_results"][0]["date"] = "2026-02-30"
+    result = evaluate_prop_firm_rules(sample_profile(), data, state())
+    assert result["status"] == "blocked"
+    assert any("Daily result 1 date must be a real calendar date" in item for item in result["blockers"])
