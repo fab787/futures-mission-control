@@ -457,3 +457,28 @@ def test_account_history_api_rejects_naive_timestamps(tmp_path, monkeypatch):
         "source_label": "Invalid fixture",
     }
     assert client.post("/api/account-history", json=payload).status_code == 400
+
+
+
+def test_tradingview_webhook_inbox_api_is_read_only(monkeypatch) -> None:
+    from mission_control import main
+
+    monkeypatch.setattr(
+        main,
+        "list_tradingview_webhook_signals",
+        lambda limit=50: {
+            "signals": [],
+            "count": 0,
+            "execution_enabled": False,
+            "human_approval_required": True,
+        },
+    )
+    response = client.get("/api/webhooks/tradingview/inbox")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["signals"] == []
+    assert payload["execution_enabled"] is False
+    assert payload["human_approval_required"] is True
+
+    invalid = client.get("/api/webhooks/tradingview/inbox?limit=500")
+    assert invalid.status_code == 422
