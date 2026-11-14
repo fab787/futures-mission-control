@@ -8,6 +8,7 @@ from mission_control.market_data_manager import MarketDataRequestManager
 def snapshot(close: int = 100) -> dict:
     return {
         "source": "test",
+        "provider_requests": 3,
         "instruments": [
             {"symbol": "MNQ", "bars": [{"c": close}]},
             {"symbol": "MES", "bars": [{"c": close}]},
@@ -31,6 +32,7 @@ def test_snapshot_is_cached_for_ttl() -> None:
         second = await manager.get_snapshot("1m", loader)
         assert first["cache"]["status"] == "miss"
         assert second["cache"]["status"] == "hit"
+        assert second["cache"]["provider_requests_per_snapshot"] == 3
         assert second["instruments"][0]["bars"][0]["c"] == 100
 
     asyncio.run(run())
