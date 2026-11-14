@@ -144,6 +144,8 @@ class YahooFinanceNewsService:
         response = {
             **payload,
             "status": status,
+            "upstream_requests": self.fetch_count,
+            "provider_requests_per_refresh": 1,
             "cache_age_seconds": round(max(0.0, now - stored_at), 1),
             "next_refresh_seconds": round(max(0.0, stored_at + self.ttl_seconds - now), 1),
         }
@@ -162,6 +164,8 @@ class YahooFinanceNewsService:
                 "status": "cooldown",
                 "source": "Yahoo Finance RSS",
                 "items": [],
+                "upstream_requests": self.fetch_count,
+                "provider_requests_per_refresh": 1,
                 "error": "Yahoo Finance refresh is cooling down after a provider error.",
                 "retry_after_seconds": round(self._cooldown_until - now, 1),
             }
@@ -177,6 +181,8 @@ class YahooFinanceNewsService:
                     "status": "cooldown",
                     "source": "Yahoo Finance RSS",
                     "items": [],
+                    "upstream_requests": self.fetch_count,
+                    "provider_requests_per_refresh": 1,
                     "error": "Yahoo Finance refresh is cooling down after a provider error.",
                     "retry_after_seconds": round(self._cooldown_until - now, 1),
                 }
@@ -204,6 +210,8 @@ class YahooFinanceNewsService:
                     "status": "unavailable",
                     "source": "Yahoo Finance RSS",
                     "items": [],
+                    "upstream_requests": self.fetch_count,
+                    "provider_requests_per_refresh": 1,
                     "error": f"Yahoo Finance news refresh failed: {type(exc).__name__}",
                     "retry_after_seconds": self.error_cooldown_seconds,
                 }
