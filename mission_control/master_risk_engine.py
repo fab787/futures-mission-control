@@ -10,7 +10,7 @@ ALLOWED_SESSIONS = {"NY", "GLOBEX"}
 def _number(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value))
 
-def evaluate_master_risk(payload: Any) -> dict[str, Any]:
+def evaluate_master_risk(payload: Any, *, require_saved_profile: bool = False) -> dict[str, Any]:
     """Veto unsafe or incomplete proposals; never approve or execute a trade."""
     base = {"engine":"master_risk_engine","authority":"independent_veto_only",
             "provider_requests_triggered":0,"broker_connections_triggered":0,
@@ -32,6 +32,8 @@ def evaluate_master_risk(payload: Any) -> dict[str, Any]:
             blockers.append(f"Trusted risk profile could not be resolved: {exc}")
     else:
         limits = payload.get("risk_limits")
+        if require_saved_profile:
+            blockers.append("A saved, verified risk_profile_id is mandatory for production risk review; caller-supplied limits cannot replace it.")
     state, proposal = payload.get("account_state"), payload.get("proposal")
     prop_firm_assessment = None
     if profile_resolution is not None:
