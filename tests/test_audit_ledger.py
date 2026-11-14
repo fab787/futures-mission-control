@@ -57,7 +57,7 @@ def valid_payload(risk_profile_id):
 def test_proposal_requires_fresh_risk_pass_and_records_audit(tmp_path, saved_risk_profile):
     db=tmp_path/"audit.sqlite3"
     payload=valid_payload(saved_risk_profile)
-    save_history_snapshot(payload["account_history"], "operator", "CI reconciled fixture", db)
+    save_history_snapshot(payload["account_history"], "operator", "CI reconciled fixture", saved_risk_profile, db)
     result=create_proposal(payload,"operator",db)
     assert result["status"]=="pending" and result["orders_created"]==0
     events=list_audit_events(result["proposal_id"],db)["events"]
@@ -74,7 +74,7 @@ def test_vetoed_proposal_cannot_be_approved(tmp_path, saved_risk_profile):
 def test_approval_and_rejection_are_single_use_decisions(tmp_path, saved_risk_profile):
     db=tmp_path/"audit.sqlite3"
     payload=valid_payload(saved_risk_profile)
-    save_history_snapshot(payload["account_history"], "operator", "CI reconciled fixture", db)
+    save_history_snapshot(payload["account_history"], "operator", "CI reconciled fixture", saved_risk_profile, db)
     p=create_proposal(payload,"operator",db)
     result=decide_proposal(p["proposal_id"],"approve","human reviewer","Reviewed",db)
     assert result["status"]=="approved" and result["orders_created"]==0
@@ -87,7 +87,7 @@ def test_approval_and_rejection_are_single_use_decisions(tmp_path, saved_risk_pr
 def test_risk_is_rechecked_at_decision_time_and_can_veto(tmp_path, saved_risk_profile):
     db=tmp_path/"audit.sqlite3"
     payload=valid_payload(saved_risk_profile)
-    save_history_snapshot(payload["account_history"], "operator", "CI reconciled fixture", db)
+    save_history_snapshot(payload["account_history"], "operator", "CI reconciled fixture", saved_risk_profile, db)
     p=create_proposal(payload,"operator",db)
     with sqlite3.connect(db) as conn:
         conn.execute("UPDATE proposals SET payload_json=? WHERE proposal_id=?",
@@ -127,7 +127,7 @@ def test_list_proposals_includes_trade_details_for_human_review(tmp_path):
 def test_proposal_uses_latest_saved_history_revision_and_rechecks_it(tmp_path, saved_risk_profile):
     db = tmp_path / "audit.sqlite3"
     payload = valid_payload(saved_risk_profile)
-    save_history_snapshot(payload["account_history"], "operator", "Initial reconciliation", db)
+    save_history_snapshot(payload["account_history"], "operator", "Initial reconciliation", saved_risk_profile, db)
     proposal = create_proposal(payload, "operator", db)
     assert proposal["status"] == "pending"
     from mission_control.audit_ledger import list_proposals
@@ -136,8 +136,8 @@ def test_proposal_uses_latest_saved_history_revision_and_rechecks_it(tmp_path, s
     from mission_control.account_history import get_current_history
     updated = valid_payload(saved_risk_profile)["account_history"]
     updated["daily_results"][0]["net_pnl"] = -600
-    save_history_snapshot(updated, "operator", "Updated statement reconciliation", db)
+    save_history_snapshot(updated, "operator", "Updated statement reconciliation", saved_risk_profile, db)
     decision = decide_proposal(proposal["proposal_id"], "approve", "reviewer", "Recheck current ledger", db)
     assert decision["status"] == "vetoed"
     assert decision["decision_recorded"] is False
-    assert get_current_history(db)["revision"] == 2
+    assert get_current_history(saved_risk_profile, db)["revision"] == 2

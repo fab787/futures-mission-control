@@ -382,10 +382,18 @@ def test_master_risk_api_rejects_caller_limits_without_saved_profile():
     assert result["orders_created"] == 0
 
 def test_account_history_api_saves_and_returns_immutable_snapshot(tmp_path, monkeypatch):
-    from mission_control import account_history
+    from mission_control import account_history, risk_config
     monkeypatch.setattr(account_history, "DEFAULT_DB", tmp_path / "history.sqlite3")
+    monkeypatch.setattr(risk_config, "DB", tmp_path / "profiles.sqlite3")
+    profile = risk_config.create_profile({"profile_name": "History API fixture", "prop_firm": "Synthetic",
+        "account_mode": "evaluation", "drawdown_type": "static", "verification_status": "user_verified",
+        "rule_coverage_status": "complete", "evaluation_rules": {"minimum_trading_days": None},
+        "consistency_rule": None, "prop_firm_maximums": {"max_daily_loss": 500, "max_session_loss": 200,
+        "max_drawdown": 2000, "max_contracts": 10, "max_per_trade_risk": 150, "allowed_sessions": ["NY"]},
+        "user_limits": {}}, "api-test")
     now = datetime.now(timezone.utc)
     payload = {
+        "risk_profile_id": profile["profile_id"],
         "account_history": {
             "starting_balance": 50000,
             "equity_observations": [
@@ -403,18 +411,26 @@ def test_account_history_api_saves_and_returns_immutable_snapshot(tmp_path, monk
     saved = client.post("/api/account-history", json=payload)
     assert saved.status_code == 200
     assert saved.json()["revision"] == 1
-    current = client.get("/api/account-history").json()
+    current = client.get("/api/account-history", params={"risk_profile_id": profile["profile_id"]}).json()
     assert current["status"] == "available"
     assert current["summary"]["cumulative_net_profit"] == 10
     assert current["summary"]["history_is_broker_authenticated"] is False
-    assert client.get("/api/account-history/versions").json()["versions"][0]["revision"] == 1
+    assert client.get("/api/account-history/versions", params={"risk_profile_id": profile["profile_id"]}).json()["versions"][0]["revision"] == 1
 
 
 def test_account_history_api_rejects_naive_timestamps(tmp_path, monkeypatch):
-    from mission_control import account_history
+    from mission_control import account_history, risk_config
     monkeypatch.setattr(account_history, "DEFAULT_DB", tmp_path / "history-invalid.sqlite3")
+    monkeypatch.setattr(risk_config, "DB", tmp_path / "profiles-invalid.sqlite3")
+    profile = risk_config.create_profile({"profile_name": "Invalid History fixture", "prop_firm": "Synthetic",
+        "account_mode": "evaluation", "drawdown_type": "static", "verification_status": "user_verified",
+        "rule_coverage_status": "complete", "evaluation_rules": {"minimum_trading_days": None},
+        "consistency_rule": None, "prop_firm_maximums": {"max_daily_loss": 500, "max_session_loss": 200,
+        "max_drawdown": 2000, "max_contracts": 10, "max_per_trade_risk": 150, "allowed_sessions": ["NY"]},
+        "user_limits": {}}, "api-test")
     now = datetime.now(timezone.utc)
     payload = {
+        "risk_profile_id": profile["profile_id"],
         "account_history": {
             "starting_balance": 50000,
             "equity_observations": [
