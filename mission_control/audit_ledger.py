@@ -79,12 +79,14 @@ def create_proposal(payload: Any, actor: str, db_path: str | Path | None = None)
         payload["account_state"] = dict(payload["account_state"])
         payload["account_state"]["cumulative_net_profit"] = history_record["summary"]["cumulative_net_profit"]
     risk = evaluate_master_risk(payload, require_saved_profile=True)
+    stored_payload = dict(payload)
+    stored_payload.pop("account_history", None)
     proposal_id = str(uuid.uuid4())
     status = "vetoed" if risk["veto"] else "pending"
     with _session(db_path) as conn:
         conn.execute(
           "INSERT INTO proposals(proposal_id,created_at,payload_json,risk_json,status) VALUES(?,?,?,?,?)",
-          (proposal_id,_now(),json.dumps(payload,sort_keys=True),json.dumps(risk,sort_keys=True),status),
+          (proposal_id,_now(),json.dumps(stored_payload,sort_keys=True),json.dumps(risk,sort_keys=True),status),
         )
         _event(conn, "proposal_vetoed" if risk["veto"] else "proposal_submitted",
                proposal_id, actor, {"risk_status":risk["status"],"blockers":risk["blockers"],"account_history_revision":payload.get("account_history_revision",0)})
