@@ -125,7 +125,7 @@ async def market_snapshot(interval: str = "1m") -> dict[str, Any]:
                 "source": "TradingView MCP",
                 "interval": interval,
             }
-        except AuthorizationRequired:
+        except (AuthorizationRequired, TradingViewQuotaExceeded):
             raise
         except Exception as exc:
             return {
