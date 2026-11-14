@@ -32,6 +32,7 @@ The receiver exposes only:
 - `GET /health`
 - `POST /webhook/tradingview`
 - `GET /inbox?limit=50` (read-only recent signal list; maximum 200)
+- `GET /api/webhooks/tradingview/inbox?limit=50` (Mission Control's read-only proxy to the local inbox)
 
 Do not expose the main Mission Control port to the public internet. If a public HTTPS ingress is configured later, it must forward only to this isolated receiver on port 8765. No tunnel has been configured by this change.
 
