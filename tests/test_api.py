@@ -34,6 +34,7 @@ def test_integrations_are_reported_honestly() -> None:
     assert response.status_code == 200
     integrations = {item["id"]: item for item in response.json()["integrations"]}
     assert isinstance(integrations["tradingview"]["connected"], bool)
+    assert integrations["tradingview"]["capabilities"] == ["get_ohlcv", "get_symbol_data_batch"]
     assert integrations["tradingview"]["status"] in {"authorized", "authorization_required"}
     assert integrations["yahoo_finance"]["connected"] is False
 
