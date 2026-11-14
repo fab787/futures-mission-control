@@ -89,6 +89,25 @@ Each instrument agent has isolated configuration and context:
 
 A selected ticker changes the detailed analysis view, not another instrument's identity or risk configuration. The overview continues to show all enabled instruments.
 
+## Initial instrument-agent implementation
+
+The first instrument-agent slice is deterministic and cache-only. MNQ, MES and
+MGC each receive an isolated report built from the already-cached 1-minute
+market snapshot. The `GET /api/agents/instruments` endpoint uses only
+`market_data_manager.peek_snapshot()`; it never calls the snapshot loader,
+TradingView MCP, Yahoo Finance, Claude, or ChatGPT.
+
+Reports summarize the last 20-bar direction, recent 20-bar high/low, ATR-style
+14-bar range and relative volume when available. Each report includes source,
+latest-bar timestamp, data age and cache status. Missing timestamps, fewer than
+20 valid OHLC bars, stale bars older than 15 minutes, or a stale cache block
+the report instead of allowing stale context to appear current.
+
+This is a descriptive baseline, not a predictive model, trade signal, strategy,
+or risk approval. Instrument agents have no risk-setting, account, or order
+authority. The next layer can add shared specialists and independent AI
+reviews only after stable report contracts and provider boundaries are tested.
+
 ## Shared specialist agents
 
 - Opportunity Scout: identifies and ranks candidate situations; does not authorize trades.
