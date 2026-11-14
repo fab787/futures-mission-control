@@ -13,11 +13,21 @@
 
 - OAuth 2.1 is authorized separately for this local FAB787 QUANTUM application; Claude Desktop's login is not reused.
 - OAuth tokens and client registration are stored in the OS keyring, never in source control, dashboard HTML, or plaintext project files.
-- Only historical OHLCV, symbol quote batches, news and economic-calendar read tools are allow-listed.
+- Only historical OHLCV and symbol quote-batch tools are allow-listed.
+- TradingView news and economic-calendar tools are not enabled. Yahoo Finance is the sole news/calendar provider in this phase.
 - Watchlist writes, alert creation/modification/deletion, paper-account actions and order submission are not exposed by the adapter.
 - A successful OAuth login does not prove that every futures symbol is available or real-time.
 - Market data is polled, not streamed. Every display must preserve source and timestamp/freshness information.
 - If authentication, symbol mapping, parsing or data freshness fails, show unavailable and block dependent analysis.
+
+## News and calendar limitations
+
+- Yahoo ticker headlines are fetched through one combined RSS request, cached for ten minutes, and protected by a fifteen-minute failure cooldown.
+- Stale headlines must be labeled with their cache age. Publisher, original publication time, received time and source URL must be retained.
+- Yahoo ticker RSS is a bounded ticker-headline feed, not a complete real-time market-news service.
+- The Yahoo economic calendar is currently a page link only. Do not display invented event rows or infer an event's time when structured Yahoo data has not been verified.
+- Yahoo's current calendar page displays event times in UTC. Do not label them New York time until a validated structured timestamp can be converted correctly.
+- No news or calendar component may call TradingView or introduce a backup provider during this phase.
 
 ## GEX data limitations
 
