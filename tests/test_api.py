@@ -38,11 +38,34 @@ def test_integrations_are_reported_honestly() -> None:
     assert integrations["yahoo_finance"]["connected"] is False
 
 
-def test_news_does_not_fabricate_headlines() -> None:
+def test_news_endpoint_uses_yahoo_adapter_without_live_provider_call(monkeypatch) -> None:
+    from mission_control import main
+
+    async def fake_get_news() -> dict:
+        return {"status": "fresh", "source": "Yahoo Finance RSS", "items": [], "item_count": 0}
+
+    monkeypatch.setattr(main.yahoo_news_service, "get_news", fake_get_news)
     response = client.get("/api/news")
     assert response.status_code == 200
-    assert response.json()["items"] == []
-    assert response.json()["status"] == "not_connected"
+    assert response.json()["status"] == "fresh"
+    assert response.json()["source"] == "Yahoo Finance RSS"
+
+
+def test_economic_calendar_is_yahoo_link_only_and_does_not_call_tradingview() -> None:
+    response = client.get("/api/calendar")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "page_link_only"
+    assert payload["source"] == "Yahoo Finance Economic Calendar"
+    assert payload["url"] == "https://finance.yahoo.com/calendar/economic/"
+    assert payload["items"] == []
+    assert "America/New_York" in payload["timezone_note"]
+
+
+def test_tradingview_adapter_excludes_news_and_economic_calendar_tools() -> None:
+    from mission_control.tradingview import READ_ONLY_TOOLS
+
+    assert READ_ONLY_TOOLS == {"get_ohlcv", "get_symbol_data_batch"}
 
 
 def test_tradingview_status_endpoint_is_read_only() -> None:
