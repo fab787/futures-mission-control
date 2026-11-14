@@ -40,6 +40,21 @@ the TradingView loader. If no fresh MNQ snapshot exists, the user must enter a
 futures price manually. The endpoint must never call `get_snapshot()` merely
 to obtain a mapping price.
 
+## Yahoo Finance news request policy
+
+Yahoo news is isolated from TradingView and uses one combined ticker RSS
+request for MNQ=F, MES=F, MGC=F and QQQ/SPY/GLD reference proxies. Successful
+responses are cached for ten minutes. Concurrent callers share one refresh;
+a provider failure starts a fifteen-minute cooldown and serves last-good data
+as stale when available. The dashboard loads the news endpoint once at startup
+and only calls it again when the user asks to check for updates; it does not
+run a news polling timer. A check inside the cache window is served from cache.
+
+The Yahoo economic calendar is currently a link to Yahoo Finance's calendar
+page. There is no structured event fetch in this version, so opening the page
+does not create an additional API request. The dashboard explicitly notes
+Yahoo's UTC event-time display and does not claim America/New_York conversion.
+
 ## Important deployment note
 
 The cache and cooldown are in-process memory. Run a single FAB787 QUANTUM API
