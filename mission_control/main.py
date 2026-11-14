@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 INSTRUMENTS_FILE = ROOT / "config" / "instruments.yaml"
 
 app = FastAPI(
-    title="Futures Mission Control",
+    title="FAB787 QUANTUM",
     version="0.3.0",
     description="Read-only futures intelligence dashboard with optional TradingView MCP data.",
 )
