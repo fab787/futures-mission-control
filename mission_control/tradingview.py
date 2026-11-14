@@ -1,4 +1,4 @@
-"""Read-only TradingView MCP adapter for Mission Control."""
+"""Read-only TradingView MCP adapter for FAB787 QUANTUM."""
 from __future__ import annotations
 
 import json
@@ -39,7 +39,7 @@ def _oauth_provider() -> OAuthClientProvider:
     return OAuthClientProvider(
         server_url=AUTH_SERVER_URL,
         client_metadata=OAuthClientMetadata(
-            client_name="Futures Mission Control",
+            client_name="FAB787 QUANTUM",
             redirect_uris=["http://127.0.0.1:8765/callback"],
             grant_types=["authorization_code", "refresh_token"],
             response_types=["code"],
@@ -85,7 +85,7 @@ def _find_bars(value: Any) -> list[dict[str, Any]]:
 async def call_readonly_tool(name: str, arguments: dict[str, Any]) -> Any:
     """Call only explicitly allow-listed read-only TradingView tools."""
     if name not in READ_ONLY_TOOLS:
-        raise ValueError(f"Tool is not enabled by Mission Control: {name}")
+        raise ValueError(f"Tool is not enabled by FAB787 QUANTUM: {name}")
     oauth = _oauth_provider()
     async with httpx2.AsyncClient(auth=oauth, timeout=httpx2.Timeout(30.0, read=90.0)) as http:
         transport = streamable_http_client(MCP_URL, http_client=http)
