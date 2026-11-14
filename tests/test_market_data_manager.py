@@ -148,3 +148,32 @@ def test_quota_error_activates_cooldown_and_serves_stale_data() -> None:
         assert with_error
 
     asyncio.run(run())
+
+
+def test_different_timeframes_share_one_upstream_gate() -> None:
+    manager = MarketDataRequestManager()
+    active_loaders = 0
+    peak_active_loaders = 0
+    calls = 0
+
+    async def loader(_interval: str) -> dict:
+        nonlocal active_loaders, peak_active_loaders, calls
+        calls += 1
+        active_loaders += 1
+        peak_active_loaders = max(peak_active_loaders, active_loaders)
+        await asyncio.sleep(0.02)
+        active_loaders -= 1
+        return snapshot()
+
+    async def run() -> None:
+        await asyncio.gather(
+            manager.get_snapshot("1m", loader),
+            manager.get_snapshot("5m", loader),
+            manager.get_snapshot("15m", loader),
+        )
+
+    asyncio.run(run())
+    assert calls == 3
+    assert peak_active_loaders == 1
+    assert manager.upstream_refreshes == 3
+
