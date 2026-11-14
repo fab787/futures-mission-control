@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse
 from mission_control.analysis_agents import analyze_instruments
 from mission_control.chief_decision_agent import compose_chief_decision
 from mission_control.account_protection import assess_account_protection
+from mission_control.account_registry import create_account, list_account_events, list_accounts, update_account
 from mission_control.gex import GexUnavailable, gex_service
 from mission_control.market_data_manager import market_data_manager
 from mission_control.master_risk_engine import evaluate_master_risk
@@ -262,6 +263,43 @@ def record_approval_decision(proposal_id: str, payload: dict[str, Any]) -> dict[
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.get("/api/accounts")
+def trading_accounts(include_inactive: bool = True) -> dict[str, Any]:
+    """List separately registered evaluation/funded accounts; no broker access."""
+    return list_accounts(include_inactive=include_inactive)
+
+
+@app.post("/api/accounts")
+def trading_account_create(payload: dict[str, Any]) -> dict[str, Any]:
+    """Register one account and bind it to its own matching risk profile."""
+    try:
+        actor = payload.pop("actor", "local_operator")
+        return create_account(payload, actor, get_profile)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.patch("/api/accounts/{account_id}")
+def trading_account_update(account_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """Update only account nickname, lifecycle status, or operator balance."""
+    try:
+        actor = payload.pop("actor", "local_operator")
+        return update_account(account_id, payload, actor)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/accounts/{account_id}/events")
+def trading_account_events(account_id: str) -> dict[str, Any]:
+    """Return the local audit trail for one registered account."""
+    try:
+        return list_account_events(account_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @app.get("/api/account-history")
