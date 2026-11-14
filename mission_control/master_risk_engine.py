@@ -81,6 +81,7 @@ def evaluate_master_risk(payload: Any) -> dict[str, Any]:
         or not isinstance(proposal_session, str)
         or proposal_session not in ALLOWED_SESSIONS
     ):
+        blockers.append("Both current account session and proposal session must be NY or GLOBEX.")
     elif current_session != proposal_session:
         blockers.append("Proposal session does not match the account snapshot's current session.")
     elif isinstance(allowed,list) and proposal_session not in allowed:
