@@ -67,10 +67,16 @@ def _validate_assessment(
             or not parsed_url.netloc
         ):
             return None, f"{provider}: every source needs a title and HTTPS URL."
+        published_at = source.get("published_at")
+        if published_at is not None:
+            parsed_published_at = _parse_time(published_at)
+            if parsed_published_at is None:
+                return None, f"{provider}: source published_at must be a timezone-aware ISO timestamp."
+            published_at = parsed_published_at.isoformat()
         normalized_sources.append({
             "title": title.strip(),
             "url": url,
-            "published_at": source.get("published_at"),
+            "published_at": published_at,
         })
 
     findings = raw.get("findings")
@@ -165,12 +171,13 @@ def compare_sentiment_assessments(
                     "sources": assessment["sources"],
                 })
         stances = {review["stance"] for review in reviews if review["stance"] != "unavailable"}
-        if len(reviews) < 2:
+        usable_reviews = [review for review in reviews if review["stance"] != "unavailable"]
+        if not usable_reviews:
+            status = "unavailable"
+        elif len(usable_reviews) < 2:
             status = "single_provider"
         elif len(stances) > 1:
             status = "disagreement"
-        elif not stances:
-            status = "unavailable"
         else:
             status = "agreement"
         comparisons.append({
