@@ -135,8 +135,10 @@ or prop-firm rules are assumed.
 
 Required limits are maximum daily loss, maximum session loss, maximum
 high-water drawdown, and maximum open contracts. Required state includes
-daily/session P&L, drawdown from high water, open contract count, and a
-verified flat/open position state. Optional profit-target and profit-protection
+daily/session P&L, drawdown from high water, open contract count, a
+verified flat/open position state, and a timezone-aware `snapshot_at` timestamp.
+Snapshots older than 120 seconds or more than 60 seconds in the future are
+blocked; timestamps without a timezone are invalid. Optional profit-target and profit-protection
 settings are supported. When profit protection is configured, the caller must
 also provide the day's realized high-water P&L so a giveback rule can be
 evaluated correctly. A configured cap is treated as the maximum permitted
