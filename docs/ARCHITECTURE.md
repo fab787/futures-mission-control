@@ -11,7 +11,7 @@ The Master Risk Engine remains a separate control boundary. No AI agent may chan
 - Overview: instrument watchlist, source health and market snapshot.
 - Charts: authenticated TradingView launch plus locally rendered historical bars when the MCP adapter is authorized.
 - GEX: on-demand Cboe delayed NDX options estimates mapped to MNQ/NQ futures levels; no TradingView request is made by this workspace.
-- News & Events: source-linked headlines and scheduled catalyst calendar (adapter wiring is a later step).
+- News & Events: cached Yahoo Finance ticker headlines plus a link to Yahoo Finance's economic calendar; structured calendar extraction remains unverified.
 - AI Desk: instrument agents, shared specialists, Chief Decision Agent and audit stream.
 - Risk & Approvals: deterministic risk checks, veto state and human review queue.
 - Integrations: provider capabilities, OAuth state and adapter health.
@@ -27,7 +27,7 @@ python -m mission_control.tradingview_auth
 
 The authorization flow opens TradingView sign-in in the browser and stores OAuth tokens and client registration in the operating system keyring. No token is written to the repository, dashboard HTML, or `.env`. If keyring storage is unavailable, authorization fails rather than falling back to plaintext files.
 
-The initial adapter allow-lists only read-only tools: `get_ohlcv`, `get_symbol_data_batch`, `get_news`, and `get_economic_calendar`. Tool access is not a blanket permission: watchlist mutation, alerts, account actions and all write tools are excluded. The current market snapshot requests 120 one-minute bars for configured MNQ, MES and MGC continuous futures symbols. This is historical-bar polling, not a streaming quote subscription. Symbol coverage, exchange permissions, delay and returned payload shape must be verified against the user's TradingView account.
+The TradingView adapter allow-lists only `get_ohlcv` and `get_symbol_data_batch`. News and economic-calendar capabilities are intentionally excluded from TradingView. Tool access is not a blanket permission: watchlist mutation, alerts, account actions and all write tools are excluded. The current market snapshot requests 120 one-minute bars for configured MNQ, MES and MGC continuous futures symbols. This is historical-bar polling, not a streaming quote subscription. Symbol coverage, exchange permissions, delay and returned payload shape must be verified against the user's TradingView account.
 
 Endpoints:
 - `GET /api/tradingview/status`: local OAuth authorization state.
@@ -36,6 +36,28 @@ Endpoints:
 - `GET /api/integrations`: integration status and permitted capabilities.
 
 TradingView MCP is beta and rate-limited. Do not poll aggressively. The initial UI should refresh manually or at a conservative interval and show the source and timestamp. If a symbol cannot be resolved or returned data cannot be normalized, display unavailable rather than fabricating a price.
+
+## News and economic calendar data path
+
+Yahoo Finance is the sole news/calendar provider in this implementation phase.
+Ticker headlines use one combined Yahoo Finance RSS request for MNQ=F, MES=F,
+MGC=F and the QQQ, SPY and GLD reference proxies. The result is cached for ten
+minutes, concurrent refreshes are coalesced, and failures trigger a fifteen-minute
+cooldown with stale-data fallback. The dashboard does not poll this feed on a
+timer; it loads once on startup and checks the cached API when the user asks.
+Headline publisher, published timestamp, received timestamp and source URL are
+preserved. News timestamps are rendered in America/New_York.
+
+Yahoo Finance's economic calendar is currently exposed as a page link only.
+The page can be opened from the News & Events workspace, but a stable structured
+event payload has not yet been verified. The dashboard therefore does not
+fabricate calendar rows or silently infer release times. Yahoo's page currently
+displays event times in UTC; New York conversion and in-dashboard event rows
+remain blocked until the underlying Yahoo event fields and timezone semantics
+are verified. This is a deliberate limitation, not a second-provider fallback.
+
+Neither Yahoo news nor the Yahoo calendar path calls TradingView. TradingView's
+tool allow-list is restricted to historical market data and symbol data.
 
 ## GEX data path
 
