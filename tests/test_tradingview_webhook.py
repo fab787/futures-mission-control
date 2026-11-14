@@ -4,8 +4,10 @@ import json
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from fastapi.testclient import TestClient
 
 from mission_control.tradingview_webhook import (
+    app,
     TradingViewSignal,
     WebhookValidationError,
     list_signals,
@@ -84,6 +86,20 @@ def test_future_timestamp_beyond_tolerance_is_rejected():
         validate_signal(_payload(timestamp=future), SECRET, now=_now())
 
 
+@pytest.mark.parametrize("action", ["approaching_buy", "approaching_sell", "invalidated"])
+def test_early_warning_and_invalidation_events_need_no_order_bracket(action):
+    signal = validate_signal(
+        _payload(action=action, quantity=None, entry_price=None, stop_loss=None, take_profit=None),
+        SECRET,
+        now=_now(),
+    )
+    assert signal.action == action
+    assert signal.quantity is None
+    assert signal.entry_price is None
+    assert signal.stop_loss is None
+    assert signal.take_profit is None
+
+
 def test_close_signal_does_not_require_entry_bracket_or_quantity():
     signal = validate_signal(
         _payload(action="close", quantity=None, entry_price=None, stop_loss=None, take_profit=None),
@@ -148,3 +164,39 @@ def test_empty_inbox_is_safe_when_database_does_not_exist(tmp_path):
     result = list_signals(db_path=tmp_path / "missing.sqlite3")
     assert result["signals"] == []
     assert result["execution_enabled"] is False
+
+
+
+def test_http_webhook_accepts_once_and_returns_duplicate_without_leaking_secret(tmp_path, monkeypatch):
+    from mission_control import tradingview_webhook
+
+    monkeypatch.setenv("FAB787_TRADINGVIEW_WEBHOOK_SECRET", SECRET)
+    monkeypatch.setenv("FAB787_WEBHOOK_DB", str(tmp_path / "http-inbox.sqlite3"))
+    client = TestClient(app)
+    payload = _payload(timestamp=datetime.now(timezone.utc).isoformat())
+
+    first = client.post("/webhook/tradingview", json=payload)
+    second = client.post("/webhook/tradingview", json=payload)
+
+    assert first.status_code == 202
+    assert first.json()["status"] == "accepted"
+    assert first.json()["execution_enabled"] is False
+    assert second.status_code == 202
+    assert second.json()["status"] == "duplicate"
+
+    inbox = tradingview_webhook.list_signals(db_path=tmp_path / "http-inbox.sqlite3")
+    assert inbox["count"] == 1
+    assert SECRET not in json.dumps(inbox)
+    assert inbox["signals"][0]["alert_id"] == payload["alert_id"]
+
+
+def test_http_webhook_rejects_bad_secret(tmp_path, monkeypatch):
+    monkeypatch.setenv("FAB787_TRADINGVIEW_WEBHOOK_SECRET", SECRET)
+    monkeypatch.setenv("FAB787_WEBHOOK_DB", str(tmp_path / "http-inbox.sqlite3"))
+    client = TestClient(app)
+    payload = _payload(secret="not-the-secret", timestamp=datetime.now(timezone.utc).isoformat())
+
+    response = client.post("/webhook/tradingview", json=payload)
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "webhook authentication failed"

@@ -24,7 +24,7 @@ SYMBOL_ALIASES = {
     "MES": "MES", "MES1!": "MES",
     "MGC": "MGC", "MGC1!": "MGC",
 }
-ALLOWED_ACTIONS = {"buy", "sell", "close", "flatten"}
+ALLOWED_ACTIONS = {"approaching_buy", "approaching_sell", "buy", "sell", "close", "flatten", "invalidated"}
 ALLOWED_ORDER_TYPES = {"market", "limit", "stop", "stop_limit"}
 
 
@@ -112,7 +112,7 @@ def validate_signal(
     symbol = _symbol_root(payload.get("symbol"))
     action = payload.get("action")
     if not isinstance(action, str) or action.strip().lower() not in ALLOWED_ACTIONS:
-        raise WebhookValidationError("action must be buy, sell, close, or flatten")
+        raise WebhookValidationError("action must be approaching_buy, approaching_sell, buy, sell, close, flatten, or invalidated")
     action = action.strip().lower()
 
     quantity: int | None = None

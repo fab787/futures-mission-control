@@ -115,10 +115,12 @@ async function loadSignals(){
   signals.forEach(signal=>{
    const card=document.createElement("article");card.className="tile";card.style.marginBottom="9px";
    const head=document.createElement("div");head.style.display="flex";head.style.justifyContent="space-between";head.style.gap="10px";head.style.flexWrap="wrap";
-   const title=document.createElement("b");title.textContent=signal.action.toUpperCase()+" · "+signal.symbol+" · "+(signal.quantity??"—")+" contract(s)";
+   const title=document.createElement("b");
+   const actionLabels={approaching_buy:"BUY SETUP APPROACHING",approaching_sell:"SELL SETUP APPROACHING",buy:"BUY TRIGGERED",sell:"SELL TRIGGERED",close:"CLOSE SIGNAL",flatten:"FLATTEN SIGNAL",invalidated:"SETUP INVALIDATED"};
+   title.textContent=(actionLabels[signal.action]||signal.action.toUpperCase())+" · "+signal.symbol+(signal.quantity?" · "+signal.quantity+" contract(s)":"");
    const status=document.createElement("span");status.className="pill off";status.textContent=String(signal.status||"received").toUpperCase();head.append(title,status);
    const details=document.createElement("div");details.className="muted small";details.style.marginTop="7px";
-   details.textContent="Entry "+money(signal.entry_price)+" · Stop "+money(signal.stop_loss)+" · Target "+money(signal.take_profit)+" · "+signal.order_type;
+   details.textContent=(signal.entry_price==null?"Entry / stop / target are supplied only when the strategy triggers.":"Entry "+money(signal.entry_price)+" · Stop "+money(signal.stop_loss)+" · Target "+money(signal.take_profit)+" · "+signal.order_type);
    const meta=document.createElement("div");meta.className="muted small";meta.style.marginTop="5px";
    meta.textContent="Strategy "+signal.strategy_id+" · Received "+new Date(signal.received_at).toLocaleString()+" · Alert "+signal.alert_id;
    const route=document.createElement("div");route.className="muted small";route.style.marginTop="4px";
@@ -127,8 +129,12 @@ async function loadSignals(){
    if(signal.status==="received"&&(signal.action==="buy"||signal.action==="sell")){
     const action=document.createElement("button");action.type="button";action.className="btn";action.style.marginTop="10px";action.textContent="Submit to Master Risk Engine";
     action.addEventListener("click",()=>submitSignal(signal,action));card.append(action);
-   }else if(signal.action==="close"||signal.action==="flatten"){
-    const note=document.createElement("div");note.className="muted small";note.style.marginTop="9px";note.textContent="Review-only alert. No entry proposal can be created from CLOSE/FLATTEN.";card.append(note);
+   }else if(signal.action==="approaching_buy"||signal.action==="approaching_sell"){
+    const note=document.createElement("div");note.className="muted small";note.style.marginTop="9px";note.textContent="EARLY WARNING ONLY · Prepare and watch the chart. Entry conditions are not confirmed; do not treat this as an executable signal.";card.append(note);
+   }else if(signal.action==="invalidated"||signal.action==="close"||signal.action==="flatten"){
+    const note=document.createElement("div");note.className="muted small";note.style.marginTop="9px";
+    note.textContent=signal.action==="invalidated"?"The indicator reports that the developing setup is no longer valid. Do not enter from the earlier warning.":"Review-only alert. No entry proposal can be created from CLOSE/FLATTEN.";
+    card.append(note);
    }
    list.append(card);
   });
