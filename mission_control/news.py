@@ -14,8 +14,8 @@ from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 from typing import Any
-from urllib.request import Request, urlopen
 from urllib.parse import urlencode, urlsplit
+from urllib.request import Request, urlopen
 
 YAHOO_FEED_URL = "https://feeds.finance.yahoo.com/rss/2.0/headline"
 YAHOO_CALENDAR_URL = "https://finance.yahoo.com/calendar/economic/"
@@ -110,7 +110,6 @@ def parse_yahoo_rss(xml_text: str, *, received_at: datetime | None = None) -> li
                 "publisher": _clean_text(source) or "Yahoo Finance",
                 "published_at": published_at,
                 "received_at": received.astimezone(timezone.utc).isoformat(),
-                "symbols": list(NEWS_SYMBOLS),
                 "categories": categories,
             }
         )
@@ -142,12 +141,15 @@ class YahooFinanceNewsService:
     def _cached_response(self, status: str, now: float) -> dict[str, Any]:
         assert self._cache is not None
         stored_at, payload = self._cache
-        return {
+        response = {
             **payload,
             "status": status,
             "cache_age_seconds": round(max(0.0, now - stored_at), 1),
             "next_refresh_seconds": round(max(0.0, stored_at + self.ttl_seconds - now), 1),
         }
+        if status == "stale" and now < self._cooldown_until:
+            response["retry_after_seconds"] = round(self._cooldown_until - now, 1)
+        return response
 
     async def get_news(self) -> dict[str, Any]:
         now = self._clock()
