@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from mission_control.account_protection import assess_account_protection
 
 
@@ -14,6 +16,7 @@ def payload():
             "profit_protection_floor": 75,
         },
         "account_state": {
+            "snapshot_at": datetime.now(timezone.utc).isoformat(),
             "daily_pnl": 100,
             "daily_high_water_pnl": 100,
             "session_pnl": 40,
@@ -124,3 +127,32 @@ def test_account_protection_blocks_if_profit_protection_history_is_missing():
     result = assess_account_protection(data)
     assert result["status"] == "blocked"
     assert any("daily_high_water_pnl" in item for item in result["validation_errors"])
+
+
+
+def test_account_protection_blocks_missing_naive_stale_and_future_snapshot_times():
+    data = payload()
+    del data["account_state"]["snapshot_at"]
+    assert assess_account_protection(data)["status"] == "blocked"
+
+    data = payload()
+    data["account_state"]["snapshot_at"] = "2026-11-14T12:00:00"
+    assert assess_account_protection(data)["status"] == "blocked"
+
+    data = payload()
+    data["account_state"]["snapshot_at"] = "2000-01-01T00:00:00+00:00"
+    result = assess_account_protection(data)
+    assert result["status"] == "blocked"
+    assert any("stale" in error for error in result["validation_errors"])
+
+    data = payload()
+    data["account_state"]["snapshot_at"] = "2999-01-01T00:00:00+00:00"
+    assert assess_account_protection(data)["status"] == "blocked"
+
+
+def test_account_protection_malformed_position_state_fails_closed_without_exception():
+    data = payload()
+    data["account_state"]["position_state"] = {"unexpected": "object"}
+    result = assess_account_protection(data)
+    assert result["status"] == "blocked"
+    assert result["new_trade_proposals_allowed"] is False
