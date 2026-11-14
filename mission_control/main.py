@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse
 from mission_control.analysis_agents import analyze_instruments
 from mission_control.gex import GexUnavailable, gex_service
 from mission_control.market_data_manager import market_data_manager
+from mission_control.market_structure import analyze_market_structure
 from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
 from mission_control.provider_errors import ProviderCooldownActive
 from mission_control.tradingview import AuthorizationRequired, market_snapshot
@@ -176,6 +177,18 @@ def instrument_agents() -> dict[str, Any]:
     """Analyze the existing 1-minute cache only; never trigger provider refreshes."""
     cached_snapshot = market_data_manager.peek_snapshot("1m")
     return analyze_instruments(load_instruments(), cached_snapshot)
+
+
+@app.get("/api/agents/market-structure")
+def market_structure_agent() -> dict[str, Any]:
+    """Run technical structure analysis using only the existing 1-minute cache."""
+    cached_snapshot = market_data_manager.peek_snapshot("1m")
+    base_reports = analyze_instruments(load_instruments(), cached_snapshot)
+    ready_reports = {
+        report["symbol"]: report
+        for report in base_reports["agents"]
+    }
+    return analyze_market_structure(ready_reports, cached_snapshot)
 
 
 @app.get("/api/news")
