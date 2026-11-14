@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse
 
 from mission_control.gex import GexUnavailable, gex_service
 from mission_control.market_data_manager import market_data_manager
+from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
 from mission_control.provider_errors import ProviderCooldownActive
 from mission_control.tradingview import AuthorizationRequired, market_snapshot
 from mission_control.tradingview_auth import KeyringTokenStorage
@@ -141,10 +142,10 @@ async def integrations() -> dict[str, Any]:
             {
                 "id": "tradingview",
                 "name": "TradingView MCP",
-                "role": "Read-only market data, history, news and economic calendar",
+                "role": "Read-only market data and history only",
                 "status": "authorized" if authorized else "authorization_required",
                 "connected": authorized,
-                "capabilities": ["get_ohlcv", "get_symbol_data_batch", "get_news", "get_economic_calendar"],
+                "capabilities": ["get_ohlcv", "get_symbol_data_batch"],
                 "limitations": [
                     "This is a separate OAuth connection; Claude Desktop authorization is not reused.",
                     "Market history is polled on demand; no continuous streaming feed is promised.",
@@ -155,12 +156,13 @@ async def integrations() -> dict[str, Any]:
             {
                 "id": "yahoo_finance",
                 "name": "Yahoo Finance / News",
-                "role": "Supplementary news and reference context",
-                "status": "not_connected",
+                "role": "Ticker headlines and economic-calendar page link",
+                "status": "configured_unverified",
                 "connected": False,
-                "capabilities": [],
+                "capabilities": ["ticker_headlines", "economic_calendar_page_link"],
                 "limitations": [
-                    "No Yahoo Finance news adapter is configured.",
+                    "Ticker-specific RSS only; this adapter does not claim a complete general-market news feed.",
+                    "Economic calendar is linked to Yahoo Finance; structured event extraction is not yet verified.",
                     "Yahoo data must not be treated as a guaranteed real-time futures feed.",
                 ],
             },
@@ -169,13 +171,28 @@ async def integrations() -> dict[str, Any]:
 
 
 @app.get("/api/news")
-def news() -> dict[str, Any]:
-    """Empty until the news workspace adapter is wired to a source."""
+async def news() -> dict[str, Any]:
+    """Return cached Yahoo Finance ticker headlines; never call TradingView."""
+    return await yahoo_news_service.get_news()
+
+
+@app.get("/api/calendar")
+def economic_calendar() -> dict[str, Any]:
+    """Link to Yahoo Finance calendar without scraping an unverified schema."""
     return {
-        "status": "not_connected",
-        "source": None,
+        "status": "page_link_only",
+        "source": "Yahoo Finance Economic Calendar",
+        "url": YAHOO_CALENDAR_URL,
+        "timezone_note": (
+            "Yahoo Finance currently displays event times in UTC. "
+            "FAB787 QUANTUM has not yet verified a structured Yahoo event feed "
+            "for conversion to America/New_York."
+        ),
         "items": [],
-        "message": "News workspace adapter is not yet enabled. No headlines are being fabricated.",
+        "message": (
+            "Open Yahoo Finance for the current economic-event schedule. "
+            "No events or timestamps are synthesized by this dashboard."
+        ),
     }
 
 
