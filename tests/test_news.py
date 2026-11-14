@@ -43,7 +43,7 @@ def test_parse_yahoo_rss_normalizes_metadata_and_deduplicates() -> None:
     assert item["publisher"] == "Yahoo Finance"
     assert item["published_at"] == "2026-11-14T14:30:00+00:00"
     assert item["received_at"] == "2026-11-14T15:00:00+00:00"
-    assert item["symbols"] == list(NEWS_SYMBOLS)
+    assert "symbols" not in item
 
 
 def test_parse_yahoo_rss_rejects_invalid_xml() -> None:
@@ -98,6 +98,7 @@ def test_news_service_serves_stale_items_after_refresh_failure() -> None:
         assert stale["status"] == "stale"
         assert stale["items"][0]["id"] == "sample-1"
         assert stale["cache_age_seconds"] == 6
+        assert stale["retry_after_seconds"] == 299
         cooling = await service.get_news()
         assert cooling["status"] == "stale"
         assert service.fetch_count == 2
