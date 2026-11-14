@@ -63,3 +63,10 @@ def test_resolved_profile_preserves_verification_status_for_rules_evaluator(tmp_
  resolved=resolve_effective_profile(saved["profile_id"],db)
  assert resolved["verification_status"]=="user_verified"
  assert resolved["rule_coverage_status"]=="complete"
+
+
+def test_unsupported_daily_profit_share_setting_is_rejected(tmp_path):
+ p=sample()
+ p["user_limits"]["max_daily_profit_share"]=40
+ with pytest.raises(ValueError,match="max_daily_profit_share is not currently enforced"):
+  create_profile(p,"operator",tmp_path/"risk.db")
