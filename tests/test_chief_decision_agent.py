@@ -50,5 +50,30 @@ def test_chief_decision_warning_does_not_hide_risk_warnings():
     inputs[5] = {"status": "warning", "breaches": [], "warnings": [{"name": "daily_loss"}],
                  "new_trade_proposals_allowed": True}
     result = compose_chief_decision(*inputs)
-    assert result["status"] == "warning"
+    assert result["status"] == "blocked"
     assert result["account_protection"]["warnings"] == [{"name": "daily_loss"}]
+    assert result["downstream_gate"]["inputs_ready_for_master_risk_engine"] is False
+
+
+
+def test_chief_decision_blocks_account_target_reached_even_if_status_is_misreported():
+    inputs = list(ready_inputs())
+    inputs[5] = {
+        "status": "within_limits",
+        "breaches": [],
+        "warnings": [],
+        "new_trade_proposals_allowed": False,
+    }
+    result = compose_chief_decision(*inputs)
+    assert result["status"] == "blocked"
+    assert result["downstream_gate"]["inputs_ready_for_master_risk_engine"] is False
+    assert any("not explicitly permitted" in item for item in result["blocking_conditions"])
+
+
+def test_chief_decision_handles_malformed_sentiment_and_calendar_payloads():
+    inputs = list(ready_inputs())
+    inputs[4] = {"status": "ready", "instruments": "not-a-list"}
+    inputs[3] = {"status": "ready", "calendar": "not-an-object"}
+    result = compose_chief_decision(*inputs)
+    assert result["status"] == "warning"
+    assert any("malformed" in item for item in result["warnings"])
