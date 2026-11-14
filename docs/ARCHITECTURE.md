@@ -259,6 +259,9 @@ or contradictory market/account inputs block downstream risk review. Model
 disagreement and unavailable news are surfaced as caveats rather than silently
 converted into consensus. The agent produces a context and readiness summary
 only: it does not generate trade setups, alter settings, or authorize orders.
+Account Protection warnings, breaches, missing permission to propose, and
+unknown account state all block the downstream gate; a warning is not treated
+as a pass. Malformed sentiment/calendar context is surfaced as unavailable.
 Every possible proposal remains subject to the independent Master Risk Engine
 and explicit human approval.
 
