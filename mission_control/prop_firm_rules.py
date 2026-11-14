@@ -73,22 +73,24 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
             blockers.append(f"Equity observation {index + 1} needs observation_type intraday or end_of_day.")
             continue
         parsed_observations.append((stamp, float(item["equity"]), kind))
+    starting_balance = account_history.get("starting_balance")
+    if not _finite(starting_balance) or float(starting_balance) <= 0:
+        blockers.append("A positive starting_balance is required to calculate drawdown.")
     if parsed_observations:
         parsed_observations.sort(key=lambda row: row[0])
+        if len({row[0] for row in parsed_observations}) != len(parsed_observations):
+            blockers.append("Equity history contains duplicate timestamps.")
         if drawdown_type == "end_of_day":
             equity_series = [row[1] for row in parsed_observations if row[2] == "end_of_day"]
         else:
             equity_series = [row[1] for row in parsed_observations]
-        if not equity_series:
-            blockers.append("End-of-day equity observations are required for end_of_day drawdown.")
+        if _finite(starting_balance):
+            equity_series.insert(0, float(starting_balance))
+        if not equity_series or (drawdown_type in {"trailing", "end_of_day"} and len(equity_series) < 3):
+            blockers.append("At least two usable equity observations plus starting balance are required to calculate trailing/end-of-day drawdown.")
         else:
             if drawdown_type == "static":
-                starting_balance = account_history.get("starting_balance")
-                if not _finite(starting_balance) or float(starting_balance) <= 0:
-                    blockers.append("A positive starting_balance is required to calculate static drawdown.")
-                    measured_drawdown = None
-                else:
-                    measured_drawdown = max(0.0, float(starting_balance) - min(equity_series))
+                measured_drawdown = max(0.0, float(starting_balance) - min(equity_series))
             else:
                 peak = equity_series[0]
                 measured_drawdown = 0.0
@@ -160,7 +162,7 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
             trading_days = len({day["date"] for day in valid_days if day["trading_day"]})
             checks.append({"name": "minimum_trading_days", "actual": trading_days, "required": minimum_days, "status": "met" if trading_days >= minimum_days else "in_progress"})
             if trading_days < minimum_days:
-                progress.append("Minimum trading-day requirement is still in progress.")
+                progress.append("minimum trading-day requirement is still in progress.")
 
     consistency = profile.get("consistency_rule")
     if consistency is not None:
