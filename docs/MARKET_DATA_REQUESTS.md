@@ -19,6 +19,7 @@ adapter directly.
 - A failed refresh does not replace a previous good snapshot with empty data.
 - There is no force-refresh parameter that bypasses the cooldown.
 - Cache state and counters are returned in the market-data response for visibility.
+- One successful snapshot refresh checks MNQ, MES and MGC sequentially (up to three TradingView MCP tool calls). The `upstream_refreshes` counter counts snapshot groups, not individual symbol calls; the response also reports calls per successful snapshot.
 
 ## Dashboard polling
 
