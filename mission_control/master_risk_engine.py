@@ -57,12 +57,12 @@ def evaluate_master_risk(payload: Any) -> dict[str, Any]:
         else:
             prices[key]=float(value)
     entry, stop, target = prices["entry_price"],prices["stop_price"],prices["target_price"]
-    if entry is not None and stop is not None and side in {"long","short"}:
+    if entry is not None and stop is not None and isinstance(side, str) and side in {"long","short"}:
         if not (stop<entry if side=="long" else stop>entry):
             blockers.append("Stop-loss must be below entry for long trades and above entry for short trades.")
         else:
             checks.append({"name":"stop_direction","status":"passed"})
-    if entry is not None and target is not None and side in {"long","short"}:
+    if entry is not None and target is not None and isinstance(side, str) and side in {"long","short"}:
         if not (target>entry if side=="long" else target<entry):
             blockers.append("Profit target must be above entry for long trades and below entry for short trades.")
         else:
@@ -109,7 +109,7 @@ def evaluate_master_risk(payload: Any) -> dict[str, Any]:
     return {**base,"status":"veto" if veto else "eligible_for_human_review","veto":veto,
             "blockers":blockers,"checks":checks,
             "proposal_summary":{"symbol":symbol if point_value is not None else None,
-             "side":side if side in {"long","short"} else None,"quantity":qty,
+             "side":side if isinstance(side, str) and side in {"long","short"} else None,"quantity":qty,
              "estimated_stop_risk":round(estimated,2) if estimated is not None else None},
             "account_protection":{"status":account.get("status"),"breaches":account.get("breaches",[]),
              "warnings":account.get("warnings",[]),"validation_errors":account.get("validation_errors",[])},
