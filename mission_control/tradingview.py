@@ -11,7 +11,7 @@ from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.auth import OAuthClientMetadata
 
 from mission_control.tradingview_auth import KeyringTokenStorage
-from mission_control.provider_errors import TradingViewQuotaExceeded
+from mission_control.provider_errors import TradingViewQuotaExceeded, is_quota_error
 
 MCP_URL = "https://mcp.tradingview.com/mcp"
 AUTH_SERVER_URL = "https://mcp.tradingview.com/mcp"
@@ -90,13 +90,18 @@ async def call_readonly_tool(name: str, arguments: dict[str, Any]) -> Any:
     async with httpx2.AsyncClient(auth=oauth, timeout=httpx2.Timeout(30.0, read=90.0)) as http:
         transport = streamable_http_client(MCP_URL, http_client=http)
         async with Client(transport) as client:
-            result = await client.call_tool(name, arguments)
+            try:
+                result = await client.call_tool(name, arguments)
+            except Exception as exc:
+                if is_quota_error(exc):
+                    raise TradingViewQuotaExceeded(
+                        f"TradingView quota/rate limit transport failure: {exc}"
+                    ) from exc
+                raise
             if result.is_error:
                 details = _decode_content(result.content)
                 detail_text = json.dumps(details, default=str)[:1000]
-                lowered = detail_text.lower()
-                quota_markers = ("quota", "rate limit", "too many requests", "resource exhausted")
-                if any(marker in lowered for marker in quota_markers):
+                if is_quota_error(details):
                     raise TradingViewQuotaExceeded(
                         f"TradingView quota/rate limit reached: {detail_text}"
                     )
