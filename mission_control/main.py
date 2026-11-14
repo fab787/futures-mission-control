@@ -13,6 +13,7 @@ from mission_control.market_data_manager import market_data_manager
 from mission_control.market_structure import analyze_market_structure
 from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
 from mission_control.news_catalyst import analyze_news_catalysts
+from mission_control.opportunity_scout import scout_opportunities
 from mission_control.provider_errors import ProviderCooldownActive
 from mission_control.tradingview import AuthorizationRequired, market_snapshot
 from mission_control.tradingview_auth import KeyringTokenStorage
@@ -196,6 +197,20 @@ def market_structure_agent() -> dict[str, Any]:
 async def news() -> dict[str, Any]:
     """Return cached Yahoo Finance ticker headlines; never call TradingView."""
     return await yahoo_news_service.get_news()
+
+
+@app.get("/api/agents/opportunity-scout")
+def opportunity_scout_agent() -> dict[str, Any]:
+    """Rank cached cross-instrument context without triggering provider refreshes."""
+    cached_snapshot = market_data_manager.peek_snapshot("1m")
+    base_payload = analyze_instruments(load_instruments(), cached_snapshot)
+    base_reports = {
+        report["symbol"]: report
+        for report in base_payload["agents"]
+    }
+    structure_payload = analyze_market_structure(base_reports, cached_snapshot)
+    catalyst_payload = analyze_news_catalysts(yahoo_news_service.peek_news())
+    return scout_opportunities(base_reports, structure_payload, catalyst_payload)
 
 
 @app.get("/api/agents/news-catalyst")
