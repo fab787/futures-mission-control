@@ -307,7 +307,7 @@ def prop_firm_rules_review(payload: dict[str, Any]) -> dict[str, Any]:
 @app.post("/api/risk/master")
 def master_risk_review(payload: dict[str, Any]) -> dict[str, Any]:
     """Apply the independent fail-closed veto; never approve or submit orders."""
-    return evaluate_master_risk(payload)
+    return evaluate_master_risk(payload, require_saved_profile=True)
 
 
 @app.post("/api/agents/account-protection")
