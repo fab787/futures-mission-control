@@ -146,4 +146,10 @@ async def market_snapshot(interval: str = "1m") -> dict[str, Any]:
     results = []
     for symbol, tv_symbol in SYMBOLS.items():
         results.append(await one(symbol, tv_symbol))
-    return {"source": "TradingView MCP", "read_only": True, "interval": interval, "instruments": results}
+    return {
+        "source": "TradingView MCP",
+        "read_only": True,
+        "interval": interval,
+        "provider_requests": len(results),
+        "instruments": results,
+    }
