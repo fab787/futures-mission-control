@@ -44,6 +44,7 @@
 
 - The analyst evaluates only explicitly supplied account snapshots and risk limits; it has no broker/account connection in this phase.
 - Never assume account size, prop-firm rules, loss limits, contract caps, or profit-protection settings. Missing required inputs block the assessment.
+- Account snapshots must include a timezone-aware `snapshot_at`; snapshots older than 120 seconds or more than 60 seconds in the future are blocked.
 - Position state must be verified as flat or open and consistent with the supplied open-contract count. Unknown or contradictory exposure blocks downstream decisions.
 - Breaches and reached profit targets block new trade proposals; warnings require attention. The analyst cannot close positions, cancel orders, or alter risk settings.
 - Profit-protection giveback checks require the day's P&L high-water value; current P&L alone cannot prove whether an activation threshold was previously reached.
