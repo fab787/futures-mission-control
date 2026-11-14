@@ -14,7 +14,6 @@ from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 from typing import Any
-from urllib.error import URLError
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode
 
@@ -39,7 +38,7 @@ class _TextExtractor(HTMLParser):
         self.parts.append(data)
 
     def text(self) -> str:
-        return re.sub(r"\\s+", " ", " ".join(self.parts)).strip()
+        return re.sub(r"\s+", " ", " ".join(self.parts)).strip()
 
 
 def fetch_yahoo_rss() -> str:
