@@ -32,6 +32,7 @@ The initial adapter allow-lists only read-only tools: `get_ohlcv`, `get_symbol_d
 Endpoints:
 - `GET /api/tradingview/status`: local OAuth authorization state.
 - `GET /api/market-data`: on-demand read-only one-minute history for MNQ/MES/MGC.
+- `GET /api/gex`: on-demand Cboe delayed NDX options GEX, mapped to MNQ/NQ using a cache-only MNQ snapshot or manual price.
 - `GET /api/integrations`: integration status and permitted capabilities.
 
 TradingView MCP is beta and rate-limited. Do not poll aggressively. The initial UI should refresh manually or at a conservative interval and show the source and timestamp. If a symbol cannot be resolved or returned data cannot be normalized, display unavailable rather than fabricating a price.
