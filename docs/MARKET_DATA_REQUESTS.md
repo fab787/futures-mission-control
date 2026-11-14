@@ -11,6 +11,7 @@ adapter directly.
 - Successful snapshots are cached for 5 minutes.
 - Empty/unavailable snapshots are cached for 30 seconds to avoid rapid retry loops.
 - Concurrent requests for the same timeframe share one in-flight refresh.
+- A single global upstream gate serializes refreshes across different timeframes, preventing overlapping TradingView MCP sessions when several charts are requested together.
 - TradingView instrument requests remain sequential to protect OAuth refresh state.
 - A detected TradingView quota/rate-limit response starts a 15-minute cooldown.
 - During cooldown, a previous good snapshot is served as stale with its age and
@@ -22,9 +23,7 @@ adapter directly.
 ## Dashboard polling
 
 The Overview's background market-data check is reduced to once every 5 minutes.
-Opening the Charts workspace or changing timeframe can request another snapshot,
-but the server-side cache and single-flight lock prevent redundant TradingView
-calls while a timeframe is still fresh.
+Opening the Charts workspace reuses the browser's existing timeframe snapshot and only requests data when that timeframe has not been loaded in the current page. Changing timeframe or explicitly reloading may request a snapshot, but the server cache prevents an upstream call while that timeframe remains fresh. Changing the chart symbol does not request new market data because each snapshot already contains all three configured instruments.
 
 ## Important deployment note
 
@@ -44,5 +43,6 @@ additional TradingView requests.
 ## Verification
 
 The request-manager tests cover cache hits, expiry, concurrent request
-coalescing, stale fallback after failures, and quota cooldown behavior.
+coalescing, cross-timeframe upstream serialization, stale fallback after failures,
+and quota cooldown behavior.
 Run the complete test suite before merging this branch.
