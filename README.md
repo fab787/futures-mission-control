@@ -1,4 +1,4 @@
-# Futures Mission Control
+# FAB787 QUANTUM
 
 A private, modular futures-market intelligence and paper-trading research workspace for MNQ, MES, and MGC.
 
@@ -54,4 +54,4 @@ After pulling the approved update and installing dependencies, run:
 python -m mission_control.tradingview_auth
 ```
 
-Approve the OAuth request in TradingView. Tokens are stored in the OS keyring. Then restart Mission Control. The Overview and Charts workspaces request historical bars through `/api/market-data`. This is a separate authorization from Claude Desktop. Only read-only market history is enabled; no watchlist changes, alerts, account access or order tools are allowed.
+Approve the OAuth request in TradingView. Tokens are stored in the OS keyring. Then restart FAB787 QUANTUM. The Overview and Charts workspaces request historical bars through `/api/market-data`. This is a separate authorization from Claude Desktop. Only read-only market history is enabled; no watchlist changes, alerts, account access or order tools are allowed.
