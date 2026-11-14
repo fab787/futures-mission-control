@@ -15,6 +15,7 @@ def payload():
         },
         "account_state": {
             "daily_pnl": 100,
+            "daily_high_water_pnl": 100,
             "session_pnl": 40,
             "drawdown_from_high_water": 100,
             "open_contracts": 1,
@@ -62,6 +63,7 @@ def test_account_protection_blocks_high_water_drawdown_and_contract_cap():
 
 def test_account_protection_enforces_profit_protection_floor():
     data = payload()
+    data["account_state"]["daily_high_water_pnl"] = 200
     data["account_state"]["daily_pnl"] = 60
     result = assess_account_protection(data)
     assert result["status"] == "breached"
@@ -106,3 +108,19 @@ def test_account_protection_detects_inconsistent_position_snapshot():
     result = assess_account_protection(data)
     assert result["status"] == "breached"
     assert any(item["name"] == "position_state_consistency" for item in result["breaches"])
+
+
+
+def test_contract_cap_allows_exactly_configured_maximum():
+    data = payload()
+    data["risk_limits"]["max_contracts"] = 1
+    result = assess_account_protection(data)
+    assert not any(item["name"] == "open_contracts" for item in result["breaches"])
+
+
+def test_account_protection_blocks_if_profit_protection_history_is_missing():
+    data = payload()
+    del data["account_state"]["daily_high_water_pnl"]
+    result = assess_account_protection(data)
+    assert result["status"] == "blocked"
+    assert any("daily_high_water_pnl" in item for item in result["validation_errors"])
