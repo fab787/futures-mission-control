@@ -15,6 +15,8 @@ def _db(path=None):
  c.executescript("""
  CREATE TABLE IF NOT EXISTS risk_profiles(profile_id TEXT,version INTEGER,created_at TEXT,actor TEXT,profile_json TEXT,PRIMARY KEY(profile_id,version));
  CREATE TABLE IF NOT EXISTS risk_config_events(event_id INTEGER PRIMARY KEY,profile_id TEXT,version INTEGER,actor TEXT,occurred_at TEXT,event_type TEXT,details_json TEXT);
+ CREATE TRIGGER IF NOT EXISTS risk_profiles_no_update BEFORE UPDATE ON risk_profiles BEGIN SELECT RAISE(ABORT,'risk profile versions are immutable'); END;
+ CREATE TRIGGER IF NOT EXISTS risk_profiles_no_delete BEFORE DELETE ON risk_profiles BEGIN SELECT RAISE(ABORT,'risk profile versions are immutable'); END;
  CREATE TRIGGER IF NOT EXISTS risk_config_events_no_update BEFORE UPDATE ON risk_config_events BEGIN SELECT RAISE(ABORT,'append-only'); END;
  CREATE TRIGGER IF NOT EXISTS risk_config_events_no_delete BEFORE DELETE ON risk_config_events BEGIN SELECT RAISE(ABORT,'append-only'); END;
  """); return c
@@ -101,3 +103,14 @@ def resolve_effective_profile(pid,db_path=None):
  p=item["profile"]
  if p["verification_status"]!="user_verified": raise ValueError("Risk profile is unverified; verify the official firm maximums before risk review.")
  return {"profile_id":item["profile_id"],"version":item["version"],"effective_limits":p["effective_limits"],"profile_name":p["profile_name"],"prop_firm":p["prop_firm"],"account_mode":p["account_mode"],"drawdown_type":p["drawdown_type"]}
+
+def list_profile_versions(profile_id,db_path=None):
+    if not isinstance(profile_id,str) or not profile_id.strip():
+        raise ValueError("profile_id must be a non-empty string.")
+    with _db(db_path) as c:
+        rows=c.execute("SELECT * FROM risk_profiles WHERE profile_id=? ORDER BY version",(profile_id,)).fetchall()
+        events=c.execute("SELECT * FROM risk_config_events WHERE profile_id=? ORDER BY event_id",(profile_id,)).fetchall()
+    return {"profile_id":profile_id,
+            "versions":[{"version":r["version"],"created_at":r["created_at"],"actor":r["actor"],"profile":json.loads(r["profile_json"])} for r in rows],
+            "events":[{"event_id":e["event_id"],"version":e["version"],"actor":e["actor"],"occurred_at":e["occurred_at"],"event_type":e["event_type"],"details":json.loads(e["details_json"])} for e in events],
+            "provider_requests_triggered":0,"execution":"disabled"}

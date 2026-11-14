@@ -1,5 +1,9 @@
 import pytest
-from mission_control.risk_config import create_profile,get_profile,list_profiles,resolve_effective_profile
+import sqlite3
+from datetime import datetime, timezone
+from mission_control import risk_config
+from mission_control.risk_config import create_profile,get_profile,list_profiles,list_profile_versions,resolve_effective_profile
+from mission_control.master_risk_engine import evaluate_master_risk
 
 def sample():
  return {"profile_name":"Example 50K","prop_firm":"User supplied","account_mode":"evaluation","drawdown_type":"end_of_day","verification_status":"user_verified","prop_firm_maximums":{"max_daily_loss":500,"max_session_loss":300,"max_drawdown":2000,"max_contracts":10,"max_per_trade_risk":200,"allowed_sessions":["NY","GLOBEX"]},"user_limits":{"max_daily_loss":250,"max_contracts":3,"max_per_trade_risk":100,"allowed_sessions":["NY"]}}
@@ -25,3 +29,25 @@ def test_unverified_profile_blocked(tmp_path):
 def test_no_provider_or_order_actions(tmp_path):
  a=create_profile(sample(),"operator",tmp_path/"risk.db")
  assert a["provider_requests_triggered"]==0 and a["orders_created"]==0 and a["execution"]=="disabled"
+
+def test_versions_are_append_only_and_auditable(tmp_path):
+ db=tmp_path/"risk.db"; a=create_profile(sample(),"operator",db)
+ p=sample(); p["profile_id"]=a["profile_id"]; create_profile(p,"operator",db)
+ history=list_profile_versions(a["profile_id"],db)
+ assert [v["version"] for v in history["versions"]]==[1,2]
+ assert [e["event_type"] for e in history["events"]]==["profile_version_created","profile_version_created"]
+ with sqlite3.connect(db) as conn:
+  with pytest.raises(sqlite3.IntegrityError): conn.execute("UPDATE risk_profiles SET actor='tampered' WHERE profile_id=?",(a["profile_id"],))
+  with pytest.raises(sqlite3.IntegrityError): conn.execute("DELETE FROM risk_profiles WHERE profile_id=?",(a["profile_id"],))
+
+def test_master_risk_uses_trusted_profile_not_caller_limits(tmp_path,monkeypatch):
+ db=tmp_path/"risk.db"; monkeypatch.setattr(risk_config,"DB",db)
+ p=sample(); p["user_limits"]["max_per_trade_risk"]=50
+ saved=create_profile(p,"operator")
+ review={"risk_profile_id":saved["profile_id"],"risk_limits":{"max_per_trade_risk":9999,"max_contracts":99,"max_daily_loss":9999,"max_session_loss":9999,"max_drawdown":9999,"allowed_sessions":["NY","GLOBEX"]},
+  "account_state":{"snapshot_at":datetime.now(timezone.utc).isoformat(),"daily_pnl":0,"session_pnl":0,"drawdown_from_high_water":0,"open_contracts":0,"position_state":"flat","current_session":"NY"},
+  "proposal":{"symbol":"MNQ","side":"long","quantity":1,"entry_price":20000,"stop_price":19950,"target_price":20100,"session":"NY"}}
+ result=evaluate_master_risk(review)
+ assert result["veto"] is True
+ assert result["risk_profile"]["effective_limits"]["max_per_trade_risk"]==50
+ assert any("max_per_trade_risk" in x for x in result["blockers"])

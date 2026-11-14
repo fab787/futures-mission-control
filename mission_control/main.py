@@ -13,7 +13,7 @@ from mission_control.account_protection import assess_account_protection
 from mission_control.gex import GexUnavailable, gex_service
 from mission_control.market_data_manager import market_data_manager
 from mission_control.master_risk_engine import evaluate_master_risk
-from mission_control.risk_config import create_profile, list_profiles
+from mission_control.risk_config import create_profile, list_profile_versions, list_profiles
 from mission_control.audit_ledger import create_proposal, decide_proposal, list_audit_events, list_proposals
 from mission_control.market_structure import analyze_market_structure
 from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
@@ -270,6 +270,12 @@ def audit_events(proposal_id: str | None = None) -> dict[str, Any]:
 def risk_profiles() -> dict[str, Any]:
     """List current immutable local risk-profile versions."""
     return list_profiles()
+
+
+@app.get("/api/risk/profiles/{profile_id}/versions")
+def risk_profile_versions(profile_id: str) -> dict[str, Any]:
+    """Return immutable profile history and configuration audit events."""
+    return list_profile_versions(profile_id)
 
 
 @app.post("/api/risk/profiles")
