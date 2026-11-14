@@ -105,7 +105,7 @@ Platform compatibility is not the same as API permission. Each firm/account type
 
 ## Per-account broker capability registry
 
-The project now records broker/platform capability separately for every registered account:
+The project now records broker/platform capability separately for every registered account, with editable controls inside the Mission Control Accounts workspace:
 
 - `GET /api/broker-capabilities` lists the known provider, platform, intended integration method, permission status and evidence reference for each account.
 - `PUT /api/accounts/{account_id}/broker-capability` records the operator-reviewed capability for one exact registered account.
