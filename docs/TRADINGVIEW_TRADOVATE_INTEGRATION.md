@@ -103,6 +103,18 @@ Platform compatibility is not the same as API permission. Each firm/account type
 4. For a firm that explicitly permits external automation, implement only its documented and supported connection method. Tradovate's standard API must not be selected for prop evaluation accounts unless Tradovate/NinjaTrader and the firm confirm eligibility in writing.
 5. Keep the local operator approval and risk-veto stages mandatory. No automatic fallback to another broker/platform is allowed.
 
+## Per-account broker capability registry
+
+The project now records broker/platform capability separately for every registered account:
+
+- `GET /api/broker-capabilities` lists the known provider, platform, intended integration method, permission status and evidence reference for each account.
+- `PUT /api/accounts/{account_id}/broker-capability` records the operator-reviewed capability for one exact registered account.
+- New accounts default to `unknown` / `unverified`; no platform or permission is inferred from a firm name.
+- Permission values are `unverified`, `confirmed` or `prohibited`. A `confirmed` status requires an evidence reference. Prohibited automation can only be recorded as `manual_only`.
+- Capability records contain no credentials, do not contact any provider, and never enable execution. The API always reports `execution_enabled: false` and `orders_created: 0`.
+
+This registry is an operator-maintained evidence ledger, not automatic verification. Only official current terms or written support confirmation should be recorded as evidence. An account with unverified or prohibited permissions is not eligible for a future automated adapter.
+
 ## Required next phases
 
 1. Complete broker-capability registry and per-firm/account permission tracking; keep unknown permissions fail-closed.
