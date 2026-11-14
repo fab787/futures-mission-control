@@ -39,10 +39,10 @@ def evaluate_master_risk(payload: Any) -> dict[str, Any]:
         blockers.append("Account Protection does not permit new trade proposals.")
 
     symbol, side = proposal.get("symbol"), proposal.get("side")
-    point_value = POINT_VALUES.get(symbol)
+    point_value = POINT_VALUES.get(symbol) if isinstance(symbol, str) else None
     if point_value is None:
         blockers.append("Proposal symbol must be one of MNQ, MES, or MGC.")
-    if side not in {"long","short"}:
+    if not isinstance(side, str) or side not in {"long","short"}:
         blockers.append("Proposal side must be long or short.")
     quantity = proposal.get("quantity")
     qty = int(quantity) if _number(quantity) and float(quantity)>0 and float(quantity).is_integer() else None
@@ -72,10 +72,10 @@ def evaluate_master_risk(payload: Any) -> dict[str, Any]:
     if not _number(max_risk) or float(max_risk)<=0:
         blockers.append("A positive finite max_per_trade_risk must be explicitly configured.")
     allowed=limits.get("allowed_sessions")
-    if not isinstance(allowed,list) or not allowed or any(x not in ALLOWED_SESSIONS for x in allowed):
+    if not isinstance(allowed,list) or not allowed or any(not isinstance(x, str) or x not in ALLOWED_SESSIONS for x in allowed):
         blockers.append("allowed_sessions must explicitly contain NY and/or GLOBEX.")
     current_session, proposal_session=state.get("current_session"),proposal.get("session")
-    if current_session not in ALLOWED_SESSIONS or proposal_session not in ALLOWED_SESSIONS:
+    if (not isinstance(current_session, str) or current_session not in ALLOWED_SESSIONS\n            or not isinstance(proposal_session, str) or proposal_session not in ALLOWED_SESSIONS):
         blockers.append("Both current account session and proposal session must be NY or GLOBEX.")
     elif current_session != proposal_session:
         blockers.append("Proposal session does not match the account snapshot's current session.")

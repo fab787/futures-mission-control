@@ -61,3 +61,15 @@ def test_master_risk_rejects_unknown_instrument_and_session():
     assert r["status"]=="veto"
     assert any("symbol" in x for x in r["blockers"])
     assert any("session" in x for x in r["blockers"])
+
+
+def test_master_risk_malformed_unhashable_fields_fail_closed():
+    d=payload()
+    d["proposal"]["symbol"] = {"unexpected": "object"}
+    d["proposal"]["side"] = ["long"]
+    d["proposal"]["session"] = ["NY"]
+    d["account_state"]["current_session"] = {"session": "NY"}
+    d["risk_limits"]["allowed_sessions"] = [["NY"]]
+    result=evaluate_master_risk(d)
+    assert result["status"]=="veto"
+    assert result["final_gate"]["trade_approved"] is False
