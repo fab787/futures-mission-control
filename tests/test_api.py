@@ -653,3 +653,44 @@ def test_webhook_alert_rejects_stale_signal_before_claiming(monkeypatch) -> None
     assert response.status_code == 409
     assert "stale" in response.json()["detail"]
     assert calls["claim"] == 0
+
+
+
+def test_broker_capability_api_lists_and_updates_per_account(monkeypatch) -> None:
+    from mission_control import main
+
+    monkeypatch.setattr(main, "list_broker_capabilities", lambda: {
+        "capabilities": [{"account_id": "acct-1", "permission_status": "unverified"}],
+        "execution_enabled": False,
+        "orders_created": 0,
+    })
+    listed = client.get("/api/broker-capabilities")
+    assert listed.status_code == 200
+    assert listed.json()["capabilities"][0]["permission_status"] == "unverified"
+    assert listed.json()["execution_enabled"] is False
+
+    captured = {}
+    def fake_upsert(account_id, payload, actor):
+        captured.update(account_id=account_id, payload=payload, actor=actor)
+        return {"account_id": account_id, "permission_status": payload["permission_status"],
+                "execution_enabled": False, "orders_created": 0}
+    monkeypatch.setattr(main, "upsert_broker_capability", fake_upsert)
+    updated = client.put(
+        "/api/accounts/acct-1/broker-capability",
+        json={"connection_provider": "tradovate", "platform": "tradingview",
+              "integration_method": "manual_only", "permission_status": "unverified"},
+    )
+    assert updated.status_code == 200
+    assert captured["account_id"] == "acct-1"
+    assert captured["actor"] == "local_operator"
+    assert updated.json()["execution_enabled"] is False
+
+
+def test_broker_capability_api_rejects_unknown_account(monkeypatch) -> None:
+    from mission_control import main
+
+    def missing(*args, **kwargs):
+        raise KeyError("Registered account not found.")
+    monkeypatch.setattr(main, "upsert_broker_capability", missing)
+    response = client.put("/api/accounts/missing/broker-capability", json={})
+    assert response.status_code == 404
