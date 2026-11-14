@@ -55,3 +55,11 @@ def test_master_risk_uses_trusted_profile_not_caller_limits(tmp_path,monkeypatch
 def test_invalid_consistency_threshold_rejected(tmp_path):
  p=sample(); p["consistency_rule"]={"max_best_day_profit_share_pct":0}
  with pytest.raises(ValueError): create_profile(p,"operator",tmp_path/"risk.db")
+
+
+def test_resolved_profile_preserves_verification_status_for_rules_evaluator(tmp_path):
+ db=tmp_path/"risk.db"
+ saved=create_profile(sample(),"operator",db)
+ resolved=resolve_effective_profile(saved["profile_id"],db)
+ assert resolved["verification_status"]=="user_verified"
+ assert resolved["rule_coverage_status"]=="complete"
