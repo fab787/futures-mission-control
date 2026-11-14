@@ -279,3 +279,16 @@ trade approval or permission to submit an order. The endpoint has no provider,
 broker, persistence, configuration-write, position-management, or execution
 capability. The engine may veto; it cannot authorize itself or override the
 mandatory human approval boundary.
+
+
+## Human Approval and Audit Ledger
+
+Proposals are submitted through `POST /api/approvals/proposals`. The Master
+Risk Engine runs before a proposal can enter the pending queue and is run
+again when a human decision is recorded. A vetoed or finalized proposal cannot
+be approved a second time. Approve/reject decisions require an actor label and
+reason and are recorded as append-only SQLite audit events. Read-only routes
+expose the pending/finalized proposal list and event history. The ledger is
+local to the application host; it does not authenticate the actor label,
+provide tamper-proof external archival, or submit orders. An approval records
+human intent only; execution remains disabled.

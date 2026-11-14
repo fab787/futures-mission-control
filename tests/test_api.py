@@ -322,3 +322,14 @@ def test_master_risk_endpoint_is_independent_pure_veto(monkeypatch) -> None:
     assert result["final_gate"]["trade_approved"] is False
     assert result["orders_created"] == 0
     assert result["provider_requests_triggered"] == 0
+
+
+def test_approval_api_never_creates_orders(tmp_path, monkeypatch) -> None:
+    from mission_control import audit_ledger, main
+    monkeypatch.setattr(audit_ledger, "DEFAULT_DB", tmp_path / "api-audit.sqlite3")
+    response = client.post("/api/approvals/proposals", json={"submitted_by":"tester"})
+    assert response.status_code == 200
+    result = response.json()
+    assert result["status"] == "vetoed"
+    assert result["orders_created"] == 0
+    assert client.get("/api/audit/events").status_code == 200

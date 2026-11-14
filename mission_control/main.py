@@ -13,6 +13,7 @@ from mission_control.account_protection import assess_account_protection
 from mission_control.gex import GexUnavailable, gex_service
 from mission_control.market_data_manager import market_data_manager
 from mission_control.master_risk_engine import evaluate_master_risk
+from mission_control.audit_ledger import create_proposal, decide_proposal, list_audit_events, list_proposals
 from mission_control.market_structure import analyze_market_structure
 from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
 from mission_control.news_catalyst import analyze_news_catalysts
@@ -232,6 +233,36 @@ def chief_decision_agent(payload: dict[str, Any]) -> dict[str, Any]:
         base_payload, structure_payload, scout_payload,
         catalyst_payload, sentiment_payload, account_payload,
     )
+
+
+@app.get("/api/approvals/proposals")
+def approval_proposals() -> dict[str, Any]:
+    return list_proposals()
+
+
+@app.post("/api/approvals/proposals")
+def submit_approval_proposal(payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        actor = payload.pop("submitted_by", "local_operator")
+        return create_proposal(payload, actor)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/approvals/proposals/{proposal_id}/decision")
+def record_approval_decision(proposal_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        return decide_proposal(proposal_id, payload.get("decision"), payload.get("actor"),
+                               payload.get("reason"))
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.get("/api/audit/events")
+def audit_events(proposal_id: str | None = None) -> dict[str, Any]:
+    return list_audit_events(proposal_id)
 
 
 @app.post("/api/risk/master")

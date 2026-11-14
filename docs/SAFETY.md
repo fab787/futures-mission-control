@@ -124,3 +124,13 @@ Paper Trading is the intended initial simulation environment. Do not assume the 
 - A non-veto result means eligible for human review only. It is not trade approval; human approval remains mandatory.
 - Stop-risk calculations exclude fees, slippage, gaps and execution uncertainty and must never be represented as guaranteed maximum loss.
 - No broker connection, order submission, automatic flattening, provider refresh, risk-setting mutation or strategy update is permitted.
+
+
+## Human approval and audit controls
+
+- Every proposal must pass the independent Master Risk Engine before entering the pending queue; the engine is re-run at decision time.
+- A vetoed proposal cannot be approved. A pending proposal can receive exactly one final decision; repeat or conflicting decisions are rejected.
+- Approval and rejection require an actor label and written reason. Each event is appended to a local SQLite ledger with UTC timestamp and proposal ID.
+- SQLite triggers prevent update/delete of audit-event rows through the application database connection. This is not cryptographic tamper-proof storage or an external immutable archive.
+- Actor labels are supplied by the caller and are not authenticated in this phase. Bind the application to localhost and do not expose approval endpoints to an untrusted network.
+- Approval records a human decision only. No broker connection, order submission, execution, automatic position management or risk-setting change exists.
