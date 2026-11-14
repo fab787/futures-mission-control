@@ -12,6 +12,7 @@ from mission_control.gex import GexUnavailable, gex_service
 from mission_control.market_data_manager import market_data_manager
 from mission_control.market_structure import analyze_market_structure
 from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
+from mission_control.news_catalyst import analyze_news_catalysts
 from mission_control.provider_errors import ProviderCooldownActive
 from mission_control.tradingview import AuthorizationRequired, market_snapshot
 from mission_control.tradingview_auth import KeyringTokenStorage
@@ -195,6 +196,12 @@ def market_structure_agent() -> dict[str, Any]:
 async def news() -> dict[str, Any]:
     """Return cached Yahoo Finance ticker headlines; never call TradingView."""
     return await yahoo_news_service.get_news()
+
+
+@app.get("/api/agents/news-catalyst")
+def news_catalyst_agent() -> dict[str, Any]:
+    """Classify cached Yahoo headlines only; never trigger an RSS refresh."""
+    return analyze_news_catalysts(yahoo_news_service.peek_news())
 
 
 @app.get("/api/calendar")
