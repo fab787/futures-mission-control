@@ -38,6 +38,15 @@
 - Open interest is generally prior-session data; the options quote feed is delayed. GEX estimates are contextual reference levels, never trade authorization or standalone signals.
 - The current GEX integration supports NDX-to-MNQ/NQ mapping only. Do not imply MES or MGC coverage.
 
+## News specialist boundary
+
+- News & Catalyst Intelligence may read only the existing Yahoo RSS cache through the cache-only accessor.
+- It must not call the Yahoo refresh method, TradingView, or any backup provider.
+- Headline theme and priority tags are keyword-based triage, not market-impact or directional assessments.
+- Combined-feed headlines must not be attributed to a specific futures contract without source-provided mapping.
+- Stale headlines must remain labeled stale; unavailable headlines block the specialist.
+- The specialist must not create economic-calendar events while Yahoo structured event extraction remains unverified.
+
 ## Instrument-agent boundary
 
 - Initial MNQ/MES/MGC agents are deterministic and descriptive; they are not trade signals.
