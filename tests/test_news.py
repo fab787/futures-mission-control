@@ -135,3 +135,36 @@ def test_parse_yahoo_rss_discards_non_https_links() -> None:
     )
     assert parse_yahoo_rss(unsafe) == []
 
+
+
+
+def test_news_service_peek_reads_cache_without_fetching() -> None:
+    now = [100.0]
+    calls = []
+
+    def fetcher() -> str:
+        calls.append(1)
+        return FIXTURE
+
+    service = YahooFinanceNewsService(
+        fetcher=fetcher,
+        clock=lambda: now[0],
+        ttl_seconds=5,
+    )
+    empty = service.peek_news()
+    assert empty["status"] == "not_loaded"
+    assert empty["provider_requests_triggered"] == 0
+
+    async def run() -> None:
+        await service.get_news()
+        cached = service.peek_news()
+        assert cached["status"] == "cached"
+        assert cached["provider_requests_triggered"] == 0
+        now[0] += 6
+        stale = service.peek_news()
+        assert stale["status"] == "stale"
+        assert stale["provider_requests_triggered"] == 0
+        assert service.fetch_count == 1
+
+    asyncio.run(run())
+    assert len(calls) == 1
