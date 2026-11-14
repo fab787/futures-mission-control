@@ -19,6 +19,15 @@
 - Market data is polled, not streamed. Every display must preserve source and timestamp/freshness information.
 - If authentication, symbol mapping, parsing or data freshness fails, show unavailable and block dependent analysis.
 
+## GEX data limitations
+
+- GEX uses Cboe delayed NDX options data only and is requested on demand.
+- The raw options chain is cached for 15 minutes; stale output must be visibly labeled.
+- NDX-to-MNQ/NQ levels use a futures/spot ratio and require a fresh cached MNQ price or explicit manual input. GEX must not trigger a TradingView refresh to obtain that price.
+- The calls-positive / puts-negative convention is an assumption about dealer positioning, not verified dealer inventory.
+- Open interest is generally prior-session data; the options quote feed is delayed. GEX estimates are contextual reference levels, never trade authorization or standalone signals.
+- The current GEX integration supports NDX-to-MNQ/NQ mapping only. Do not imply MES or MGC coverage.
+
 ## Fail-safe behavior
 
 Block new trade proposals when:
