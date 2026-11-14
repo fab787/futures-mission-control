@@ -229,6 +229,40 @@ def store_signal(signal: TradingViewSignal, db_path: str | Path | None = None) -
         connection.close()
 
 
+def list_signals(limit: int = 50, db_path: str | Path | None = None) -> dict[str, Any]:
+    """Return recent inbox records for a local operator review screen."""
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 200:
+        raise ValueError("limit must be an integer between 1 and 200")
+    path = Path(db_path or os.getenv(
+        "FAB787_WEBHOOK_DB", str(ROOT / "data" / "fab787_tradingview_webhooks.sqlite3")
+    ))
+    if not path.exists():
+        return {"signals": [], "count": 0, "execution_enabled": False}
+    connection = sqlite3.connect(path, timeout=5)
+    connection.row_factory = sqlite3.Row
+    try:
+        rows = connection.execute(
+            """
+            SELECT alert_id, received_at, event_timestamp, symbol, action, quantity,
+                   order_type, entry_price, stop_loss, take_profit, strategy_id,
+                   route_key, status
+            FROM tradingview_webhook_inbox
+            ORDER BY received_at DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+        signals = [dict(row) for row in rows]
+        return {
+            "signals": signals,
+            "count": len(signals),
+            "execution_enabled": False,
+            "human_approval_required": True,
+        }
+    finally:
+        connection.close()
+
+
 app = FastAPI(
     title="FAB787 QUANTUM TradingView Webhook Receiver",
     docs_url=None,
@@ -244,6 +278,17 @@ def health() -> dict[str, Any]:
         "service": "isolated-tradingview-webhook-receiver",
         "execution_enabled": False,
     }
+
+
+@app.get("/inbox")
+def webhook_inbox(limit: int = 50) -> dict[str, Any]:
+    """Read recent alerts; this endpoint cannot approve or execute them."""
+    try:
+        return list_signals(limit=limit)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except sqlite3.Error as exc:
+        raise HTTPException(status_code=503, detail="webhook inbox unavailable") from exc
 
 
 @app.post("/webhook/tradingview", status_code=202)
