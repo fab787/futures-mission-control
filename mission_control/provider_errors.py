@@ -29,5 +29,5 @@ def is_quota_error(error: object) -> bool:
         message += " " + repr(error).lower()
     markers = ("quota", "rate limit", "too many requests", "resource exhausted")
     return any(marker in message for marker in markers) or bool(
-        re.search(r"\\b(?:http\\s*)?429\\b", message)
+        re.search(r"\b(?:http\s*)?429\b", message)
     )
