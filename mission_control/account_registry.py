@@ -1,6 +1,7 @@
 """Local multi-account registry; no broker credentials, provider calls, or execution."""
 from __future__ import annotations
 
+import json
 import math
 import os
 import sqlite3
@@ -102,6 +103,9 @@ def create_account(payload: Any, actor: Any, profile_resolver, db_path=None) -> 
     account_id = str(uuid.uuid4())
     with _connect(db_path) as conn:
         conn.execute("BEGIN IMMEDIATE")
+        linked = conn.execute("SELECT 1 FROM trading_accounts WHERE risk_profile_id=?", (profile_id.strip(),)).fetchone()
+        if linked:
+            raise ValueError("Each registered account must use a distinct risk profile; this profile is already linked.")
         duplicate = conn.execute(
             "SELECT 1 FROM trading_accounts WHERE lower(nickname)=lower(?) AND firm=?",
             (nickname.strip(), firm),
