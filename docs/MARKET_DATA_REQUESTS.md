@@ -25,6 +25,20 @@ adapter directly.
 The Overview's background market-data check is reduced to once every 5 minutes.
 Opening the Charts workspace reuses the browser's existing timeframe snapshot and only requests data when that timeframe has not been loaded in the current page. Changing timeframe or explicitly reloading may request a snapshot, but the server cache prevents an upstream call while that timeframe remains fresh. Changing the chart symbol does not request new market data because each snapshot already contains all three configured instruments.
 
+## GEX provider isolation
+
+The GEX workspace uses Cboe's delayed NDX options-chain endpoint only. It does
+not call TradingView. The raw options chain is cached for 15 minutes and is
+requested only when a user explicitly loads GEX; changing the MNQ/NQ mapping
+price recalculates levels from the cached chain. A five-minute failure cooldown
+and stale-data labeling prevent repeated failed Cboe requests.
+
+GEX reads the existing 1-minute MNQ snapshot through
+`market_data_manager.peek_snapshot()`, which is cache-only and never invokes
+the TradingView loader. If no fresh MNQ snapshot exists, the user must enter a
+futures price manually. The endpoint must never call `get_snapshot()` merely
+to obtain a mapping price.
+
 ## Important deployment note
 
 The cache and cooldown are in-process memory. Run a single FAB787 QUANTUM API
