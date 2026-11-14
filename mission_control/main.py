@@ -29,6 +29,7 @@ from mission_control.provider_errors import ProviderCooldownActive
 from mission_control.tradingview import AuthorizationRequired, market_snapshot
 from mission_control.tradingview_auth import KeyringTokenStorage
 from mission_control.tradingview_webhook import list_signals as list_tradingview_webhook_signals
+from mission_control.webhook_inbox_ui import build_webhook_dashboard
 
 ROOT = Path(__file__).resolve().parent.parent
 INSTRUMENTS_FILE = ROOT / "config" / "instruments.yaml"
@@ -449,4 +450,4 @@ def economic_calendar() -> dict[str, Any]:
 @app.get("/", response_class=HTMLResponse)
 def dashboard() -> str:
     template = (ROOT / "mission_control" / "dashboard.html").read_text(encoding="utf-8")
-    return build_dashboard(template)
+    return build_webhook_dashboard(build_dashboard(template))
