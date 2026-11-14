@@ -14,8 +14,7 @@ from mission_control.gex import GexUnavailable, gex_service
 from mission_control.market_data_manager import market_data_manager
 from mission_control.master_risk_engine import evaluate_master_risk
 from mission_control.prop_firm_rules import evaluate_prop_firm_rules
-from mission_control.risk_config import get_profile
-from mission_control.risk_config import create_profile, list_profile_versions, list_profiles
+from mission_control.risk_config import create_profile, get_profile, list_profile_versions, list_profiles
 from mission_control.audit_ledger import create_proposal, decide_proposal, list_audit_events, list_proposals
 from mission_control.market_structure import analyze_market_structure
 from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service

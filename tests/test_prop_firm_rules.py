@@ -115,3 +115,14 @@ def test_minimum_trading_days_is_progress_not_a_permanent_breach():
     assert result["status"] == "in_progress"
     assert result["new_trade_proposals_allowed"] is True
     assert any("minimum trading-day" in item for item in result["progress_notes"])
+
+def test_consistency_waits_for_positive_net_profit_without_blocking_safe_progress():
+    data = history()
+    data["daily_results"] = [
+        {"date": "2026-11-10", "net_pnl": -100, "trading_day": True},
+        {"date": "2026-11-11", "net_pnl": -50, "trading_day": True},
+    ]
+    result = evaluate_prop_firm_rules(sample_profile(), data, state())
+    assert result["status"] == "in_progress"
+    assert result["new_trade_proposals_allowed"] is True
+    assert any("cannot be evaluated" in item for item in result["progress_notes"])

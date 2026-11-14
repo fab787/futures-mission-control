@@ -180,7 +180,7 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
             total_net = sum(float(day["net_pnl"]) for day in valid_days)
             best_day = max((float(day["net_pnl"]) for day in valid_days), default=0.0)
             if total_net <= 0 or best_day <= 0:
-                blockers.append("Positive cumulative net profit is required to calculate best-day consistency.")
+                progress.append("Best-day consistency cannot be evaluated until cumulative net profit is positive.")
             else:
                 share = best_day / total_net * 100.0
                 maximum_share = float(consistency["max_best_day_profit_share_pct"])
