@@ -253,6 +253,7 @@ def test_account_protection_endpoint_evaluates_supplied_snapshot_only() -> None:
                 "max_contracts": 10,
             },
             "account_state": {
+                "snapshot_at": "2026-11-14T20:17:50+00:00",
                 "daily_pnl": -500,
                 "session_pnl": -10,
                 "drawdown_from_high_water": 100,
