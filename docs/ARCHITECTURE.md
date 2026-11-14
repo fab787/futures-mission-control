@@ -116,6 +116,23 @@ reviews only after stable report contracts and provider boundaries are tested.
 - Market Structure Analyst: evaluates structure using validated market data.
 - Account Protection Analyst: monitors account-level constraints and emerging risk.
 
+
+
+### Market Structure Analyst
+
+The first shared specialist consumes the existing cache-only instrument reports
+and the same cached 1-minute OHLCV snapshot. Its endpoint,
+`GET /api/agents/market-structure`, uses only `peek_snapshot()`; it never
+refreshes TradingView or any other provider. It is blocked per instrument when
+the base report is not ready or fewer than 50 valid bars are available.
+
+For eligible instruments it reports EMA-20/EMA-50 alignment, confirmed swing
+highs and lows (two bars on each side to confirm), nearest confirmed support
+and resistance, and a basic higher-high/higher-low versus lower-high/lower-low
+description. Unconfirmed pivots are excluded. These are descriptive levels,
+not forecasts, entries, stop placements, or trade approvals. The specialist has
+no risk or trade authority and reports zero provider requests.
+
 ## Decision and risk layers
 
 The Chief Decision Agent compares instrument and specialist reports, highlights disagreement, and drafts proposals with rationale and invalidation conditions. It cannot override the Master Risk Engine.
