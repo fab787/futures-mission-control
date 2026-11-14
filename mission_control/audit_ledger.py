@@ -75,6 +75,9 @@ def create_proposal(payload: Any, actor: str, db_path: str | Path | None = None)
     history_record = get_current_history(db_path)
     payload["account_history"] = history_record.get("account_history") if history_record.get("status") == "available" else None
     payload["account_history_revision"] = history_record.get("revision", 0)
+    if history_record.get("status") == "available" and isinstance(payload.get("account_state"), dict):
+        payload["account_state"] = dict(payload["account_state"])
+        payload["account_state"]["cumulative_net_profit"] = history_record["summary"]["cumulative_net_profit"]
     risk = evaluate_master_risk(payload, require_saved_profile=True)
     proposal_id = str(uuid.uuid4())
     status = "vetoed" if risk["veto"] else "pending"
@@ -106,6 +109,9 @@ def decide_proposal(proposal_id: str, decision: str, actor: str, reason: str,
         history_record = get_current_history(db_path, conn)
         payload["account_history"] = history_record.get("account_history") if history_record.get("status") == "available" else None
         payload["account_history_revision"] = history_record.get("revision", 0)
+        if history_record.get("status") == "available" and isinstance(payload.get("account_state"), dict):
+            payload["account_state"] = dict(payload["account_state"])
+            payload["account_state"]["cumulative_net_profit"] = history_record["summary"]["cumulative_net_profit"]
         fresh_risk=evaluate_master_risk(payload, require_saved_profile=True)
         if fresh_risk["veto"]:
             conn.execute("UPDATE proposals SET status='vetoed',risk_json=? WHERE proposal_id=?",

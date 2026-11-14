@@ -130,6 +130,9 @@ def test_proposal_uses_latest_saved_history_revision_and_rechecks_it(tmp_path, s
     save_history_snapshot(payload["account_history"], "operator", "Initial reconciliation", db)
     proposal = create_proposal(payload, "operator", db)
     assert proposal["status"] == "pending"
+    from mission_control.audit_ledger import list_proposals
+    saved_proposal = list_proposals(db)["proposals"][0]
+    assert saved_proposal["account_history_revision"] == 1
     from mission_control.account_history import get_current_history
     updated = valid_payload(saved_risk_profile)["account_history"]
     updated["daily_results"][0]["net_pnl"] = -600
