@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse
 
 from mission_control.tradingview import AuthorizationRequired, market_snapshot
 from mission_control.market_data_manager import market_data_manager
+from mission_control.provider_errors import ProviderCooldownActive
 from mission_control.tradingview_auth import KeyringTokenStorage
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -80,6 +81,8 @@ async def market_data(interval: str = Query(default="1m", pattern="^(1m|5m|15m|1
         return await market_data_manager.get_snapshot(interval, market_snapshot)
     except AuthorizationRequired as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ProviderCooldownActive as exc:
+        raise HTTPException(status_code=429, detail=str(exc)) from exc
 
 
 @app.get("/api/integrations")
