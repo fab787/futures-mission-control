@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import csv
 import io
+import math
 import re
 from typing import Any
 
@@ -33,7 +34,7 @@ def _number(value: str, field: str, row_number: int) -> float:
         result = float(cleaned)
     except ValueError as exc:
         raise ValueError(f"CSV row {row_number}: {field} must be a number.") from exc
-    if not __import__("math").isfinite(result):
+    if not math.isfinite(result):
         raise ValueError(f"CSV row {row_number}: {field} must be finite.")
     return result
 
@@ -63,7 +64,7 @@ def preview_csv(
         balance = float(starting_balance)
     except (TypeError, ValueError) as exc:
         raise ValueError("Enter a valid positive starting balance.") from exc
-    if not __import__("math").isfinite(balance) or balance <= 0:
+    if not math.isfinite(balance) or balance <= 0:
         raise ValueError("Starting balance must be a positive finite number.")
 
     reader = csv.DictReader(io.StringIO(csv_text))
@@ -154,7 +155,7 @@ def preview_csv(
 def suggest_column_mapping(headers: list[str]) -> dict[str, str | None]:
     """Suggest exact, conservative header matches; the operator must review each mapping."""
     aliases = {
-        "timestamp": {"timestamp", "equitytimestamp", "datetime", "datetimeutc", "datetime"},
+        "timestamp": {"timestamp", "equitytimestamp", "datetime", "datetimeutc"},
         "equity": {"equity", "accountequity", "balanceequity", "endingequity"},
         "date": {"date", "tradedate", "statementdate"},
         "daily_pnl": {"dailypnl", "daypnl", "netpnl", "dailynetpnl"},
