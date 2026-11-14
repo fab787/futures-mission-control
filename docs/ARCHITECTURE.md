@@ -261,3 +261,21 @@ converted into consensus. The agent produces a context and readiness summary
 only: it does not generate trade setups, alter settings, or authorize orders.
 Every possible proposal remains subject to the independent Master Risk Engine
 and explicit human approval.
+
+
+## Independent Master Risk Engine
+
+The Master Risk Engine is exposed at `POST /api/risk/master` as a pure,
+independent veto layer. It validates a fresh caller-supplied account snapshot,
+Account Protection status, explicit per-trade risk and account contract limits,
+permitted NY/Globex session, instrument identity, proposed quantity, stop and
+target orientation, and estimated stop-distance risk. Missing, stale,
+contradictory, warning, breached, or invalid account/risk inputs veto the
+proposal. Contract multipliers used for estimates are MNQ $2, MES $5 and MGC
+$10 per full point. Stop-risk estimates exclude fees, slippage and gaps.
+
+A non-veto result means only eligible for separate human review. It is never
+trade approval or permission to submit an order. The endpoint has no provider,
+broker, persistence, configuration-write, position-management, or execution
+capability. The engine may veto; it cannot authorize itself or override the
+mandatory human approval boundary.

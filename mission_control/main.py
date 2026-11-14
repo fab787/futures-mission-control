@@ -12,6 +12,7 @@ from mission_control.chief_decision_agent import compose_chief_decision
 from mission_control.account_protection import assess_account_protection
 from mission_control.gex import GexUnavailable, gex_service
 from mission_control.market_data_manager import market_data_manager
+from mission_control.master_risk_engine import evaluate_master_risk
 from mission_control.market_structure import analyze_market_structure
 from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
 from mission_control.news_catalyst import analyze_news_catalysts
@@ -231,6 +232,12 @@ def chief_decision_agent(payload: dict[str, Any]) -> dict[str, Any]:
         base_payload, structure_payload, scout_payload,
         catalyst_payload, sentiment_payload, account_payload,
     )
+
+
+@app.post("/api/risk/master")
+def master_risk_review(payload: dict[str, Any]) -> dict[str, Any]:
+    """Apply the independent fail-closed veto; never approve or submit orders."""
+    return evaluate_master_risk(payload)
 
 
 @app.post("/api/agents/account-protection")

@@ -306,3 +306,19 @@ def test_chief_decision_endpoint_uses_only_existing_caches(monkeypatch) -> None:
     assert result["provider_requests_triggered"] == 0
     assert result["decision"]["trade_authority"] == "none"
     assert calls == {"market_peek": 1, "market_refresh": 0, "news_peek": 1, "news_refresh": 0}
+
+
+def test_master_risk_endpoint_is_independent_pure_veto(monkeypatch) -> None:
+    from mission_control import main
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Master Risk Engine must not access providers")
+    monkeypatch.setattr(main.market_data_manager, "get_snapshot", forbidden)
+    monkeypatch.setattr(main.yahoo_news_service, "get_news", forbidden)
+    response = client.post("/api/risk/master", json={})
+    assert response.status_code == 200
+    result = response.json()
+    assert result["status"] == "veto"
+    assert result["final_gate"]["master_risk_veto"] is True
+    assert result["final_gate"]["trade_approved"] is False
+    assert result["orders_created"] == 0
+    assert result["provider_requests_triggered"] == 0

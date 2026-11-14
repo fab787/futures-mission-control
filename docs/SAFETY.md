@@ -114,3 +114,13 @@ Paper Trading is the intended initial simulation environment. Do not assume the 
 - Missing, stale, malformed, or contradictory market/account inputs block downstream risk review. Model disagreement and missing news must be disclosed, not hidden.
 - The agent creates no entries, exits, stops, targets, contract sizes, or orders. It has no trade or risk-setting authority.
 - Master Risk Engine review and explicit human approval remain mandatory for every trade.
+
+
+## Master Risk Engine veto boundary
+
+- The Master Risk Engine is independent of the Chief Decision Agent and Account Protection Analyst; it may veto but never approve or submit orders.
+- It requires explicit maximum per-trade risk, maximum account exposure, allowed session(s), a fresh account snapshot, and a complete proposal.
+- Unknown instruments, invalid stop/target orientation, excess risk, excess projected contracts, disallowed or mismatched session, account warnings/breaches, and missing/stale/contradictory inputs veto the proposal.
+- A non-veto result means eligible for human review only. It is not trade approval; human approval remains mandatory.
+- Stop-risk calculations exclude fees, slippage, gaps and execution uncertainty and must never be represented as guaranteed maximum loss.
+- No broker connection, order submission, automatic flattening, provider refresh, risk-setting mutation or strategy update is permitted.
