@@ -16,6 +16,7 @@ from mission_control.master_risk_engine import evaluate_master_risk
 from mission_control.prop_firm_rules import evaluate_prop_firm_rules
 from mission_control.risk_config import create_profile, get_profile, list_profile_versions, list_profiles
 from mission_control.audit_ledger import create_proposal, decide_proposal, list_audit_events, list_proposals
+from mission_control.account_history import get_current_history, list_history_versions, save_history_snapshot
 from mission_control.market_structure import analyze_market_structure
 from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
 from mission_control.news_catalyst import analyze_news_catalysts
@@ -260,6 +261,28 @@ def record_approval_decision(proposal_id: str, payload: dict[str, Any]) -> dict[
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.get("/api/account-history")
+def account_history_current() -> dict[str, Any]:
+    """Return the latest local immutable account-history snapshot; no provider calls."""
+    return get_current_history()
+
+
+@app.get("/api/account-history/versions")
+def account_history_versions() -> dict[str, Any]:
+    """List immutable account-history snapshot revisions."""
+    return list_history_versions()
+
+
+@app.post("/api/account-history")
+def account_history_save(payload: dict[str, Any]) -> dict[str, Any]:
+    """Save a complete operator-imported history snapshot; no broker/provider access."""
+    try:
+        return save_history_snapshot(payload.get("account_history"), payload.get("actor"),
+                                     payload.get("source_label"))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/audit/events")

@@ -380,3 +380,51 @@ def test_master_risk_api_rejects_caller_limits_without_saved_profile():
     assert result["veto"] is True
     assert any("saved, verified risk_profile_id is mandatory" in item for item in result["blockers"])
     assert result["orders_created"] == 0
+
+def test_account_history_api_saves_and_returns_immutable_snapshot(tmp_path, monkeypatch):
+    from mission_control import account_history
+    monkeypatch.setattr(account_history, "DEFAULT_DB", tmp_path / "history.sqlite3")
+    now = datetime.now(timezone.utc)
+    payload = {
+        "account_history": {
+            "starting_balance": 50000,
+            "equity_observations": [
+                {"timestamp": (now - __import__("datetime").timedelta(minutes=2)).isoformat(),
+                 "equity": 50000, "observation_type": "intraday"},
+                {"timestamp": (now - __import__("datetime").timedelta(minutes=1)).isoformat(),
+                 "equity": 50010, "observation_type": "intraday"},
+            ],
+            "daily_results": [{"date": now.date().isoformat(), "net_pnl": 10, "trading_day": True}],
+            "session_results": [{"date": now.date().isoformat(), "session": "NY", "net_pnl": 5}],
+        },
+        "actor": "api-test",
+        "source_label": "Synthetic API fixture",
+    }
+    saved = client.post("/api/account-history", json=payload)
+    assert saved.status_code == 200
+    assert saved.json()["revision"] == 1
+    current = client.get("/api/account-history").json()
+    assert current["status"] == "available"
+    assert current["summary"]["cumulative_net_profit"] == 10
+    assert current["summary"]["history_is_broker_authenticated"] is False
+    assert client.get("/api/account-history/versions").json()["versions"][0]["revision"] == 1
+
+
+def test_account_history_api_rejects_naive_timestamps(tmp_path, monkeypatch):
+    from mission_control import account_history
+    monkeypatch.setattr(account_history, "DEFAULT_DB", tmp_path / "history-invalid.sqlite3")
+    now = datetime.now(timezone.utc)
+    payload = {
+        "account_history": {
+            "starting_balance": 50000,
+            "equity_observations": [
+                {"timestamp": now.replace(tzinfo=None).isoformat(), "equity": 50000, "observation_type": "intraday"},
+                {"timestamp": now.isoformat(), "equity": 50010, "observation_type": "intraday"},
+            ],
+            "daily_results": [{"date": now.date().isoformat(), "net_pnl": 10, "trading_day": True}],
+            "session_results": [{"date": now.date().isoformat(), "session": "NY", "net_pnl": 5}],
+        },
+        "actor": "api-test",
+        "source_label": "Invalid fixture",
+    }
+    assert client.post("/api/account-history", json=payload).status_code == 400

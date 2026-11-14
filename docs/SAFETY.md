@@ -160,3 +160,12 @@ Paper Trading is the intended initial simulation environment. Do not assume the 
 - Account history and account state remain caller-supplied and unauthenticated. These checks are analytical safeguards, not broker-side enforcement or proof of prop-firm compliance.
 - The Master Risk Engine runs this evaluator for saved-profile proposals and vetoes when it does not return within_rules.
 - The evaluator has no provider, broker, persistence, order, or risk-configuration mutation authority.
+
+
+## Account History & Performance Tracker
+
+- Account history is imported by an explicit local operator action as a complete snapshot; no provider, broker, or order calls are made.
+- Every saved revision is immutable through application SQL triggers and retains source label, actor label, UTC timestamp and content hash. Corrections create new revisions; identical content is idempotent.
+- Approval proposals use the latest saved history revision, not a caller-provided replacement. The latest revision is re-read when a human decision is recorded; new historical breaches can veto a pending proposal.
+- Imported account history and actor labels are not authenticated. The tracker is an audit aid, not broker-side enforcement or proof of prop-firm compliance.
+- The current account-state snapshot remains separately supplied and must pass the existing freshness and consistency checks.

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from mission_control.master_risk_engine import evaluate_master_risk
+from mission_control.account_history import get_current_history
 
 DEFAULT_DB = (Path(os.environ["FAB787_AUDIT_DB"]) if "FAB787_AUDIT_DB" in os.environ else Path(__file__).resolve().parent.parent / "data" / "fab787_quantum_audit.sqlite3")
 
@@ -70,6 +71,10 @@ def _clean_actor(value: Any) -> str:
 
 def create_proposal(payload: Any, actor: str, db_path: str | Path | None = None) -> dict[str, Any]:
     actor = _clean_actor(actor)
+    payload = dict(payload)
+    history_record = get_current_history(db_path)
+    payload["account_history"] = history_record.get("account_history") if history_record.get("status") == "available" else None
+    payload["account_history_revision"] = history_record.get("revision", 0)
     risk = evaluate_master_risk(payload, require_saved_profile=True)
     proposal_id = str(uuid.uuid4())
     status = "vetoed" if risk["veto"] else "pending"
@@ -79,7 +84,7 @@ def create_proposal(payload: Any, actor: str, db_path: str | Path | None = None)
           (proposal_id,_now(),json.dumps(payload,sort_keys=True),json.dumps(risk,sort_keys=True),status),
         )
         _event(conn, "proposal_vetoed" if risk["veto"] else "proposal_submitted",
-               proposal_id, actor, {"risk_status":risk["status"],"blockers":risk["blockers"]})
+               proposal_id, actor, {"risk_status":risk["status"],"blockers":risk["blockers"],"account_history_revision":payload.get("account_history_revision",0)})
     return {"proposal_id":proposal_id,"status":status,"risk_review":risk,
             "execution":"disabled","orders_created":0}
 
@@ -98,12 +103,15 @@ def decide_proposal(proposal_id: str, decision: str, actor: str, reason: str,
         if row["status"] != "pending":
             raise ValueError(f"Proposal is already finalized: {row['status']}.")
         payload=json.loads(row["payload_json"])
+        history_record = get_current_history(db_path)
+        payload["account_history"] = history_record.get("account_history") if history_record.get("status") == "available" else None
+        payload["account_history_revision"] = history_record.get("revision", 0)
         fresh_risk=evaluate_master_risk(payload, require_saved_profile=True)
         if fresh_risk["veto"]:
             conn.execute("UPDATE proposals SET status='vetoed',risk_json=? WHERE proposal_id=?",
                          (json.dumps(fresh_risk,sort_keys=True),proposal_id))
             _event(conn,"approval_blocked_by_risk_engine",proposal_id,actor,
-                   {"blockers":fresh_risk["blockers"],"attempted_decision":decision})
+                   {"blockers":fresh_risk["blockers"],"attempted_decision":decision,"account_history_revision":payload.get("account_history_revision",0)})
             return {"proposal_id":proposal_id,"status":"vetoed","risk_review":fresh_risk,
                     "decision_recorded":False,"execution":"disabled","orders_created":0}
         status="approved" if decision=="approve" else "rejected"
@@ -111,7 +119,7 @@ def decide_proposal(proposal_id: str, decision: str, actor: str, reason: str,
                      (status,json.dumps(fresh_risk,sort_keys=True),proposal_id))
         _event(conn,"human_approval_recorded" if decision=="approve" else "human_rejection_recorded",
                proposal_id,actor,{"decision":decision,"reason":reason.strip(),
-                                  "risk_status":fresh_risk["status"]})
+                                  "risk_status":fresh_risk["status"],"account_history_revision":payload.get("account_history_revision",0)})
         return {"proposal_id":proposal_id,"status":status,"decision_recorded":True,
                 "risk_review":fresh_risk,"execution":"disabled","orders_created":0,
                 "note":"This records a human decision only. No order is created or transmitted."}
@@ -128,7 +136,8 @@ def list_proposals(db_path: str | Path | None = None) -> dict[str, Any]:
             "proposal":{"symbol":proposal.get("symbol"),"side":proposal.get("side"),
                 "quantity":proposal.get("quantity"),"entry_price":proposal.get("entry_price"),
                 "stop_price":proposal.get("stop_price"),"target_price":proposal.get("target_price"),
-                "session":proposal.get("session")},"risk_profile_id":payload.get("risk_profile_id")})
+                "session":proposal.get("session")},"risk_profile_id":payload.get("risk_profile_id"),
+            "account_history_revision":payload.get("account_history_revision",0)})
     return {"proposals":proposals,"execution":"disabled"}
 
 def list_audit_events(proposal_id: str | None = None, db_path: str | Path | None = None) -> dict[str, Any]:
