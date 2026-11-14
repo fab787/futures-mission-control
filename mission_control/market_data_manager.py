@@ -72,6 +72,7 @@ class MarketDataRequestManager:
             "next_refresh_seconds": round(max(0.0, ttl_seconds - age_seconds), 1),
             "cooldown_seconds": round(max(0.0, self._cooldown_until - now), 1),
             "upstream_refreshes": self.upstream_refreshes,
+            "provider_requests_per_snapshot": snapshot.get("provider_requests"),
             "cache_hits": self.cache_hits,
             "coalesced_requests": self.coalesced_requests,
             "quota_events": self.quota_events,
