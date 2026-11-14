@@ -103,3 +103,48 @@ def test_failed_refresh_serves_last_good_data_as_stale() -> None:
         assert stale["instruments"][0]["bars"][0]["c"] == 123
 
     asyncio.run(run())
+
+
+def test_quota_error_activates_cooldown_and_serves_stale_data() -> None:
+    from mission_control.provider_errors import (
+        ProviderCooldownActive,
+        TradingViewQuotaExceeded,
+    )
+
+    now = [10.0]
+    manager = MarketDataRequestManager(
+        ttl_seconds=5, cooldown_seconds=900, clock=lambda: now[0]
+    )
+    calls = 0
+
+    async def good_loader(_interval: str) -> dict:
+        return snapshot(456)
+
+    async def quota_loader(_interval: str) -> dict:
+        nonlocal calls
+        calls += 1
+        raise TradingViewQuotaExceeded("quota exceeded")
+
+    async def run() -> None:
+        await manager.get_snapshot("1m", good_loader)
+        now[0] += 6
+        stale = await manager.get_snapshot("1m", quota_loader)
+        assert stale["cache"]["status"] == "stale"
+        assert stale["cache"]["cooldown_seconds"] == 900
+        now[0] += 1
+        still_stale = await manager.get_snapshot("1m", quota_loader)
+        assert still_stale["cache"]["status"] == "stale"
+        assert calls == 1
+        assert manager.quota_events == 1
+
+        empty_manager = MarketDataRequestManager(
+            cooldown_seconds=900, clock=lambda: now[0]
+        )
+        with_error = False
+        try:
+            await empty_manager.get_snapshot("1m", quota_loader)
+        except ProviderCooldownActive:
+            with_error = True
+        assert with_error
+
+    asyncio.run(run())
