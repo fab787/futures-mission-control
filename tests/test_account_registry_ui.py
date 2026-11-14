@@ -2,7 +2,7 @@ from mission_control.account_registry_ui import build_dashboard
 
 
 def test_registry_workspace_is_injected_into_existing_dashboard() -> None:
-    source = '<nav><button data-tab="risk">Risk &amp; Approvals</button></nav><section class="section" id="integrations"></section></body>'
+    source = '<nav><button data-tab="risk">Risk & Approvals</button></nav><section class="section" id="integrations"></section></body>'
     result = build_dashboard(source)
 
     assert '<button data-tab="accounts">Accounts</button>' in result
