@@ -122,6 +122,30 @@ reviews only after stable report contracts and provider boundaries are tested.
 
 
 
+
+### Sentiment Analyst
+
+The Sentiment Analyst exposes a provider-independent review contract through
+`GET /api/agents/sentiment` and a comparison endpoint at
+`POST /api/agents/sentiment/compare`. Claude and ChatGPT are represented as
+separate analysis resources, but neither is automatically connected or called
+by this implementation. Structured reviews can be submitted by an external
+workflow; the comparison endpoint does not persist them or trigger market/news
+provider requests.
+
+Each review must identify its provider, model label, timezone-aware analysis
+timestamp, cited HTTPS source URLs and instrument-specific findings for MNQ,
+MES or MGC. Reviews older than 15 minutes, malformed timestamps, unknown
+symbols/stances, missing citations and duplicate provider submissions are
+rejected. The response preserves each provider's view and source attribution.
+It reports agreement, disagreement, a single-provider result, or unavailable;
+it never averages away disagreement or treats model consensus as proof.
+
+This phase does not assume Claude or OpenAI API credentials, paid API access,
+or an always-on external service. The boundary is ready for separately
+authorized adapters later. The analyst has no market-data, risk, or trade
+authority and generates no sentiment-based orders or trade proposals.
+
 ### Opportunity Scout
 
 The Opportunity Scout endpoint, `GET /api/agents/opportunity-scout`, combines
