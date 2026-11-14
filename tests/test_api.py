@@ -7,6 +7,19 @@ from mission_control.main import app
 client = TestClient(app)
 
 
+def test_multi_account_registry_api_is_local_and_read_only() -> None:
+    response = client.get("/api/accounts")
+    assert response.status_code == 200
+    payload = response.json()
+    assert "accounts" in payload
+    assert payload["provider_requests_triggered"] == 0
+    assert payload["broker_connections_triggered"] == 0
+    assert payload["execution"] == "disabled"
+
+    missing = client.patch("/api/accounts/not-a-real-account", json={"status": "inactive"})
+    assert missing.status_code == 404
+
+
 def test_health_is_read_only() -> None:
     response = client.get("/api/health")
     assert response.status_code == 200
