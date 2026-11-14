@@ -70,7 +70,7 @@ def _clean_actor(value: Any) -> str:
 
 def create_proposal(payload: Any, actor: str, db_path: str | Path | None = None) -> dict[str, Any]:
     actor = _clean_actor(actor)
-    risk = evaluate_master_risk(payload)
+    risk = evaluate_master_risk(payload, require_saved_profile=True)
     proposal_id = str(uuid.uuid4())
     status = "vetoed" if risk["veto"] else "pending"
     with _session(db_path) as conn:
@@ -98,7 +98,7 @@ def decide_proposal(proposal_id: str, decision: str, actor: str, reason: str,
         if row["status"] != "pending":
             raise ValueError(f"Proposal is already finalized: {row['status']}.")
         payload=json.loads(row["payload_json"])
-        fresh_risk=evaluate_master_risk(payload)
+        fresh_risk=evaluate_master_risk(payload, require_saved_profile=True)
         if fresh_risk["veto"]:
             conn.execute("UPDATE proposals SET status='vetoed',risk_json=? WHERE proposal_id=?",
                          (json.dumps(fresh_risk,sort_keys=True),proposal_id))
