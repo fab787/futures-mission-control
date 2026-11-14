@@ -55,3 +55,7 @@ python -m mission_control.tradingview_auth
 ```
 
 Approve the OAuth request in TradingView. Tokens are stored in the OS keyring. Then restart FAB787 QUANTUM. The Overview and Charts workspaces request historical bars through `/api/market-data`. This is a separate authorization from Claude Desktop. Only read-only market history is enabled; no watchlist changes, alerts, account access or order tools are allowed.
+
+## Account statement CSV import
+
+The Risk & Approvals workspace includes a local CSV statement preview. Select the risk profile, upload a CSV, confirm the column mappings, and provide the starting balance. The preview validates timezone-aware equity timestamps, daily results, NY/GLOBEX session results, duplicate dates/timestamps, numeric values, and required fields. The preview does not save data. Review the generated normalized JSON and explicitly use the existing save action to create an immutable account-history revision. Imports remain operator-supplied and are not broker-authenticated; no market-data provider or broker is contacted.
