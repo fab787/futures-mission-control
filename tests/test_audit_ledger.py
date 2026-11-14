@@ -88,7 +88,7 @@ def test_risk_is_rechecked_at_decision_time_and_can_veto(tmp_path, saved_risk_pr
     result=decide_proposal(p["proposal_id"],"approve","reviewer","recheck",db)
     assert result["status"]=="vetoed" and result["decision_recorded"] is False
 
-def test_audit_events_are_append_only(tmp_path):
+def test_audit_events_are_append_only(tmp_path, saved_risk_profile):
     db=tmp_path/"audit.sqlite3"
     p=create_proposal(valid_payload(saved_risk_profile),"operator",db)
     with sqlite3.connect(db) as conn:
