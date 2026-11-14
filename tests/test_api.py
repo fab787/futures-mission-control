@@ -362,3 +362,21 @@ def test_chief_decision_blocks_account_warning_before_risk_engine(monkeypatch) -
     assert result["downstream_gate"]["inputs_ready_for_master_risk_engine"] is False
     assert result["decision"]["orders_created"] == 0
     assert result["provider_requests_triggered"] == 0
+
+
+def test_master_risk_api_rejects_caller_limits_without_saved_profile():
+    response = client.post("/api/risk/master", json={
+        "risk_limits": {"max_daily_loss": 500, "max_session_loss": 200,
+            "max_drawdown": 2000, "max_contracts": 10,
+            "max_per_trade_risk": 150, "allowed_sessions": ["NY"]},
+        "account_state": {"snapshot_at": datetime.now(timezone.utc).isoformat(),
+            "daily_pnl": 0, "session_pnl": 0, "drawdown_from_high_water": 0,
+            "open_contracts": 0, "position_state": "flat", "current_session": "NY"},
+        "proposal": {"symbol": "MNQ", "side": "long", "quantity": 1,
+            "entry_price": 20000, "stop_price": 19950, "target_price": 20100, "session": "NY"}
+    })
+    assert response.status_code == 200
+    result = response.json()
+    assert result["veto"] is True
+    assert any("saved, verified risk_profile_id is mandatory" in item for item in result["blockers"])
+    assert result["orders_created"] == 0
