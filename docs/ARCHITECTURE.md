@@ -107,7 +107,7 @@ The risk engine validates permissions, account state, instrument/session limits,
 
 Yahoo Finance/news is supplementary context, not a guaranteed real-time futures feed. Every news item must retain publisher, published time, received time and source URL. Do not fabricate headlines or silently substitute stale data.
 
-TradingView chart display, market-history reads, news reads, calendar reads, account reads and simulated order submission are separate capabilities. This adapter enables only a narrow set of read-only market-data calls. No account or order capability is enabled.
+TradingView chart display and market-history reads are separate from Yahoo news and calendar retrieval. TradingView enables only a narrow set of read-only market-data calls; Yahoo handles the news RSS feed and calendar page link. No account or order capability is enabled.
 
 ## Expansion
 
