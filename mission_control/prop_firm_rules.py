@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 
@@ -18,6 +18,16 @@ def _timestamp(value: Any) -> datetime | None:
     except ValueError:
         return None
     return parsed if parsed.tzinfo is not None else None
+
+def _calendar_date(value: Any) -> date | None:
+    """Accept only real calendar dates in canonical YYYY-MM-DD form."""
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = date.fromisoformat(value)
+    except ValueError:
+        return None
+    return parsed if parsed.isoformat() == value else None
 
 
 def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: Any) -> dict[str, Any]:
@@ -48,6 +58,11 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
     if not isinstance(limits, dict):
         blockers.append("Effective configured risk limits are unavailable.")
         limits = {}
+    if "max_daily_profit_share" in limits:
+        blockers.append(
+            "max_daily_profit_share is not an enforced rule; configure the supported "
+            "consistency_rule.max_best_day_profit_share_pct instead."
+        )
     drawdown_type = profile.get("drawdown_type")
     if drawdown_type not in {"trailing", "end_of_day", "static"}:
         blockers.append("Drawdown method must be trailing, end_of_day or static.")
@@ -116,10 +131,8 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
         if not isinstance(day, dict) or not isinstance(day.get("date"), str) or not _finite(day.get("net_pnl")) or not isinstance(day.get("trading_day"), bool):
             blockers.append(f"Daily result {index + 1} must include date, finite net_pnl and boolean trading_day.")
             continue
-        try:
-            datetime.strptime(day["date"], "%Y-%m-%d")
-        except ValueError:
-            blockers.append(f"Daily result {index + 1} date must use YYYY-MM-DD.")
+        if _calendar_date(day["date"]) is None:
+            blockers.append(f"Daily result {index + 1} date must be a real calendar date in YYYY-MM-DD form.")
             continue
         valid_days.append(day)
     dates = [day["date"] for day in valid_days]
@@ -144,8 +157,14 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
     elif session_results:
         parsed_sessions = []
         for index, session in enumerate(session_results):
-            if not isinstance(session, dict) or not isinstance(session.get("date"), str) or session.get("session") not in {"NY", "GLOBEX"} or not _finite(session.get("net_pnl")):
+            if not isinstance(session, dict):
                 blockers.append(f"Session result {index + 1} is malformed.")
+                continue
+            if _calendar_date(session.get("date")) is None:
+                blockers.append(f"Session result {index + 1} date must be a real calendar date in YYYY-MM-DD form.")
+                continue
+            if session.get("session") not in {"NY", "GLOBEX"} or not _finite(session.get("net_pnl")):
+                blockers.append(f"Session result {index + 1} must include session NY/GLOBEX and finite net_pnl.")
                 continue
             parsed_sessions.append(session)
         session_keys = [(item["date"], item["session"]) for item in parsed_sessions]
