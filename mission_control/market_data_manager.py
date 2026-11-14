@@ -85,6 +85,18 @@ class MarketDataRequestManager:
             ttl_seconds=ttl,
         )
 
+    def peek_snapshot(self, interval: str) -> dict[str, Any] | None:
+        """Return an existing cached snapshot without triggering provider I/O."""
+        cached = self._cache.get(interval)
+        if cached is None:
+            return None
+        stored_at, snapshot, ttl = cached
+        age = self._clock() - stored_at
+        status = "hit" if age < ttl else "stale"
+        return self._decorate(
+            snapshot, status=status, age_seconds=age, ttl_seconds=ttl
+        )
+
     async def get_snapshot(
         self,
         interval: str,
