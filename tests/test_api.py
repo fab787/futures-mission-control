@@ -163,3 +163,47 @@ def test_news_catalyst_endpoint_reads_cache_without_rss_fetch(monkeypatch) -> No
     assert payload["provider_requests_triggered"] == 0
     assert payload["calendar"]["events"] == []
     assert calls == {"peek": 1, "fetch": 0}
+
+
+
+def test_opportunity_scout_endpoint_reads_existing_caches_only(monkeypatch) -> None:
+    from mission_control import main
+
+    calls = {"market_peek": 0, "market_refresh": 0, "news_peek": 0, "news_refresh": 0}
+
+    def fake_market_peek(interval: str):
+        calls["market_peek"] += 1
+        assert interval == "1m"
+        return None
+
+    async def forbidden_market_refresh(*args, **kwargs):
+        calls["market_refresh"] += 1
+        raise AssertionError("Opportunity Scout must not refresh TradingView")
+
+    def fake_news_peek():
+        calls["news_peek"] += 1
+        return {"status": "not_loaded", "items": []}
+
+    async def forbidden_news_refresh():
+        calls["news_refresh"] += 1
+        raise AssertionError("Opportunity Scout must not refresh Yahoo RSS")
+
+    monkeypatch.setattr(main.market_data_manager, "peek_snapshot", fake_market_peek)
+    monkeypatch.setattr(main.market_data_manager, "get_snapshot", forbidden_market_refresh)
+    monkeypatch.setattr(main.yahoo_news_service, "peek_news", fake_news_peek)
+    monkeypatch.setattr(main.yahoo_news_service, "get_news", forbidden_news_refresh)
+
+    response = client.get("/api/agents/opportunity-scout")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "blocked"
+    assert payload["provider_requests_triggered"] == 0
+    assert payload["trade_proposals_created"] == 0
+    assert payload["execution"] == "disabled"
+    assert payload["risk_authority"] == "none"
+    assert calls == {
+        "market_peek": 1,
+        "market_refresh": 0,
+        "news_peek": 1,
+        "news_refresh": 0,
+    }
