@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
 from mission_control.analysis_agents import analyze_instruments
+from mission_control.account_protection import assess_account_protection
 from mission_control.gex import GexUnavailable, gex_service
 from mission_control.market_data_manager import market_data_manager
 from mission_control.market_structure import analyze_market_structure
@@ -212,6 +213,12 @@ def opportunity_scout_agent() -> dict[str, Any]:
     structure_payload = analyze_market_structure(base_reports, cached_snapshot)
     catalyst_payload = analyze_news_catalysts(yahoo_news_service.peek_news())
     return scout_opportunities(base_reports, structure_payload, catalyst_payload)
+
+
+@app.post("/api/agents/account-protection")
+def account_protection_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    """Assess a caller-supplied account snapshot; no broker connection or persistence."""
+    return assess_account_protection(payload)
 
 
 @app.get("/api/agents/sentiment")
