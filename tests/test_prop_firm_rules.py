@@ -38,7 +38,7 @@ def history():
 
 
 def state():
-    return {"cumulative_net_profit": 500}
+    return {"snapshot_at": datetime.now(timezone.utc).isoformat(), "cumulative_net_profit": 500}
 
 
 def test_rules_evaluator_passes_complete_consistent_history():
@@ -160,3 +160,24 @@ def test_rules_evaluator_rejects_invalid_daily_calendar_date():
     result = evaluate_prop_firm_rules(sample_profile(), data, state())
     assert result["status"] == "blocked"
     assert any("Daily result 1 date must be a real calendar date" in item for item in result["blockers"])
+
+def test_rules_evaluator_blocks_stale_equity_and_daily_history():
+    old = datetime.now(timezone.utc) - timedelta(days=4)
+    data = history()
+    data["equity_observations"] = [
+        {"timestamp": (old - timedelta(minutes=2)).isoformat(), "equity": 50000, "observation_type": "intraday"},
+        {"timestamp": (old - timedelta(minutes=1)).isoformat(), "equity": 50100, "observation_type": "intraday"},
+    ]
+    data["daily_results"] = [
+        {"date": (old.date() - timedelta(days=2)).isoformat(), "net_pnl": 100, "trading_day": True}
+    ]
+    result = evaluate_prop_firm_rules(sample_profile(), data, state())
+    assert result["status"] == "blocked"
+    assert any("older than 72 hours" in item for item in result["blockers"])
+    assert any("older than five calendar days" in item for item in result["blockers"])
+
+
+def test_rules_evaluator_requires_fresh_current_account_snapshot():
+    result = evaluate_prop_firm_rules(sample_profile(), history(), {"cumulative_net_profit": 500})
+    assert result["status"] == "blocked"
+    assert any("snapshot_at" in item for item in result["blockers"])

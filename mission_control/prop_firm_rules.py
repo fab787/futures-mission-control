@@ -48,6 +48,15 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
     blockers: list[str] = []
     progress: list[str] = []
     checks: list[dict[str, Any]] = []
+    state_stamp = _timestamp(account_state.get("snapshot_at"))
+    if state_stamp is None:
+        blockers.append("A timezone-aware current account_state.snapshot_at is required.")
+    else:
+        now_utc = datetime.now(timezone.utc)
+        if state_stamp > now_utc + timedelta(seconds=60):
+            blockers.append("Current account-state timestamp is too far in the future.")
+        elif (now_utc - state_stamp.astimezone(timezone.utc)).total_seconds() > 120:
+            blockers.append("Current account-state snapshot is stale; refresh it before risk review.")
     if not isinstance(profile, dict) or not isinstance(account_history, dict) or not isinstance(account_state, dict):
         return {**base, "status": "blocked", "blockers": ["A resolved profile, account history and current account state are required."], "checks": [], "new_trade_proposals_allowed": False}
     if profile.get("verification_status") != "user_verified":
@@ -98,6 +107,12 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
         parsed_observations.sort(key=lambda row: row[0])
         if len({row[0] for row in parsed_observations}) != len(parsed_observations):
             blockers.append("Equity history contains duplicate timestamps.")
+        if state_stamp is not None:
+            latest_equity_stamp = max(row[0] for row in parsed_observations)
+            if latest_equity_stamp > state_stamp + timedelta(seconds=60):
+                blockers.append("Equity history contains observations later than the current account-state snapshot.")
+            elif (state_stamp - latest_equity_stamp).total_seconds() > 72 * 60 * 60:
+                blockers.append("Latest equity history is older than 72 hours relative to the current account snapshot.")
         if drawdown_type == "end_of_day":
             equity_series = [row[1] for row in parsed_observations if row[2] == "end_of_day"]
         else:
@@ -138,6 +153,13 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
     dates = [day["date"] for day in valid_days]
     if len(set(dates)) != len(dates):
         blockers.append("Daily history contains duplicate dates.")
+    if valid_days and state_stamp is not None:
+        latest_daily_date = max(_calendar_date(day["date"]) for day in valid_days)
+        snapshot_date = state_stamp.date()
+        if latest_daily_date > snapshot_date:
+            blockers.append("Daily history contains dates later than the current account-state snapshot.")
+        elif (snapshot_date - latest_daily_date).days > 5:
+            blockers.append("Daily account history is older than five calendar days; reconcile the latest completed trading days.")
     daily_cap = limits.get("max_daily_loss")
     if not _finite(daily_cap) or float(daily_cap) <= 0:
         blockers.append("A positive maximum daily loss is required.")
@@ -170,6 +192,12 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
         session_keys = [(item["date"], item["session"]) for item in parsed_sessions]
         if len(set(session_keys)) != len(session_keys):
             blockers.append("Session history contains duplicate date/session records.")
+        if parsed_sessions and state_stamp is not None:
+            latest_session_date = max(_calendar_date(item["date"]) for item in parsed_sessions)
+            if latest_session_date > state_stamp.date():
+                blockers.append("Session history contains dates later than the current account-state snapshot.")
+            elif (state_stamp.date() - latest_session_date).days > 5:
+                blockers.append("Session account history is older than five calendar days; reconcile the latest completed sessions.")
         worst_session = min((float(item["net_pnl"]) for item in parsed_sessions), default=0.0)
         checks.append({"name": "historical_session_loss", "worst_session": worst_session, "limit": float(session_cap), "status": "breached" if worst_session <= -float(session_cap) else "within_limit"})
         if worst_session <= -float(session_cap):
