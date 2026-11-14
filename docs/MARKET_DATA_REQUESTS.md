@@ -13,7 +13,7 @@ adapter directly.
 - Concurrent requests for the same timeframe share one in-flight refresh.
 - A single global upstream gate serializes refreshes across different timeframes, preventing overlapping TradingView MCP sessions when several charts are requested together.
 - TradingView instrument requests remain sequential to protect OAuth refresh state.
-- A detected TradingView quota/rate-limit response starts a 15-minute cooldown.
+- Quota detection covers MCP error payloads and transport-level HTTP 429/rate-limit exceptions; a detected response starts a 15-minute cooldown.
 - During cooldown, a previous good snapshot is served as stale with its age and
   cooldown countdown; if no good snapshot exists, the API returns HTTP 429.
 - A failed refresh does not replace a previous good snapshot with empty data.
