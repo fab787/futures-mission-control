@@ -106,6 +106,17 @@ button,select{font:inherit}.shell{max-width:1780px;margin:auto;padding:20px}.top
   <label>Source / reconciliation note<input class="control" id="history-source" maxlength="160" value="Manual statement reconciliation" style="display:block;width:100%;margin-top:5px"></label>
   <label>Actor label<input class="control" id="history-actor" maxlength="120" value="local_operator" required style="display:block;width:100%;margin-top:5px"></label>
  </div>
+ <div class="panel" style="margin-top:12px;border-color:#31516d">
+  <div class="panel-title">CSV Statement Importer · Preview First</div>
+  <p class="muted small">Select a CSV, confirm its column mapping and preview the converted records. Nothing is saved until you review the generated JSON and press the existing Save button below. Required content: timezone-aware equity timestamp/value, daily date/P&amp;L/trading-day flag, and session date/session/ P&amp;L.</p>
+  <div class="cards2">
+   <label>CSV statement file<input class="control" id="history-csv-file" type="file" accept=".csv,text/csv" style="display:block;width:100%;margin-top:5px"></label>
+   <label>Starting account balance<input class="control" id="history-csv-starting-balance" type="number" min="0.01" step="0.01" placeholder="50000" style="display:block;width:100%;margin-top:5px"></label>
+  </div>
+  <div id="history-csv-mappings" class="cards2" style="margin-top:10px"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" id="history-csv-preview" type="button" disabled>Preview &amp; validate CSV</button><span class="muted small" id="history-csv-file-status" aria-live="polite">Choose a CSV file to begin.</span></div>
+  <div class="muted small" id="history-csv-preview-result" aria-live="polite" style="margin-top:8px"></div>
+ </div>
  <label style="display:block;margin-top:12px">Complete account history JSON<textarea class="control" id="history-import-json" rows="9" placeholder='{"starting_balance":50000,"equity_observations":[...],"daily_results":[...],"session_results":[...]}' style="display:block;width:100%;margin-top:5px"></textarea></label>
  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" id="history-save" type="button">Validate &amp; save new revision</button><button class="btn" id="history-refresh" type="button">Reload saved history</button></div>
  <div class="muted small" id="history-save-message" aria-live="polite" style="margin-top:8px"></div>
@@ -331,6 +342,60 @@ async function loadAccountHistory(profileId){
   if(!(versions.versions||[]).length)box.textContent="No saved revisions.";
  }catch(error){status.textContent="UNAVAILABLE";status.className="pill warn";message.textContent="Account history could not be loaded: "+error.message;}
 }
+let historyCsvText="";
+const historyCsvFields=[
+ ["timestamp","Equity timestamp"],["equity","Equity value"],["date","Statement date"],
+ ["daily_pnl","Daily net P&L"],["trading_day","Trading day flag"],
+ ["session","Session (NY/GLOBEX)"],["session_pnl","Session net P&L"]
+];
+function normalizeCsvHeader(value){return String(value||"").toLowerCase().replace(/[^a-z0-9]/g,"");}
+function csvHeaderAliases(key){return ({
+ timestamp:["timestamp","equitytimestamp","datetime","datetimeutc","date_time"],
+ equity:["equity","accountequity","balanceequity","endingequity"],
+ date:["date","tradedate","statementdate"],
+ daily_pnl:["dailypnl","daypnl","netpnl","dailynetpnl"],
+ trading_day:["tradingday","istradingday","tradeday"],
+ session:["session","tradingsession"],
+ session_pnl:["sessionpnl","sessionnetpnl"]
+})[key]||[];}
+document.getElementById("history-csv-file").addEventListener("change",async event=>{
+ const file=event.target.files?.[0],status=document.getElementById("history-csv-file-status"),preview=document.getElementById("history-csv-preview"),mappingBox=document.getElementById("history-csv-mappings");
+ historyCsvText="";preview.disabled=true;mappingBox.replaceChildren();document.getElementById("history-csv-preview-result").textContent="";
+ if(!file){status.textContent="Choose a CSV file to begin.";return;}
+ if(file.size>2*1024*1024){status.textContent="File exceeds the 2 MB limit.";return;}
+ if(!file.name.toLowerCase().endsWith(".csv")&&file.type!=="text/csv"){status.textContent="Choose a .csv file.";return;}
+ try{
+  historyCsvText=await file.text();
+  const first=(historyCsvText.split(/\r?\n/,1)[0]||"");
+  const headers=first.split(",").map(x=>x.trim().replace(/^"|"$/g,""));
+  if(!headers.length||headers.some(x=>!x)){throw new Error("CSV header row is empty or contains blank columns.");}
+  const seen=new Set(headers);if(seen.size!==headers.length)throw new Error("CSV has duplicate column names. Rename duplicate headers first.");
+  historyCsvFields.forEach(([key,label])=>{
+   const wrap=document.createElement("label");wrap.textContent=label;
+   const select=document.createElement("select");select.className="control";select.dataset.csvField=key;select.style.display="block";select.style.width="100%";select.style.marginTop="5px";
+   select.add(new Option("Select column…",""));
+   headers.forEach(header=>select.add(new Option(header,header)));
+   const normalized=headers.map(normalizeCsvHeader),aliases=csvHeaderAliases(key),match=normalized.findIndex(x=>aliases.includes(x));
+   if(match>=0)select.value=headers[match];
+   wrap.append(select);mappingBox.append(wrap);
+  });
+  preview.disabled=false;status.textContent=file.name+" · "+headers.length+" columns · "+Math.max(0,historyCsvText.split(/\r?\n/).length-1)+" data lines. Review mappings.";
+ }catch(error){historyCsvText="";status.textContent="CSV not loaded: "+error.message;}
+});
+document.getElementById("history-csv-preview").addEventListener("click",async()=>{
+ const message=document.getElementById("history-csv-preview-result"),profileId=document.getElementById("history-profile-select").value;
+ if(!profileId){message.textContent="Select the account profile this statement belongs to.";return;}
+ if(!historyCsvText){message.textContent="Choose a CSV file first.";return;}
+ const column_mapping={};document.querySelectorAll("[data-csv-field]").forEach(select=>column_mapping[select.dataset.csvField]=select.value);
+ const starting_balance=Number(document.getElementById("history-csv-starting-balance").value);
+ message.textContent="Validating CSV locally. No history is being saved…";
+ try{
+  const response=await fetch("/api/account-history/csv-preview",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({risk_profile_id:profileId,csv_text:historyCsvText,starting_balance,column_mapping})});
+  const data=await response.json();if(!response.ok)throw new Error(data.detail||"CSV preview failed");
+  document.getElementById("history-import-json").value=JSON.stringify(data.account_history,null,2);
+  message.textContent="VALID PREVIEW · "+data.source_rows+" source rows → "+data.equity_observations+" equity observations, "+data.daily_results+" daily results, "+data.session_results+" session results. Review the generated JSON below, then click “Validate & save new revision” when ready. Nothing has been saved yet.";
+ }catch(error){message.textContent="CSV rejected · nothing saved: "+error.message;}
+});
 document.getElementById("history-save").addEventListener("click",async()=>{
  const message=document.getElementById("history-save-message");let history;
  if(!document.getElementById("history-profile-select").value){message.textContent="Select an account profile before saving history.";return;}
