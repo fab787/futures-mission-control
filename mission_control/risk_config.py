@@ -117,7 +117,7 @@ def resolve_effective_profile(pid,db_path=None):
  if item is None: raise ValueError("Configured risk profile was not found.")
  p=item["profile"]
  if p["verification_status"]!="user_verified": raise ValueError("Risk profile is unverified; verify the official firm maximums before risk review.")
- return {"profile_id":item["profile_id"],"version":item["version"],"effective_limits":p["effective_limits"],"profile_name":p["profile_name"],"prop_firm":p["prop_firm"],"account_mode":p["account_mode"],"drawdown_type":p["drawdown_type"],"rule_coverage_status":p["rule_coverage_status"],"consistency_rule":p["consistency_rule"],"evaluation_rules":p["evaluation_rules"]}
+ return {"profile_id":item["profile_id"],"version":item["version"],"effective_limits":p["effective_limits"],"profile_name":p["profile_name"],"prop_firm":p["prop_firm"],"account_mode":p["account_mode"],"verification_status":p["verification_status"],"drawdown_type":p["drawdown_type"],"rule_coverage_status":p["rule_coverage_status"],"consistency_rule":p["consistency_rule"],"evaluation_rules":p["evaluation_rules"]}
 
 def list_profile_versions(profile_id,db_path=None):
     if not isinstance(profile_id,str) or not profile_id.strip():
