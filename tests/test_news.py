@@ -123,3 +123,12 @@ def test_news_service_does_not_retry_during_error_cooldown() -> None:
 
     asyncio.run(run())
     assert len(calls) == 1
+
+
+def test_parse_yahoo_rss_discards_non_https_links() -> None:
+    unsafe = FIXTURE.replace(
+        "https://finance.yahoo.com/news/sample-story",
+        "javascript:alert(1)",
+    )
+    assert parse_yahoo_rss(unsafe) == []
+
