@@ -11,6 +11,7 @@ from mission_control.analysis_agents import analyze_instruments
 from mission_control.chief_decision_agent import compose_chief_decision
 from mission_control.account_protection import assess_account_protection
 from mission_control.account_registry import create_account, list_account_events, list_accounts, update_account
+from mission_control.account_registry_ui import build_dashboard
 from mission_control.gex import GexUnavailable, gex_service
 from mission_control.market_data_manager import market_data_manager
 from mission_control.master_risk_engine import evaluate_master_risk
@@ -437,4 +438,5 @@ def economic_calendar() -> dict[str, Any]:
 
 @app.get("/", response_class=HTMLResponse)
 def dashboard() -> str:
-    return (ROOT / "mission_control" / "dashboard.html").read_text(encoding="utf-8")
+    template = (ROOT / "mission_control" / "dashboard.html").read_text(encoding="utf-8")
+    return build_dashboard(template)
