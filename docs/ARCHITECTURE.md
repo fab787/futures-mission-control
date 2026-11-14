@@ -118,6 +118,24 @@ reviews only after stable report contracts and provider boundaries are tested.
 
 
 
+
+
+### News & Catalyst Intelligence
+
+The specialist reads only the existing Yahoo Finance RSS cache through
+`yahoo_news_service.peek_news()`. Its `GET /api/agents/news-catalyst`
+endpoint never calls `get_news()` and cannot initiate an RSS request. It
+classifies headline text into broad catalyst themes (monetary policy,
+macro-economic data, geopolitical/trade, equity index, technology earnings,
+precious metals and energy) and applies simple keyword-based triage labels.
+The labels do not infer market direction, surprise, impact or a trade setup.
+
+The combined Yahoo feed does not reliably map each story to an individual
+futures contract. The specialist therefore preserves the full watchlist feed
+scope and explicitly marks per-headline instrument mapping unavailable. Stale
+headlines remain visibly stale context. The Yahoo economic calendar remains
+page-link-only; the specialist creates no event rows or release times.
+
 ### Market Structure Analyst
 
 The first shared specialist consumes the existing cache-only instrument reports
