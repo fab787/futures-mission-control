@@ -207,3 +207,25 @@ def test_opportunity_scout_endpoint_reads_existing_caches_only(monkeypatch) -> N
         "news_peek": 1,
         "news_refresh": 0,
     }
+
+
+def test_sentiment_interface_endpoint_does_not_connect_to_ai_providers() -> None:
+    response = client.get("/api/agents/sentiment")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "awaiting_reviews"
+    assert payload["comparison_endpoint"] == "POST /api/agents/sentiment/compare"
+    assert [provider["id"] for provider in payload["providers"]] == ["claude", "chatgpt"]
+    assert all(provider["connected"] is False for provider in payload["providers"])
+    assert payload["provider_requests_triggered"] == 0
+
+
+def test_sentiment_comparison_endpoint_accepts_empty_payload_without_provider_calls() -> None:
+    response = client.post("/api/agents/sentiment/compare", json={"assessments": []})
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "awaiting_reviews"
+    assert payload["instruments"] == []
+    assert payload["provider_requests_triggered"] == 0
+    assert payload["market_data_requests_triggered"] == 0
+    assert payload["trade_authority"] == "none"
