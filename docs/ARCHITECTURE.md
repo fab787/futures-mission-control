@@ -331,14 +331,14 @@ does not connect to a broker or external provider and cannot submit orders.
 ## Account History & Performance Tracker
 
 The local Account History API stores complete operator-imported history snapshots
-as immutable, versioned SQLite records. Each revision includes a source label,
+as immutable, versioned SQLite records scoped to a saved risk-profile/account ID. Each revision includes a source label,
 actor label, UTC creation time and SHA-256 content-integrity check. Duplicate
 content is idempotent; corrections are saved as new revisions rather than
 overwriting prior records. The tracker summarizes recorded equity, cumulative
 daily P&L, trading days, best-day consistency and session coverage.
 
-Approval proposals always resolve the latest saved history revision from the
-local ledger; caller-supplied history in a proposal cannot override it. The
+Approval proposals always resolve the latest saved history revision for their
+own saved risk-profile ID from the local ledger; caller-supplied history in a proposal cannot override it. The
 Master Risk Engine re-reads the latest revision when a human decision is
 recorded, so a newly recorded historical breach can veto an older pending
 proposal. Current account state remains a separately supplied fresh snapshot.

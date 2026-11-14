@@ -169,3 +169,5 @@ Paper Trading is the intended initial simulation environment. Do not assume the 
 - Approval proposals use the latest saved history revision, not a caller-provided replacement. The latest revision is re-read when a human decision is recorded; new historical breaches can veto a pending proposal.
 - Imported account history and actor labels are not authenticated. The tracker is an audit aid, not broker-side enforcement or proof of prop-firm compliance.
 - The current account-state snapshot remains separately supplied and must pass the existing freshness and consistency checks.
+
+- Every account-history snapshot is bound to one saved risk-profile ID. A different evaluation/funded profile cannot read or reuse another profile's history.
