@@ -38,6 +38,17 @@
 - Open interest is generally prior-session data; the options quote feed is delayed. GEX estimates are contextual reference levels, never trade authorization or standalone signals.
 - The current GEX integration supports NDX-to-MNQ/NQ mapping only. Do not imply MES or MGC coverage.
 
+
+## Sentiment Analyst boundary
+
+- Claude and ChatGPT are separate analysis resources; no API calls or paid service assumptions are enabled in this phase.
+- Only structured external reviews with provider identity, timezone-aware analysis timestamp, instrument scope and cited HTTPS sources may be compared.
+- Reviews older than 15 minutes, malformed reviews, unknown instruments/stances and duplicate provider submissions must be rejected.
+- Preserve provider disagreement; never average conflicting views into artificial consensus.
+- Model agreement is not proof of correctness and is never a trade signal.
+- Sentiment analysis cannot refresh market data or news, change risk settings, approve trades, or submit orders.
+- Every future trade proposal remains subject to the independent Master Risk Engine and explicit human approval.
+
 ## Opportunity Scout boundary
 
 - Opportunity Scout may read only the existing instrument, Market Structure and Yahoo news cache results.
