@@ -60,6 +60,8 @@ def preview_csv(
         raise ValueError("CSV file exceeds the 2 MB import limit.")
     if not isinstance(column_mapping, dict):
         raise ValueError("A CSV column mapping is required.")
+    if isinstance(starting_balance, bool):
+        raise ValueError("Starting balance must be a positive finite number.")
     try:
         balance = float(starting_balance)
     except (TypeError, ValueError) as exc:
