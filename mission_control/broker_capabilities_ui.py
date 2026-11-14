@@ -84,7 +84,7 @@ function render(records){
   footer.append(save,detail);card.append(footer);list.append(card);
  });
 }
-async function load(){
+async function loadBrokerCapabilities(){
  refresh.disabled=true;status.textContent="LOADING";
  try{
   const response=await fetch("/api/broker-capabilities");const data=await response.json();
@@ -97,10 +97,10 @@ async function load(){
  }catch(error){status.textContent="UNAVAILABLE";status.className="pill warn";list.textContent="Could not load broker capability registry: "+error.message;}
  finally{refresh.disabled=false;}
 }
-refresh.addEventListener("click",load);load();
+refresh.addEventListener("click",loadBrokerCapabilities);loadBrokerCapabilities();
 })();
 </script>
 '''
-    if "</body>" in html and "broker-capability-refresh" not in html:
+    if "</body>" in html and "async function loadBrokerCapabilities()" not in html:
         html = html.replace("</body>", script + "\n</body>", 1)
     return html
