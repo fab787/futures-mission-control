@@ -154,7 +154,7 @@ function renderNews(data){
   status.textContent=(data.status||"unavailable").toUpperCase()+" · YAHOO";
   status.className=["fresh","cached"].includes(data.status)?"pill ok":data.status==="stale"?"pill warn":"pill off";
   document.getElementById("news-meta").textContent=
-    (data.item_count??(data.items||[]).length)+" headlines · cache age "+(data.cache_age_seconds??"—")+"s · next upstream refresh in about "+(data.next_refresh_seconds??data.retry_after_seconds??"—")+"s · source: Yahoo Finance RSS.";
+    (data.item_count??(data.items||[]).length)+" headlines · cache age "+(data.cache_age_seconds??"—")+"s · upstream requests "+(data.upstream_requests??0)+" · next refresh in about "+(data.next_refresh_seconds??data.retry_after_seconds??"—")+"s · source: Yahoo Finance RSS.";
   const feed=document.getElementById("news-feed");
   feed.replaceChildren();
   const items=data.items||[];
