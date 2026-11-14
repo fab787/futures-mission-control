@@ -694,3 +694,17 @@ def test_broker_capability_api_rejects_unknown_account(monkeypatch) -> None:
     monkeypatch.setattr(main, "upsert_broker_capability", missing)
     response = client.put("/api/accounts/missing/broker-capability", json={})
     assert response.status_code == 404
+
+
+
+def test_accounts_workspace_renders_broker_capability_registry_controls() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    html = response.text
+    assert 'id="broker-capability-panel"' in html
+    assert 'id="broker-capability-refresh"' in html
+    assert 'id="broker-capability-list"' in html
+    assert "async function loadBrokerCapabilities()" in html
+    assert "/api/broker-capabilities" in html
+    assert "/broker-capability" in html
+    assert "This registry does not connect or execute trades." in html
