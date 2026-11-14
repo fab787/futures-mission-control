@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 
@@ -65,6 +65,9 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
             blockers.append(f"Equity observation {index + 1} is malformed.")
             continue
         stamp = _timestamp(item.get("timestamp"))
+        if stamp is not None and stamp > datetime.now(timezone.utc) + timedelta(seconds=60):
+            blockers.append(f"Equity observation {index + 1} timestamp is too far in the future.")
+            continue
         if stamp is None:
             blockers.append(f"Equity observation {index + 1} needs a timezone-aware timestamp.")
             continue
@@ -98,14 +101,16 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
                     peak = max(peak, equity)
                     measured_drawdown = max(measured_drawdown, peak - equity)
             if measured_drawdown is not None:
-                checks.append({"name": "drawdown_method", "method": drawdown_type, "measured": round(measured_drawdown, 2), "limit": float(maximum_drawdown) if _finite(maximum_drawdown) else None, "status": "breached" if _finite(maximum_drawdown) and measured_drawdown > float(maximum_drawdown) else "within_limit"})
-                if _finite(maximum_drawdown) and measured_drawdown > float(maximum_drawdown):
+                checks.append({"name": "drawdown_method", "method": drawdown_type, "measured": round(measured_drawdown, 2), "limit": float(maximum_drawdown) if _finite(maximum_drawdown) else None, "status": "breached" if _finite(maximum_drawdown) and measured_drawdown >= float(maximum_drawdown) else "within_limit"})
+                if _finite(maximum_drawdown) and measured_drawdown >= float(maximum_drawdown):
                     blockers.append("Historical drawdown exceeds the configured maximum for the selected drawdown method.")
 
     daily_results = account_history.get("daily_results")
     if not isinstance(daily_results, list):
         blockers.append("Daily account history is required to verify daily loss, consistency and trading-day rules.")
         daily_results = []
+    if not daily_results:
+        blockers.append("At least one daily result is required to verify daily-loss history.")
     valid_days = []
     for index, day in enumerate(daily_results):
         if not isinstance(day, dict) or not isinstance(day.get("date"), str) or not _finite(day.get("net_pnl")) or not isinstance(day.get("trading_day"), bool):
@@ -125,8 +130,8 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
         blockers.append("A positive maximum daily loss is required.")
     elif valid_days:
         worst_day = min(float(day["net_pnl"]) for day in valid_days)
-        checks.append({"name": "historical_daily_loss", "worst_day": worst_day, "limit": float(daily_cap), "status": "breached" if worst_day < -float(daily_cap) else "within_limit"})
-        if worst_day < -float(daily_cap):
+        checks.append({"name": "historical_daily_loss", "worst_day": worst_day, "limit": float(daily_cap), "status": "breached" if worst_day <= -float(daily_cap) else "within_limit"})
+        if worst_day <= -float(daily_cap):
             blockers.append("Historical daily loss exceeded the configured daily-loss limit.")
 
     session_results = account_history.get("session_results")
@@ -143,9 +148,12 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
                 blockers.append(f"Session result {index + 1} is malformed.")
                 continue
             parsed_sessions.append(session)
+        session_keys = [(item["date"], item["session"]) for item in parsed_sessions]
+        if len(set(session_keys)) != len(session_keys):
+            blockers.append("Session history contains duplicate date/session records.")
         worst_session = min((float(item["net_pnl"]) for item in parsed_sessions), default=0.0)
-        checks.append({"name": "historical_session_loss", "worst_session": worst_session, "limit": float(session_cap), "status": "breached" if worst_session < -float(session_cap) else "within_limit"})
-        if worst_session < -float(session_cap):
+        checks.append({"name": "historical_session_loss", "worst_session": worst_session, "limit": float(session_cap), "status": "breached" if worst_session <= -float(session_cap) else "within_limit"})
+        if worst_session <= -float(session_cap):
             blockers.append("Historical session loss exceeded the configured session-loss limit.")
     else:
         blockers.append("At least one session result is required to verify session-loss history.")
