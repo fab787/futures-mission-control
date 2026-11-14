@@ -171,3 +171,12 @@ Paper Trading is the intended initial simulation environment. Do not assume the 
 - The current account-state snapshot remains separately supplied and must pass the existing freshness and consistency checks.
 
 - Every account-history snapshot is bound to one saved risk-profile ID. A different evaluation/funded profile cannot read or reuse another profile's history.
+
+## Account statement CSV import boundary
+
+- CSV upload is a local operator action and is limited to 2 MB / 5,000 data rows.
+- Column mappings must be reviewed; preview validation does not save or mutate account history.
+- Equity timestamps must be timezone-aware; daily and session records must be complete, non-duplicated, and use supported NY/GLOBEX session labels.
+- Starting balance is supplied explicitly. Missing rows or values are never synthesized.
+- Only after the operator reviews the normalized preview may the existing save action append a new immutable revision for the selected risk profile.
+- The importer has no broker, account, TradingView, Yahoo Finance, or other provider connection. Imported statement data remains operator-supplied and is not broker-authenticated.
