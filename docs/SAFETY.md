@@ -39,6 +39,17 @@
 - The current GEX integration supports NDX-to-MNQ/NQ mapping only. Do not imply MES or MGC coverage.
 
 
+
+## Account Protection Analyst boundary
+
+- The analyst evaluates only explicitly supplied account snapshots and risk limits; it has no broker/account connection in this phase.
+- Never assume account size, prop-firm rules, loss limits, contract caps, or profit-protection settings. Missing required inputs block the assessment.
+- Position state must be verified as flat or open and consistent with the supplied open-contract count. Unknown or contradictory exposure blocks downstream decisions.
+- Breaches and reached profit targets block new trade proposals; warnings require attention. The analyst cannot close positions, cancel orders, or alter risk settings.
+- Profit-protection giveback checks require the day's P&L high-water value; current P&L alone cannot prove whether an activation threshold was previously reached.
+- This is point-in-time assessment, not continuous monitoring or broker-side enforcement.
+- The independent Master Risk Engine retains veto authority and explicit human approval remains mandatory.
+
 ## Sentiment Analyst boundary
 
 - Claude and ChatGPT are separate analysis resources; no API calls or paid service assumptions are enabled in this phase.
