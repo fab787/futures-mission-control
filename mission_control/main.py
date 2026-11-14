@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse
 from mission_control.tradingview import AuthorizationRequired, market_snapshot
 from mission_control.market_data_manager import market_data_manager
 from mission_control.provider_errors import ProviderCooldownActive
+from mission_control.gex import GexUnavailable, gex_service
 from mission_control.tradingview_auth import KeyringTokenStorage
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -83,6 +84,52 @@ async def market_data(interval: str = Query(default="1m", pattern="^(1m|5m|15m|1
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ProviderCooldownActive as exc:
         raise HTTPException(status_code=429, detail=str(exc)) from exc
+
+
+@app.get("/api/gex")
+async def gex(futures_price: float | None = Query(default=None, gt=0)) -> dict[str, Any]:
+    """Return cached Cboe NDX GEX estimates mapped to MNQ/NQ futures levels."""
+    price_source = "manual input"
+    resolved_price = futures_price
+
+    if resolved_price is None:
+        cached = market_data_manager.peek_snapshot("1m")
+        cache_meta = cached.get("cache", {}) if cached else {}
+        if cached is not None and cache_meta.get("status") == "hit":
+            mnq = next(
+                (
+                    item for item in cached.get("instruments", [])
+                    if item.get("symbol") == "MNQ"
+                ),
+                None,
+            )
+            latest = mnq.get("latest") if mnq else None
+            close = latest.get("c") if isinstance(latest, dict) else None
+            try:
+                resolved_price = float(close)
+            except (TypeError, ValueError):
+                resolved_price = None
+            if resolved_price and resolved_price > 0:
+                price_source = (
+                    "cached MNQ TradingView snapshot "
+                    f"({cache_meta.get('age_seconds', 'unknown')}s old)"
+                )
+
+    if resolved_price is None or resolved_price <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "No fresh cached MNQ price is available. Enter the current MNQ/NQ "
+                "futures price manually; this endpoint will not trigger a TradingView request."
+            ),
+        )
+
+    try:
+        return await gex_service.get_levels(
+            resolved_price, price_source=price_source
+        )
+    except GexUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @app.get("/api/integrations")
