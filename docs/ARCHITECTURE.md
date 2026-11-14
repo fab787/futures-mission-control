@@ -18,7 +18,7 @@ The Master Risk Engine remains a separate control boundary. No AI agent may chan
 
 ## TradingView direct MCP integration
 
-Mission Control connects independently to the official endpoint `https://mcp.tradingview.com/mcp` using Streamable HTTP and OAuth 2.1. It does not reuse Claude Desktop's OAuth session or credentials. The one-time authorization command is:
+FAB787 QUANTUM connects independently to the official endpoint `https://mcp.tradingview.com/mcp` using Streamable HTTP and OAuth 2.1. It does not reuse Claude Desktop's OAuth session or credentials. The one-time authorization command is:
 
 ```powershell
 python -m mission_control.tradingview_auth
