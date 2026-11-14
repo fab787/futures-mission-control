@@ -118,7 +118,7 @@ def decide_proposal(proposal_id: str, decision: str, actor: str, reason: str,
 
 def list_proposals(db_path: str | Path | None = None) -> dict[str, Any]:
     with _connect(db_path) as conn:
-        rows=conn.execute("SELECT proposal_id,created_at,status,risk_json FROM proposals ORDER BY created_at DESC").fetchall()
+        rows=conn.execute("SELECT proposal_id,created_at,status,risk_json,payload_json FROM proposals ORDER BY created_at DESC").fetchall()
     proposals=[]
     for r in rows:
         payload=json.loads(r["payload_json"])
