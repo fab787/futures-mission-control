@@ -11,7 +11,7 @@
 
 ## TradingView MCP permissions
 
-- OAuth 2.1 is authorized separately for this local Mission Control application; Claude Desktop's login is not reused.
+- OAuth 2.1 is authorized separately for this local FAB787 QUANTUM application; Claude Desktop's login is not reused.
 - OAuth tokens and client registration are stored in the OS keyring, never in source control, dashboard HTML, or plaintext project files.
 - Only historical OHLCV, symbol quote batches, news and economic-calendar read tools are allow-listed.
 - Watchlist writes, alert creation/modification/deletion, paper-account actions and order submission are not exposed by the adapter.
