@@ -119,9 +119,17 @@ def decide_proposal(proposal_id: str, decision: str, actor: str, reason: str,
 def list_proposals(db_path: str | Path | None = None) -> dict[str, Any]:
     with _connect(db_path) as conn:
         rows=conn.execute("SELECT proposal_id,created_at,status,risk_json FROM proposals ORDER BY created_at DESC").fetchall()
-    return {"proposals":[{"proposal_id":r["proposal_id"],"created_at":r["created_at"],
-            "status":r["status"],"risk_review":json.loads(r["risk_json"])} for r in rows],
-            "execution":"disabled"}
+    proposals=[]
+    for r in rows:
+        payload=json.loads(r["payload_json"])
+        proposal=payload.get("proposal",{})
+        proposals.append({"proposal_id":r["proposal_id"],"created_at":r["created_at"],
+            "status":r["status"],"risk_review":json.loads(r["risk_json"]),
+            "proposal":{"symbol":proposal.get("symbol"),"side":proposal.get("side"),
+                "quantity":proposal.get("quantity"),"entry_price":proposal.get("entry_price"),
+                "stop_price":proposal.get("stop_price"),"target_price":proposal.get("target_price"),
+                "session":proposal.get("session")},"risk_profile_id":payload.get("risk_profile_id")})
+    return {"proposals":proposals,"execution":"disabled"}
 
 def list_audit_events(proposal_id: str | None = None, db_path: str | Path | None = None) -> dict[str, Any]:
     with _connect(db_path) as conn:

@@ -55,3 +55,23 @@ def test_audit_events_are_append_only(tmp_path):
             conn.execute("UPDATE audit_events SET actor='tampered'")
         with pytest.raises(sqlite3.IntegrityError):
             conn.execute("DELETE FROM audit_events")
+
+def test_list_proposals_includes_trade_details_for_human_review(tmp_path):
+    from mission_control.audit_ledger import list_proposals
+    payload = {
+        "risk_limits": {},
+        "account_state": {},
+        "proposal": {
+            "symbol": "MNQ", "side": "long", "quantity": 2,
+            "entry_price": 20000, "stop_price": 19950,
+            "target_price": 20100, "session": "NY",
+        },
+    }
+    created = create_proposal(payload, "operator", tmp_path / "audit.sqlite3")
+    item = list_proposals(tmp_path / "audit.sqlite3")["proposals"][0]
+    assert item["proposal"]["symbol"] == "MNQ"
+    assert item["proposal"]["quantity"] == 2
+    assert item["proposal"]["entry_price"] == 20000
+    assert item["proposal"]["stop_price"] == 19950
+    assert item["proposal"]["target_price"] == 20100
+    assert created["orders_created"] == 0
