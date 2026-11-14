@@ -37,7 +37,7 @@ def evaluate_master_risk(payload: Any) -> dict[str, Any]:
     if profile_resolution is not None:
         from mission_control.prop_firm_rules import evaluate_prop_firm_rules
         prop_firm_assessment = evaluate_prop_firm_rules(profile_resolution, payload.get("account_history"), state if isinstance(state, dict) else {})
-        if prop_firm_assessment.get("status") != "within_rules":
+        if prop_firm_assessment.get("status") not in {"within_rules", "in_progress"}:
             blockers.append("Prop-Firm Rules Evaluator did not return within_rules; missing history, incomplete rules, warnings or rule breaches veto this proposal.")
     if not isinstance(limits, dict):
         limits = {}

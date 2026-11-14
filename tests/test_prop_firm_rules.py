@@ -77,8 +77,9 @@ def test_rules_evaluator_vetoes_best_day_consistency_violation():
         {"date": "2026-11-12", "net_pnl": 100, "trading_day": True},
     ]
     result = evaluate_prop_firm_rules(sample_profile(), data, state())
-    assert result["status"] == "blocked"
-    assert any("Best profitable day" in item for item in result["blockers"])
+    assert result["status"] == "in_progress"
+    assert result["new_trade_proposals_allowed"] is True
+    assert any("consistency threshold" in item for item in result["progress_notes"])
 
 
 def test_rules_evaluator_blocks_missing_history_and_incomplete_rules():
@@ -106,3 +107,11 @@ def test_rules_evaluator_requires_history_for_profit_target():
     result = evaluate_prop_firm_rules(profile, history(), {})
     assert result["status"] == "blocked"
     assert any("cumulative_net_profit" in item for item in result["blockers"])
+
+def test_minimum_trading_days_is_progress_not_a_permanent_breach():
+    profile = sample_profile()
+    profile["evaluation_rules"]["minimum_trading_days"] = 10
+    result = evaluate_prop_firm_rules(profile, history(), state())
+    assert result["status"] == "in_progress"
+    assert result["new_trade_proposals_allowed"] is True
+    assert any("minimum trading-day" in item for item in result["progress_notes"])

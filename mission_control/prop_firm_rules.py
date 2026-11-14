@@ -36,6 +36,7 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
         "human_approval_required": True,
     }
     blockers: list[str] = []
+    progress: list[str] = []
     checks: list[dict[str, Any]] = []
     if not isinstance(profile, dict) or not isinstance(account_history, dict) or not isinstance(account_state, dict):
         return {**base, "status": "blocked", "blockers": ["A resolved profile, account history and current account state are required."], "checks": [], "new_trade_proposals_allowed": False}
@@ -159,7 +160,7 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
             trading_days = len({day["date"] for day in valid_days if day["trading_day"]})
             checks.append({"name": "minimum_trading_days", "actual": trading_days, "required": minimum_days, "status": "met" if trading_days >= minimum_days else "in_progress"})
             if trading_days < minimum_days:
-                blockers.append("Minimum trading-day requirement has not yet been met.")
+                progress.append("Minimum trading-day requirement is still in progress.")
 
     consistency = profile.get("consistency_rule")
     if consistency is not None:
@@ -175,7 +176,7 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
                 maximum_share = float(consistency["max_best_day_profit_share_pct"])
                 checks.append({"name": "best_day_profit_share", "actual_pct": round(share, 2), "maximum_pct": maximum_share, "status": "within_limit" if share <= maximum_share else "breached"})
                 if share > maximum_share:
-                    blockers.append("Best profitable day exceeds the configured share of cumulative net profit.")
+                    progress.append("Best-day profit share is currently above the configured consistency threshold; additional net profit may change this ratio.")
 
     profit_target = limits.get("profit_target")
     if profit_target is not None:
@@ -190,7 +191,7 @@ def evaluate_prop_firm_rules(profile: Any, account_history: Any, account_state: 
             if reached:
                 blockers.append("Configured profit target has been reached; additional proposals are blocked pending the firm's completion process.")
 
-    status = "blocked" if blockers else "within_rules"
-    return {**base, "status": status, "blockers": blockers, "checks": checks,
-            "drawdown_method": drawdown_type, "new_trade_proposals_allowed": status == "within_rules",
+    status = "blocked" if blockers else "in_progress" if progress else "within_rules"
+    return {**base, "status": status, "blockers": blockers, "progress_notes": progress, "checks": checks,
+            "drawdown_method": drawdown_type, "new_trade_proposals_allowed": status in {"within_rules", "in_progress"},
             "history_source": "caller_supplied_unverified", "history_is_broker_authenticated": False}

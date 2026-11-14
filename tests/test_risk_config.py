@@ -6,7 +6,7 @@ from mission_control.risk_config import create_profile,get_profile,list_profiles
 from mission_control.master_risk_engine import evaluate_master_risk
 
 def sample():
- return {"profile_name":"Example 50K","prop_firm":"User supplied","account_mode":"evaluation","drawdown_type":"end_of_day","verification_status":"user_verified","rule_coverage_status":"complete","evaluation_rules":{"minimum_trading_days":null},"prop_firm_maximums":{"max_daily_loss":500,"max_session_loss":300,"max_drawdown":2000,"max_contracts":10,"max_per_trade_risk":200,"allowed_sessions":["NY","GLOBEX"]},"user_limits":{"max_daily_loss":250,"max_contracts":3,"max_per_trade_risk":100,"allowed_sessions":["NY"]}}
+ return {"profile_name":"Example 50K","prop_firm":"User supplied","account_mode":"evaluation","drawdown_type":"end_of_day","verification_status":"user_verified","rule_coverage_status":"complete","evaluation_rules":{"minimum_trading_days":None},"prop_firm_maximums":{"max_daily_loss":500,"max_session_loss":300,"max_drawdown":2000,"max_contracts":10,"max_per_trade_risk":200,"allowed_sessions":["NY","GLOBEX"]},"user_limits":{"max_daily_loss":250,"max_contracts":3,"max_per_trade_risk":100,"allowed_sessions":["NY"]}}
 
 def test_strictest_limits_and_versions(tmp_path):
  db=tmp_path/"risk.db"; a=create_profile(sample(),"operator",db); e=resolve_effective_profile(a["profile_id"],db)["effective_limits"]
@@ -51,3 +51,7 @@ def test_master_risk_uses_trusted_profile_not_caller_limits(tmp_path,monkeypatch
  assert result["veto"] is True
  assert result["risk_profile"]["effective_limits"]["max_per_trade_risk"]==50
  assert any("max_per_trade_risk" in x for x in result["blockers"])
+
+def test_invalid_consistency_threshold_rejected(tmp_path):
+ p=sample(); p["consistency_rule"]={"max_best_day_profit_share_pct":0}
+ with pytest.raises(ValueError): create_profile(p,"operator",tmp_path/"risk.db")
