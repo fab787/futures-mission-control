@@ -153,6 +153,34 @@ class YahooFinanceNewsService:
             response["retry_after_seconds"] = round(self._cooldown_until - now, 1)
         return response
 
+    def peek_news(self) -> dict[str, Any]:
+        """Read the existing Yahoo cache without triggering a fetch or cooldown retry."""
+        now = self._clock()
+        if self._cache is None:
+            return {
+                "status": "not_loaded",
+                "source": "Yahoo Finance RSS",
+                "items": [],
+                "upstream_requests": self.fetch_count,
+                "provider_requests_triggered": 0,
+                "message": "No Yahoo headlines have been loaded into the local cache yet.",
+            }
+        stored_at, payload = self._cache
+        age = max(0.0, now - stored_at)
+        status = "cached" if age < self.ttl_seconds else "stale"
+        response = {
+            **payload,
+            "status": status,
+            "upstream_requests": self.fetch_count,
+            "provider_requests_per_refresh": 1,
+            "cache_age_seconds": round(age, 1),
+            "next_refresh_seconds": round(max(0.0, self.ttl_seconds - age), 1),
+            "provider_requests_triggered": 0,
+        }
+        if status == "stale" and now < self._cooldown_until:
+            response["retry_after_seconds"] = round(self._cooldown_until - now, 1)
+        return response
+
     async def get_news(self) -> dict[str, Any]:
         now = self._clock()
         if self._cache and now - self._cache[0] < self.ttl_seconds:
