@@ -6,7 +6,7 @@ from pathlib import Path
 
 DB=Path(os.environ.get("FAB787_AUDIT_DB",Path(__file__).resolve().parent.parent/"data"/"fab787_quantum_audit.sqlite3"))
 FIELDS=("max_daily_loss","max_session_loss","max_drawdown","max_contracts","max_per_trade_risk")
-OPTIONAL=("profit_target","profit_protection_activation","profit_protection_floor","max_daily_profit_share")
+OPTIONAL=("profit_target","profit_protection_activation","profit_protection_floor")
 SESSIONS={"NY","GLOBEX"}
 
 def _db(path=None):
@@ -28,6 +28,8 @@ def _actor(v):
 
 def _limits(data,label,required):
  if not isinstance(data,dict): raise ValueError(f"{label} must be an object.")
+ if "max_daily_profit_share" in data:
+  raise ValueError(f"{label}.max_daily_profit_share is not currently enforced; use consistency_rule.max_best_day_profit_share_pct.")
  out={}
  for k in FIELDS:
   if k not in data:
@@ -48,14 +50,13 @@ def _limits(data,label,required):
    out[k]=float(v)
  if ("profit_protection_activation" in out)!=("profit_protection_floor" in out): raise ValueError(f"{label} must include both profit-protection activation and floor.")
  if out.get("profit_protection_floor",0)>out.get("profit_protection_activation",float("inf")): raise ValueError("Profit-protection floor cannot exceed activation.")
- if out.get("max_daily_profit_share",0)>100: raise ValueError("max_daily_profit_share must be at most 100.")
  return out
 
 def _combine(p,u):
  e={k:min(p[k],u.get(k,p[k])) for k in FIELDS}
  e["allowed_sessions"]=sorted(set(p["allowed_sessions"])&set(u.get("allowed_sessions",p["allowed_sessions"])))
  if not e["allowed_sessions"]: raise ValueError("User sessions do not intersect prop-firm permitted sessions.")
- for k in ("profit_target","profit_protection_activation","max_daily_profit_share"):
+ for k in ("profit_target","profit_protection_activation"):
   vals=[x[k] for x in (p,u) if k in x]
   if vals: e[k]=min(vals)
  if "profit_protection_floor" in p or "profit_protection_floor" in u:
