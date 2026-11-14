@@ -31,6 +31,7 @@ python -m uvicorn mission_control.tradingview_webhook:app --host 127.0.0.1 --por
 The receiver exposes only:
 - `GET /health`
 - `POST /webhook/tradingview`
+- `GET /inbox?limit=50` (read-only recent signal list; maximum 200)
 
 Do not expose the main Mission Control port to the public internet. If a public HTTPS ingress is configured later, it must forward only to this isolated receiver on port 8765. No tunnel has been configured by this change.
 
@@ -47,7 +48,7 @@ Do not expose the main Mission Control port to the public internet. If a public 
 - `strategy_id`: identifies the Pine strategy/version.
 - `route_key`: optional operator-defined alias only. It is not an account ID and grants no routing authority.
 
-The receiver rejects unknown instruments, malformed fields, bad secrets, timestamps older than 15 minutes, timestamps more than 60 seconds in the future, and incorrectly oriented brackets. Each alert ID is stored once in a local SQLite inbox. The secret is removed before persistence.
+The receiver rejects unknown instruments, malformed fields, bad secrets, timestamps older than 15 minutes, timestamps more than 60 seconds in the future, and incorrectly oriented brackets. Each alert ID is stored once in a local SQLite inbox. The secret is removed before persistence. A read-only inbox endpoint returns a bounded list of safe alert metadata; it never exposes the raw payload or secret.
 
 ### Response behavior
 
