@@ -40,7 +40,7 @@ def test_initial_instruments_are_configured() -> None:
 def test_dashboard_serves_workspaces() -> None:
     response = client.get("/")
     assert response.status_code == 200
-    for workspace in ("Overview", "Charts", "GEX", "News & Events", "AI Desk", "Risk & Approvals", "Integrations", "Expansion"):
+    for workspace in ("Overview", "Charts", "GEX", "News & Events", "AI Desk", "Risk & Approvals", "Accounts", "Signals", "Integrations", "Expansion"):
         assert workspace in response.text
 
 
@@ -482,3 +482,12 @@ def test_tradingview_webhook_inbox_api_is_read_only(monkeypatch) -> None:
 
     invalid = client.get("/api/webhooks/tradingview/inbox?limit=500")
     assert invalid.status_code == 422
+
+
+
+def test_signal_workspace_is_read_only_and_uses_local_inbox_api() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    assert 'id="signals"' in response.text
+    assert 'fetch("/api/webhooks/tradingview/inbox?limit=100")' in response.text
+    assert "not verified or authorized" in response.text
