@@ -345,3 +345,7 @@ proposal. Current account state remains a separately supplied fresh snapshot.
 The tracker makes zero market-data/provider or broker requests. Imported
 records remain operator supplied and unauthenticated; the hash and SQLite
 triggers are integrity safeguards, not a cryptographic external archive.
+
+## Account statement CSV import path
+
+The Risk & Approvals workspace can read an operator-selected CSV file in the browser and submit its text to `POST /api/account-history/csv-preview`. The local parser applies explicit column mappings and returns a normalized, fully validated account-history payload for review. It does not write to SQLite. The operator must inspect the generated JSON and use the existing `POST /api/account-history` save action to create an immutable, profile-scoped revision. CSV size is limited to 2 MB and data rows to 5,000. The importer requires ISO 8601 timestamps with timezone offsets, YYYY-MM-DD dates, explicit daily trading-day flags, NY/GLOBEX session values, and complete numeric fields. It does not infer missing records or contact market-data, news, broker, or account providers.
