@@ -97,6 +97,13 @@ def assess_account_protection(payload: Any) -> dict[str, Any]:
         else:
             numeric_state[key] = float(value)
 
+    if "profit_protection_activation" in limits and "profit_protection_floor" in limits:
+        value = state.get("daily_high_water_pnl")
+        if not _finite_number(value):
+            errors.append("Account state daily_high_water_pnl is required when profit protection is configured.")
+        else:
+            numeric_state["daily_high_water_pnl"] = float(value)
+
     position_state = state.get("position_state")
     if position_state not in {"flat", "open", "unknown"}:
         errors.append("Account state 'position_state' must be flat, open, or unknown.")
@@ -124,7 +131,11 @@ def assess_account_protection(payload: Any) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
 
     def evaluate(name: str, actual: float, limit: float, *, comparison: str, unit: str) -> None:
-        breached = actual <= -limit if comparison == "loss" else actual >= limit
+        breached = (
+            actual <= -limit if comparison == "loss"
+            else actual > limit if comparison == "cap"
+            else actual >= limit
+        )
         utilization = abs(actual) / limit if comparison == "loss" else actual / limit
         item = {
             "name": name,
@@ -143,7 +154,7 @@ def assess_account_protection(payload: Any) -> dict[str, Any]:
     evaluate("daily_loss", numeric_state["daily_pnl"], parsed_limits["max_daily_loss"], comparison="loss", unit="account_currency")
     evaluate("session_loss", numeric_state["session_pnl"], parsed_limits["max_session_loss"], comparison="loss", unit="account_currency")
     evaluate("high_water_drawdown", numeric_state["drawdown_from_high_water"], parsed_limits["max_drawdown"], comparison="drawdown", unit="account_currency")
-    evaluate("open_contracts", numeric_state["open_contracts"], parsed_limits["max_contracts"], comparison="drawdown", unit="contracts")
+    evaluate("open_contracts", numeric_state["open_contracts"], parsed_limits["max_contracts"], comparison="cap", unit="contracts")
 
     if position_state == "flat" and numeric_state["open_contracts"] != 0:
         breaches.append({
@@ -162,16 +173,18 @@ def assess_account_protection(payload: Any) -> dict[str, Any]:
     profit_floor = limits.get("profit_protection_floor")
     if profit_activation is not None and profit_floor is not None:
         daily_pnl = numeric_state["daily_pnl"]
-        if daily_pnl >= float(profit_activation) and daily_pnl < float(profit_floor):
+        daily_high_water = numeric_state["daily_high_water_pnl"]
+        if daily_high_water >= float(profit_activation) and daily_pnl < float(profit_floor):
             breaches.append({
                 "name": "profit_protection_floor",
                 "status": "breached",
                 "actual": daily_pnl,
+                "daily_high_water_pnl": daily_high_water,
                 "activation": float(profit_activation),
                 "floor": float(profit_floor),
                 "reason": "Daily P&L is below the configured protection floor after activation.",
             })
-        elif daily_pnl >= float(profit_activation):
+        elif daily_high_water >= float(profit_activation):
             checks.append({
                 "name": "profit_protection_floor",
                 "status": "active",
