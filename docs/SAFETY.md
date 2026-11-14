@@ -38,6 +38,14 @@
 - Open interest is generally prior-session data; the options quote feed is delayed. GEX estimates are contextual reference levels, never trade authorization or standalone signals.
 - The current GEX integration supports NDX-to-MNQ/NQ mapping only. Do not imply MES or MGC coverage.
 
+## Instrument-agent boundary
+
+- Initial MNQ/MES/MGC agents are deterministic and descriptive; they are not trade signals.
+- The instrument-agent endpoint may read only the existing cached 1-minute snapshot through the cache-only accessor. It must never call a provider refresh.
+- Reports are blocked if the latest bar timestamp is missing, fewer than 20 valid OHLC bars exist, the latest bar is older than 15 minutes, or the cache marks the snapshot stale.
+- Instrument agents have no authority to modify risk settings, approve trades, or submit orders.
+- Every report must disclose freshness and confirm zero provider requests triggered by analysis.
+
 ## Fail-safe behavior
 
 Block new trade proposals when:
