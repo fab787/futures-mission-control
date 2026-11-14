@@ -292,3 +292,21 @@ expose the pending/finalized proposal list and event history. The ledger is
 local to the application host; it does not authenticate the actor label,
 provide tamper-proof external archival, or submit orders. An approval records
 human intent only; execution remains disabled.
+
+
+## Master Risk Configuration Manager
+
+Local profiles are immutable SQLite versions with append-only configuration
+events. Each stores a named prop firm, evaluation/funded mode, drawdown method,
+explicit prop-firm maximums, optional tighter user limits and verification
+status. No firm rules or account values are pre-populated.
+
+Effective settings use lower loss/drawdown/contract/per-trade caps, allowed
+session intersection, lower profit-target/activation thresholds and higher
+profit-protection floors. Missing required values or conflicting sessions
+reject a profile. Unverified profiles cannot be used for risk review.
+
+`GET /api/risk/profiles` lists current profiles; `POST /api/risk/profiles`
+creates a new immutable version. `POST /api/risk/master` accepts
+`risk_profile_id` and resolves the latest verified version locally. Account
+state remains caller-supplied. Actor labels are not authentication; bind locally.

@@ -21,10 +21,21 @@ def evaluate_master_risk(payload: Any) -> dict[str, Any]:
     if not isinstance(payload, dict):
         payload = {}
         blockers.append("A structured risk-review payload is required.")
-    limits, state, proposal = payload.get("risk_limits"), payload.get("account_state"), payload.get("proposal")
+    profile_resolution = None
+    if payload.get("risk_profile_id") is not None:
+        try:
+            from mission_control.risk_config import resolve_effective_profile
+            profile_resolution = resolve_effective_profile(payload.get("risk_profile_id"))
+            limits = profile_resolution["effective_limits"]
+        except (ValueError, TypeError) as exc:
+            limits = {}
+            blockers.append(f"Trusted risk profile could not be resolved: {exc}")
+    else:
+        limits = payload.get("risk_limits")
+    state, proposal = payload.get("account_state"), payload.get("proposal")
     if not isinstance(limits, dict):
         limits = {}
-        blockers.append("Explicit risk_limits are required.")
+        blockers.append("A trusted configured risk profile or explicit risk_limits are required.")
     if not isinstance(state, dict):
         state = {}
         blockers.append("A fresh account_state snapshot is required.")
@@ -118,4 +129,5 @@ def evaluate_master_risk(payload: Any) -> dict[str, Any]:
             "limitations":["Account state and risk limits are caller-supplied and not broker-authenticated.",
              "Stop-risk estimate excludes commissions, slippage, gaps, and execution uncertainty.",
              "A pass means eligible for separate human review only; it is not trade approval.",
-             "No strategy signal, order routing, position management, or broker-side enforcement exists."]}
+             "No strategy signal, order routing, position management, or broker-side enforcement exists."],
+            "risk_profile": profile_resolution}

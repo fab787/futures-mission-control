@@ -13,6 +13,7 @@ from mission_control.account_protection import assess_account_protection
 from mission_control.gex import GexUnavailable, gex_service
 from mission_control.market_data_manager import market_data_manager
 from mission_control.master_risk_engine import evaluate_master_risk
+from mission_control.risk_config import create_profile, list_profiles
 from mission_control.audit_ledger import create_proposal, decide_proposal, list_audit_events, list_proposals
 from mission_control.market_structure import analyze_market_structure
 from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
@@ -263,6 +264,22 @@ def record_approval_decision(proposal_id: str, payload: dict[str, Any]) -> dict[
 @app.get("/api/audit/events")
 def audit_events(proposal_id: str | None = None) -> dict[str, Any]:
     return list_audit_events(proposal_id)
+
+
+@app.get("/api/risk/profiles")
+def risk_profiles() -> dict[str, Any]:
+    """List current immutable local risk-profile versions."""
+    return list_profiles()
+
+
+@app.post("/api/risk/profiles")
+def save_risk_profile(payload: dict[str, Any]) -> dict[str, Any]:
+    """Create a new immutable profile version after an explicit local action."""
+    try:
+        actor = payload.pop("actor", "local_operator")
+        return create_profile(payload, actor)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/risk/master")

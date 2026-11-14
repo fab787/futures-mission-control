@@ -134,3 +134,14 @@ Paper Trading is the intended initial simulation environment. Do not assume the 
 - SQLite triggers prevent update/delete of audit-event rows through the application database connection. This is not cryptographic tamper-proof storage or an external immutable archive.
 - Actor labels are supplied by the caller and are not authenticated in this phase. Bind the application to localhost and do not expose approval endpoints to an untrusted network.
 - Approval records a human decision only. No broker connection, order submission, execution, automatic position management or risk-setting change exists.
+
+
+## Master Risk Configuration Manager
+
+- Risk profiles are immutable, versioned local snapshots; changes create new versions and retain prior versions.
+- Prop-firm maximums must be entered from current official rules. No firm values, account sizes, drawdown methods, consistency rules, or payout conditions are invented.
+- User settings may only tighten limits: lower loss/drawdown/contract/per-trade caps, session intersection, lower profit-target/activation thresholds, and higher profit-protection floors.
+- Missing required maximums, invalid values, or empty session intersections reject profile creation. Unverified profiles cannot be used by the Master Risk Engine.
+- Profile mutation requires an explicit local API action. Actor labels are not authenticated; bind locally and do not expose mutation endpoints to untrusted networks.
+- The Master Risk Engine accepts `risk_profile_id` and resolves its latest verified version locally. Account state remains caller-supplied and unauthenticated in this phase.
+- Configuration causes zero provider requests, broker connections, or orders. AI agents cannot mutate profiles.
