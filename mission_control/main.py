@@ -14,6 +14,7 @@ from mission_control.market_structure import analyze_market_structure
 from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
 from mission_control.news_catalyst import analyze_news_catalysts
 from mission_control.opportunity_scout import scout_opportunities
+from mission_control.sentiment_analyst import compare_sentiment_assessments, sentiment_interface_status
 from mission_control.provider_errors import ProviderCooldownActive
 from mission_control.tradingview import AuthorizationRequired, market_snapshot
 from mission_control.tradingview_auth import KeyringTokenStorage
@@ -211,6 +212,18 @@ def opportunity_scout_agent() -> dict[str, Any]:
     structure_payload = analyze_market_structure(base_reports, cached_snapshot)
     catalyst_payload = analyze_news_catalysts(yahoo_news_service.peek_news())
     return scout_opportunities(base_reports, structure_payload, catalyst_payload)
+
+
+@app.get("/api/agents/sentiment")
+def sentiment_analyst_status() -> dict[str, Any]:
+    """Describe Claude/ChatGPT review interfaces without making external calls."""
+    return sentiment_interface_status()
+
+
+@app.post("/api/agents/sentiment/compare")
+def sentiment_analyst_compare(payload: dict[str, Any]) -> dict[str, Any]:
+    """Compare caller-supplied structured reviews; no provider calls or persistence."""
+    return compare_sentiment_assessments(payload.get("assessments", []))
 
 
 @app.get("/api/agents/news-catalyst")
