@@ -122,7 +122,7 @@ async function loadSignals(){
    const meta=document.createElement("div");meta.className="muted small";meta.style.marginTop="5px";
    meta.textContent="Strategy "+signal.strategy_id+" · Received "+new Date(signal.received_at).toLocaleString()+" · Alert "+signal.alert_id;
    const route=document.createElement("div");route.className="muted small";route.style.marginTop="4px";
-   route.textContent="Route alias: "+(signal.route_key||"Not assigned")+" · Alias is informational only; account is selected above.";
+   route.textContent="Route alias: "+(signal.route_key||"Not assigned")+" · Alias is informational only, not verified or authorized; account is selected above.";
    card.append(head,details,meta,route);
    if(signal.status==="received"&&(signal.action==="buy"||signal.action==="sell")){
     const action=document.createElement("button");action.type="button";action.className="btn";action.style.marginTop="10px";action.textContent="Submit to Master Risk Engine";
