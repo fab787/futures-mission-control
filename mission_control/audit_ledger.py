@@ -11,7 +11,7 @@ from typing import Any
 
 from mission_control.master_risk_engine import evaluate_master_risk
 
-DEFAULT_DB = Path(os.environ.get("FAB787_AUDIT_DB", str(Path(__file__).resolve().parent.parent / "data" / "fab787_quantum_audit.sqlite3"))))
+DEFAULT_DB = (Path(os.environ["FAB787_AUDIT_DB"]) if "FAB787_AUDIT_DB" in os.environ else Path(__file__).resolve().parent.parent / "data" / "fab787_quantum_audit.sqlite3")
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
