@@ -324,7 +324,7 @@ async function loadAccountHistory(profileId){
   document.getElementById("history-trading-days").textContent=summary?String(summary.trading_days):"—";
   document.getElementById("history-revision").textContent=summary?"v"+summary.revision+" · equity "+new Date(summary.latest_equity_at).toLocaleString():"No saved history";
   message.textContent=summary?"Account profile "+profileId+" · source: "+summary.source_label+" · imported by "+summary.actor+" · latest equity age "+summary.history_age_seconds+" seconds. History is operator supplied, not broker authenticated.":(data.error||"No history saved for this account profile. The Master Risk Engine will veto proposals until a complete history snapshot is saved.");
-  if(data.account_history)document.getElementById("history-import-json").value=JSON.stringify(data.account_history,null,2);
+  document.getElementById("history-import-json").value=data.account_history?JSON.stringify(data.account_history,null,2):"";
   document.getElementById("proposal-history-status").textContent=summary?"Proposal reviews will use saved history revision "+summary.revision+" (latest equity age "+summary.history_age_seconds+" seconds). The current account-state snapshot must still be fresh.":"No saved account history. Save a complete history snapshot above before submitting a proposal.";
   const box=document.getElementById("history-versions");box.replaceChildren();
   (versions.versions||[]).forEach(v=>{const row=document.createElement("div");row.className="status-row";const left=document.createElement("span");left.textContent="Revision "+v.revision+" · "+new Date(v.created_at).toLocaleString()+" · "+v.source_label;const right=document.createElement("b");right.textContent=v.actor;row.append(left,right);box.append(row);});
