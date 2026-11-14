@@ -25,7 +25,7 @@ def test_initial_instruments_are_configured() -> None:
 def test_dashboard_serves_workspaces() -> None:
     response = client.get("/")
     assert response.status_code == 200
-    for workspace in ("Overview", "Charts", "News & Events", "AI Desk", "Risk & Approvals", "Integrations", "Expansion"):
+    for workspace in ("Overview", "Charts", "GEX", "News & Events", "AI Desk", "Risk & Approvals", "Integrations", "Expansion"):
         assert workspace in response.text
 
 
