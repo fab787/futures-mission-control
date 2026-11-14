@@ -154,15 +154,15 @@ def preview_csv(
 def suggest_column_mapping(headers: list[str]) -> dict[str, str | None]:
     """Suggest exact, conservative header matches; the operator must review each mapping."""
     aliases = {
-        "timestamp": {"timestamp", "equity_timestamp", "datetime", "date_time"},
-        "equity": {"equity", "account_equity", "balance_equity", "ending_equity"},
-        "date": {"date", "trade_date", "statement_date"},
-        "daily_pnl": {"daily_pnl", "day_pnl", "net_pnl", "daily_net_pnl"},
-        "trading_day": {"trading_day", "is_trading_day", "trade_day"},
-        "session": {"session", "trading_session"},
-        "session_pnl": {"session_pnl", "session_net_pnl"},
+        "timestamp": {"timestamp", "equitytimestamp", "datetime", "datetimeutc", "datetime"},
+        "equity": {"equity", "accountequity", "balanceequity", "endingequity"},
+        "date": {"date", "tradedate", "statementdate"},
+        "daily_pnl": {"dailypnl", "daypnl", "netpnl", "dailynetpnl"},
+        "trading_day": {"tradingday", "istradingday", "tradeday"},
+        "session": {"session", "tradingsession"},
+        "session_pnl": {"sessionpnl", "sessionnetpnl"},
     }
-    normalized = {header.strip().lower(): header for header in headers}
+    normalized = {re.sub(r"[^a-z0-9]", "", header.strip().lower()): header for header in headers}
     return {
         key: next((normalized[name] for name in names if name in normalized), None)
         for key, names in aliases.items()
