@@ -8,6 +8,7 @@ import pytest
 from mission_control.tradingview_webhook import (
     TradingViewSignal,
     WebhookValidationError,
+    list_signals,
     store_signal,
     validate_signal,
 )
@@ -119,3 +120,31 @@ def test_signal_is_an_immutable_data_record():
     assert isinstance(signal, TradingViewSignal)
     with pytest.raises((AttributeError, TypeError)):
         signal.action = "sell"  # type: ignore[misc]
+
+
+
+def test_inbox_lists_safe_recent_records_without_raw_payload_or_secret(tmp_path):
+    signal = validate_signal(_payload(), SECRET, now=_now())
+    db_path = tmp_path / "inbox.sqlite3"
+    assert store_signal(signal, db_path) is True
+
+    result = list_signals(db_path=db_path)
+
+    assert result["count"] == 1
+    row = result["signals"][0]
+    assert row["alert_id"] == signal.alert_id
+    assert row["symbol"] == "MNQ"
+    assert row["status"] == "received"
+    assert "raw_payload" not in row
+    assert "secret" not in row
+
+
+def test_inbox_limit_is_bounded(tmp_path):
+    with pytest.raises(ValueError, match="between 1 and 200"):
+        list_signals(limit=201, db_path=tmp_path / "inbox.sqlite3")
+
+
+def test_empty_inbox_is_safe_when_database_does_not_exist(tmp_path):
+    result = list_signals(db_path=tmp_path / "missing.sqlite3")
+    assert result["signals"] == []
+    assert result["execution_enabled"] is False
