@@ -20,7 +20,7 @@ SYMBOLS = {
     "MES": "CME_MINI:MES1!",
     "MGC": "COMEX:MGC1!",
 }
-READ_ONLY_TOOLS = {"get_ohlcv", "get_symbol_data_batch", "get_news", "get_economic_calendar"}
+READ_ONLY_TOOLS = {"get_ohlcv", "get_symbol_data_batch"}
 
 
 class AuthorizationRequired(RuntimeError):
