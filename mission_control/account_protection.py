@@ -6,7 +6,11 @@ connect to a broker, persist account state, change limits, or authorize trades.
 from __future__ import annotations
 
 import math
+from datetime import datetime, timezone
 from typing import Any
+
+MAX_SNAPSHOT_AGE_SECONDS = 120.0
+MAX_FUTURE_SKEW_SECONDS = 60.0
 
 REQUIRED_LIMITS = (
     "max_daily_loss",
@@ -72,6 +76,24 @@ def assess_account_protection(payload: Any) -> dict[str, Any]:
         }
 
     errors: list[str] = []
+    snapshot_value = state.get("snapshot_at")
+    snapshot_time = None
+    if not isinstance(snapshot_value, str):
+        errors.append("Account state snapshot_at must be a timezone-aware ISO 8601 timestamp.")
+    else:
+        try:
+            snapshot_time = datetime.fromisoformat(snapshot_value.replace("Z", "+00:00"))
+        except ValueError:
+            errors.append("Account state snapshot_at must be a valid ISO 8601 timestamp.")
+        if snapshot_time is not None and snapshot_time.tzinfo is None:
+            errors.append("Account state snapshot_at must include a timezone.")
+            snapshot_time = None
+    if snapshot_time is not None:
+        snapshot_age = (datetime.now(timezone.utc) - snapshot_time.astimezone(timezone.utc)).total_seconds()
+        if snapshot_age < -MAX_FUTURE_SKEW_SECONDS:
+            errors.append("Account state snapshot_at is too far in the future.")
+        elif snapshot_age > MAX_SNAPSHOT_AGE_SECONDS:
+            errors.append("Account state snapshot is stale; maximum age is 120 seconds.")
     missing_limits = [key for key in REQUIRED_LIMITS if key not in limits]
     missing_state = [key for key in REQUIRED_STATE if key not in state]
     if missing_limits:
@@ -115,7 +137,7 @@ def assess_account_protection(payload: Any) -> dict[str, Any]:
             numeric_state["daily_high_water_pnl"] = float(value)
 
     position_state = state.get("position_state")
-    if position_state not in {"flat", "open", "unknown"}:
+    if not isinstance(position_state, str) or position_state not in {"flat", "open", "unknown"}:
         errors.append("Account state 'position_state' must be flat, open, or unknown.")
     elif position_state == "unknown":
         errors.append("Position state is unknown; existing exposure cannot be verified.")
