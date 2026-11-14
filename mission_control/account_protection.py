@@ -83,11 +83,21 @@ def assess_account_protection(payload: Any) -> dict[str, Any]:
         key: _validate_positive_limit(limits, key, errors)
         for key in REQUIRED_LIMITS
     }
+    if parsed_limits["max_contracts"] is not None and not parsed_limits["max_contracts"].is_integer():
+        errors.append("Risk limit 'max_contracts' must be a whole number.")
     for optional in ("profit_target", "profit_protection_activation", "profit_protection_floor"):
         if optional in limits and (
             not _finite_number(limits[optional]) or float(limits[optional]) < 0
         ):
             errors.append(f"Optional limit '{optional}' must be a non-negative finite number.")
+    if (
+        "profit_protection_activation" in limits
+        and "profit_protection_floor" in limits
+        and _finite_number(limits["profit_protection_activation"])
+        and _finite_number(limits["profit_protection_floor"])
+        and float(limits["profit_protection_floor"]) > float(limits["profit_protection_activation"])
+    ):
+        errors.append("profit_protection_floor cannot exceed its activation threshold.")
 
     numeric_state: dict[str, float] = {}
     for key in ("daily_pnl", "session_pnl", "drawdown_from_high_water", "open_contracts"):
