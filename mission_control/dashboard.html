@@ -60,7 +60,25 @@ button,select{font:inherit}.shell{max-width:1780px;margin:auto;padding:20px}.top
 </div>
 <div class="notice" id="gex-assumptions">GEX is an estimate, not a trade signal. Calls-positive / puts-negative is a dealer-positioning assumption, not verified dealer inventory. Open interest is generally prior-session data.</div>
 </section>
-<section class="section" id="news"><div class="grid2"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Market intelligence</div><div class="panel-title">News stream</div></div><span class="pill off" id="news-status">SOURCE NOT CONNECTED</span></div><div id="news-feed" class="placeholder"><div><strong>News feed waiting for connection</strong>Yahoo Finance/news is planned as a supplementary source. No headlines are fabricated or displayed as current without a source and timestamp.</div></div></div><div class="panel"><div class="panel-title">Economic catalyst calendar</div><div class="placeholder"><div><strong>Calendar adapter placeholder</strong>CPI · PPI · NFP · FOMC · Fed speakers · Treasury auctions<br><span class="small">Will include event time in New York time, source, impact and last update.</span></div></div></div></div><div class="panel" style="margin-top:12px"><div class="panel-title">News source plan</div><p class="muted">Yahoo Finance can provide supplementary headlines and reference context after an adapter is configured. Scheduled economic events should use a dedicated calendar source. Every item will carry its publisher, published time, received time and instrument relevance.</p></div></section>
+<section class="section" id="news">
+<div class="grid2">
+  <div class="panel">
+    <div class="panel-head">
+      <div><div class="eyebrow">Market intelligence · Yahoo Finance only</div><div class="panel-title">Ticker headline stream</div></div>
+      <div class="toolbar"><span class="pill off" id="news-status">CHECKING FEED</span><button class="btn" id="refresh-news">Check for updates</button></div>
+    </div>
+    <div class="muted small" id="news-meta">One combined Yahoo Finance RSS request covers MNQ, MES, MGC and related index / gold proxies. Ten-minute cache; no TradingView news requests.</div>
+    <div id="news-feed" style="margin-top:8px"><div class="placeholder"><div><strong>Loading Yahoo Finance headlines</strong>Headlines will appear only when a source item and timestamp are available.</div></div></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><div><div class="eyebrow">Scheduled macro releases</div><div class="panel-title">Economic catalyst calendar</div></div><span class="pill warn" id="calendar-status">YAHOO PAGE LINK</span></div>
+    <p class="muted">Yahoo Finance publishes a US and global economic-events calendar. Its page currently displays event times in UTC. A stable structured Yahoo event feed has not yet been verified, so this dashboard does not copy, convert, or invent calendar rows.</p>
+    <a class="tv-link" id="yahoo-calendar-link" href="https://finance.yahoo.com/calendar/economic/" target="_blank" rel="noopener noreferrer">Open Yahoo Finance Economic Calendar ↗</a>
+    <p class="muted small" style="margin-top:12px">New York time conversion and in-dashboard event rows will be added only after the Yahoo event fields and timestamps can be validated reliably.</p>
+  </div>
+</div>
+<div class="notice" style="margin-top:12px">Provider protection: one combined Yahoo ticker RSS feed, cached for 10 minutes with a 15-minute failure cooldown. Repeated dashboard visits and manual checks inside the cache window do not create another upstream request. TradingView is not used for news or the economic calendar.</div>
+</section>
 <section class="section" id="agents"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Hybrid multi-agent architecture</div><div class="panel-title">AI operations desk</div></div><span class="pill off">PLANNED · NOT ACTIVE</span></div><div class="agent-grid">
 <div class="agent"><b>MNQ Instrument Agent</b><span>Independent Nasdaq futures analysis</span></div><div class="agent"><b>MES Instrument Agent</b><span>Independent S&amp;P futures analysis</span></div><div class="agent"><b>MGC Instrument Agent</b><span>Independent gold futures analysis</span></div>
 <div class="agent"><b>Opportunity Scout</b><span>Candidate discovery and ranking</span></div><div class="agent"><b>News &amp; Catalyst Intelligence</b><span>Events, headlines and source checks</span></div><div class="agent"><b>Sentiment Analyst</b><span>Sourced sentiment with confidence limits</span></div><div class="agent"><b>Market Structure Analyst</b><span>Trend, levels, volatility and context</span></div><div class="agent"><b>Account Protection Analyst</b><span>Independent risk surveillance</span></div><div class="agent"><b>Chief Decision Agent</b><span>Coordinates analysis and drafts proposals</span></div></div></div><div class="panel" style="margin-top:12px"><div class="panel-title">Agent communication & audit trail</div><div class="placeholder"><div><strong>Agent activity stream reserved</strong>Reports will show source data, timestamps, confidence, disagreements, reasoning summaries and failure states.</div></div></div></section>
@@ -125,5 +143,42 @@ function renderOverview(symbol){const rows=marketCache["1m"]?.instruments||[];ro
 function renderChart(data){const symbol=document.getElementById("chart-symbol").value;const row=data.instruments?.find(x=>x.symbol===symbol);const svg=document.getElementById("local-chart-svg");if(!row||!row.bars?.length){svg.innerHTML=`<text x="500" y="180" text-anchor="middle" fill="#e8b45c" font-size="16">${row?.status==="unavailable"?"Data unavailable for "+symbol:"No historical bars returned for "+symbol}</text>`;document.getElementById("local-chart-status").textContent="DATA UNAVAILABLE";return;}const bars=row.bars.filter(b=>Number.isFinite(Number(b.c)));if(!bars.length){document.getElementById("local-chart-status").textContent="DATA FORMAT NOT RECOGNIZED";return;}const vals=bars.map(b=>Number(b.c));const lo=Math.min(...vals),hi=Math.max(...vals),span=hi-lo||1;const points=vals.map((v,i)=>`${30+i*940/Math.max(1,vals.length-1)},${320-(v-lo)/span*270}`).join(" ");svg.innerHTML=`<line x1="30" y1="50" x2="970" y2="50" stroke="#263951"/><line x1="30" y1="185" x2="970" y2="185" stroke="#263951"/><line x1="30" y1="320" x2="970" y2="320" stroke="#263951"/><polyline points="${points}" fill="none" stroke="#58c9e9" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><text x="30" y="24" fill="#8da1ba" font-size="13">${fmt(hi)}</text><text x="30" y="348" fill="#8da1ba" font-size="13">${fmt(lo)}</text><text x="970" y="24" text-anchor="end" fill="#e8f0fa" font-size="15">${fmt(vals[vals.length-1])}</text>`;document.getElementById("local-chart-status").textContent=`${symbol} · ${bars.length} historical bars · ${intervalName(document.getElementById("chart-timeframe").value)}`;document.getElementById("local-chart-source").textContent="TradingView MCP · retrieved "+new Date().toLocaleTimeString();}
 async function fetchMarketData(interval="1m",showChart=false){try{const response=await fetch("/api/market-data?interval="+encodeURIComponent(intervalName(interval)));if(!response.ok){const err=await response.json();if(response.status===503){document.getElementById("market-data-status").textContent="AUTHORIZATION REQUIRED";document.getElementById("local-chart-status").textContent="Authorize TradingView from the local project terminal";document.getElementById("chart-data-help").textContent=err.detail?.message||"TradingView authorization is required.";return;}throw new Error("Market data request failed");}const data=await response.json();marketCache[intervalName(interval)]=data;if(data.cache){document.getElementById("chart-data-help").textContent=`Central request manager: ${data.cache.status}. Cache age ${data.cache.age_seconds}s; next upstream refresh in about ${data.cache.next_refresh_seconds}s. Snapshot refresh groups: ${data.cache.upstream_refreshes}; provider calls per group: ${data.cache.provider_requests_per_snapshot??"up to 3"}; cache hits: ${data.cache.cache_hits}.`;}if(interval==="1m"){const selected=document.getElementById("overview-selected").textContent.split(" ")[0];renderOverview(selected);document.getElementById("market-data-status").textContent="DATA RECEIVED";document.getElementById("market-data-status").className="pill ok";}if(showChart)renderChart(data);}catch(e){document.getElementById("local-chart-status").textContent="TradingView data temporarily unavailable";}}
 checkTradingView();setInterval(()=>{if(document.getElementById("tv-health-label").textContent==="Authorized")fetchMarketData("1m",false);},300000);
-fetch("/api/news").then(r=>r.json()).then(d=>{document.getElementById("news-status").textContent=d.status==="connected"?"CONNECTED":"SOURCE NOT CONNECTED";}).catch(()=>{});
+function formatNewsTime(value){
+  if(!value)return "Published time unavailable";
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime()))return "Published time unavailable";
+  return new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",dateStyle:"medium",timeStyle:"short",timeZoneName:"short"}).format(date);
+}
+function renderNews(data){
+  const status=document.getElementById("news-status");
+  status.textContent=(data.status||"unavailable").toUpperCase()+" · YAHOO";
+  status.className=["fresh","cached"].includes(data.status)?"pill ok":data.status==="stale"?"pill warn":"pill off";
+  document.getElementById("news-meta").textContent=
+    (data.item_count??(data.items||[]).length)+" headlines · cache age "+(data.cache_age_seconds??"—")+"s · next upstream refresh in about "+(data.next_refresh_seconds??data.retry_after_seconds??"—")+"s · source: Yahoo Finance RSS.";
+  const feed=document.getElementById("news-feed");
+  feed.replaceChildren();
+  const items=data.items||[];
+  if(!items.length){
+    const empty=document.createElement("div");empty.className="placeholder";
+    const inner=document.createElement("div");
+    const strong=document.createElement("strong");strong.textContent=data.error||"No Yahoo Finance headlines returned";
+    const note=document.createElement("span");note.className="small";note.textContent="No headlines are fabricated. Check the feed again after the provider cooldown or open Yahoo Finance directly.";
+    inner.append(strong,note);empty.appendChild(inner);feed.appendChild(empty);return;
+  }
+  items.forEach(item=>{
+    const article=document.createElement("article");article.className="feed-item";
+    const tag=document.createElement("div");tag.className="tag";tag.textContent=(item.publisher||"Yahoo Finance")+" · "+formatNewsTime(item.published_at);
+    const title=document.createElement("a");title.href=item.url;title.target="_blank";title.rel="noopener noreferrer";title.textContent=item.title;title.style.color="var(--text)";title.style.fontWeight="700";title.style.textDecoration="none";
+    const summary=document.createElement("p");summary.textContent=item.summary||"No summary supplied by the publisher.";
+    const received=document.createElement("div");received.className="muted small";received.textContent="Received "+formatNewsTime(item.received_at)+" · timestamps shown in New York time.";
+    article.append(tag,title,summary,received);feed.appendChild(article);
+  });
+}
+async function loadNews(){
+  const status=document.getElementById("news-status");status.textContent="CHECKING YAHOO";status.className="pill warn";
+  try{const response=await fetch("/api/news");const data=await response.json();renderNews(data);}
+  catch(error){renderNews({status:"unavailable",items:[],error:"Yahoo Finance RSS is temporarily unavailable."});}
+}
+document.getElementById("refresh-news").addEventListener("click",loadNews);
+loadNews();
 </script></body></html>
