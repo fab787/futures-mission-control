@@ -28,7 +28,12 @@ from mission_control.sentiment_analyst import compare_sentiment_assessments, sen
 from mission_control.provider_errors import ProviderCooldownActive
 from mission_control.tradingview import AuthorizationRequired, market_snapshot
 from mission_control.tradingview_auth import KeyringTokenStorage
-from mission_control.tradingview_webhook import list_signals as list_tradingview_webhook_signals
+from mission_control.tradingview_webhook import (
+    claim_signal_for_review,
+    get_signal as get_tradingview_signal,
+    list_signals as list_tradingview_webhook_signals,
+    set_signal_status,
+)
 from mission_control.webhook_inbox_ui import build_webhook_dashboard
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -266,6 +271,77 @@ def record_approval_decision(proposal_id: str, payload: dict[str, Any]) -> dict[
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/api/approvals/proposals/from-webhook/{alert_id}")
+def create_proposal_from_webhook(alert_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """Route one BUY/SELL alert to one explicitly selected active account for risk review."""
+    account_id = payload.get("account_id")
+    account_state = payload.get("account_state")
+    actor = payload.get("submitted_by", "local_operator")
+    if not isinstance(account_id, str) or not account_id.strip():
+        raise HTTPException(status_code=400, detail="Select a registered account explicitly.")
+    if not isinstance(account_state, dict):
+        raise HTTPException(status_code=400, detail="A fresh account_state snapshot is required.")
+    try:
+        signal = get_tradingview_signal(alert_id)
+        if signal is None:
+            raise HTTPException(status_code=404, detail="Webhook alert not found.")
+        if signal["status"] != "received":
+            raise HTTPException(status_code=409, detail="This alert has already entered the proposal-review workflow.")
+        if signal["action"] not in {"buy", "sell"}:
+            raise HTTPException(status_code=400, detail="CLOSE/FLATTEN alerts remain review-only and cannot create entry proposals.")
+        from datetime import datetime, timedelta, timezone
+        event_time = datetime.fromisoformat(signal["event_timestamp"])
+        if event_time.tzinfo is None or datetime.now(timezone.utc) - event_time.astimezone(timezone.utc) > timedelta(minutes=15):
+            raise HTTPException(status_code=409, detail="This alert is stale; only alerts within 15 minutes can enter risk review.")
+        accounts = list_accounts(include_inactive=True).get("accounts", [])
+        account = next((item for item in accounts if item.get("account_id") == account_id), None)
+        if account is None:
+            raise HTTPException(status_code=404, detail="Selected registered account was not found.")
+        if account.get("status") != "active":
+            raise HTTPException(status_code=409, detail="Selected account is inactive or completed.")
+        if not claim_signal_for_review(alert_id):
+            raise HTTPException(status_code=409, detail="This alert is already being reviewed or has already been submitted.")
+        side = "long" if signal["action"] == "buy" else "short"
+        proposal_payload = {
+            "risk_profile_id": account["risk_profile_id"],
+            "account_label": account["nickname"],
+            "account_state": account_state,
+            "proposal": {
+                "symbol": signal["symbol"],
+                "side": side,
+                "quantity": signal["quantity"],
+                "entry_price": signal["entry_price"],
+                "stop_price": signal["stop_loss"],
+                "target_price": signal["take_profit"],
+                "session": account_state.get("current_session"),
+            },
+            "source": "tradingview_webhook",
+            "source_alert_id": alert_id,
+            "strategy_id": signal["strategy_id"],
+            "route_key": signal.get("route_key"),
+        }
+        try:
+            result = create_proposal(proposal_payload, actor)
+        except Exception:
+            set_signal_status(alert_id, "received")
+            raise
+        set_signal_status(alert_id, "proposal_created" if result.get("status") in {"pending", "vetoed"} else "review_blocked")
+        return {
+            **result,
+            "source_alert_id": alert_id,
+            "selected_account": {"account_id": account["account_id"], "nickname": account["nickname"],
+                                 "firm": account["firm"], "account_mode": account["account_mode"]},
+            "route_key_used_for_authorization": False,
+            "human_approval_required": True,
+            "execution": "disabled",
+            "orders_created": 0,
+        }
+    except HTTPException:
+        raise
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/webhooks/tradingview/inbox")
