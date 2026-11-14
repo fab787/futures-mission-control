@@ -612,3 +612,44 @@ def test_webhook_alert_requires_active_registered_account(monkeypatch) -> None:
     )
     assert response.status_code == 409
     assert "inactive or completed" in response.json()["detail"]
+
+
+
+def test_signals_workspace_exposes_explicit_account_snapshot_controls() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    html = response.text
+    for control in (
+        'id="tv-route-account"',
+        'id="tv-snapshot-at"',
+        'id="tv-current-session"',
+        'id="tv-daily-pnl"',
+        'id="tv-session-pnl"',
+        'id="tv-drawdown"',
+        'id="tv-open-contracts"',
+        'id="tv-position-state"',
+    ):
+        assert control in html
+    assert "Submit to Master Risk Engine" in html
+    assert "Alias is informational only" in html
+
+
+def test_webhook_alert_rejects_stale_signal_before_claiming(monkeypatch) -> None:
+    from datetime import datetime, timezone, timedelta
+    from mission_control import main
+
+    signal = {
+        "alert_id": "tv-stale",
+        "event_timestamp": (datetime.now(timezone.utc) - timedelta(minutes=20)).isoformat(),
+        "symbol": "MNQ", "action": "buy", "status": "received",
+    }
+    calls = {"claim": 0}
+    monkeypatch.setattr(main, "get_tradingview_signal", lambda alert_id: signal)
+    monkeypatch.setattr(main, "claim_signal_for_review", lambda alert_id: calls.update(claim=calls["claim"] + 1) or True)
+    response = client.post(
+        "/api/approvals/proposals/from-webhook/tv-stale",
+        json={"account_id": "some-account", "account_state": {}},
+    )
+    assert response.status_code == 409
+    assert "stale" in response.json()["detail"]
+    assert calls["claim"] == 0
