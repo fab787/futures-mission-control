@@ -264,23 +264,26 @@ def record_approval_decision(proposal_id: str, payload: dict[str, Any]) -> dict[
 
 
 @app.get("/api/account-history")
-def account_history_current() -> dict[str, Any]:
-    """Return the latest local immutable account-history snapshot; no provider calls."""
-    return get_current_history()
+def account_history_current(risk_profile_id: str = Query(..., min_length=1, max_length=120)) -> dict[str, Any]:
+    """Return the latest local immutable account-history snapshot for one risk profile."""
+    return get_current_history(risk_profile_id)
 
 
 @app.get("/api/account-history/versions")
-def account_history_versions() -> dict[str, Any]:
-    """List immutable account-history snapshot revisions."""
-    return list_history_versions()
+def account_history_versions(risk_profile_id: str = Query(..., min_length=1, max_length=120)) -> dict[str, Any]:
+    """List immutable account-history revisions for one risk profile."""
+    return list_history_versions(risk_profile_id)
 
 
 @app.post("/api/account-history")
 def account_history_save(payload: dict[str, Any]) -> dict[str, Any]:
     """Save a complete operator-imported history snapshot; no broker/provider access."""
     try:
+        profile_id = payload.get("risk_profile_id")
+        if not isinstance(profile_id, str) or get_profile(profile_id) is None:
+            raise ValueError("A valid saved risk_profile_id is required before importing account history.")
         return save_history_snapshot(payload.get("account_history"), payload.get("actor"),
-                                     payload.get("source_label"))
+                                     payload.get("source_label"), profile_id)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
