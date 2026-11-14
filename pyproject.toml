@@ -16,6 +16,7 @@ dependencies = [
   "PyYAML>=6.0,<7.0",
   "mcp>=2.3,<3.0",
   "keyring>=25,<26",
+  "tzdata>=2024.1",
 ]
 
 [project.optional-dependencies]

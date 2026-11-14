@@ -1,4 +1,4 @@
-"""Read-only TradingView MCP adapter for Mission Control."""
+"""Read-only TradingView MCP adapter for FAB787 QUANTUM."""
 from __future__ import annotations
 
 import json
@@ -11,6 +11,7 @@ from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.auth import OAuthClientMetadata
 
 from mission_control.tradingview_auth import KeyringTokenStorage
+from mission_control.provider_errors import TradingViewQuotaExceeded, is_quota_error
 
 MCP_URL = "https://mcp.tradingview.com/mcp"
 AUTH_SERVER_URL = "https://mcp.tradingview.com/mcp"
@@ -19,7 +20,7 @@ SYMBOLS = {
     "MES": "CME_MINI:MES1!",
     "MGC": "COMEX:MGC1!",
 }
-READ_ONLY_TOOLS = {"get_ohlcv", "get_symbol_data_batch", "get_news", "get_economic_calendar"}
+READ_ONLY_TOOLS = {"get_ohlcv", "get_symbol_data_batch"}
 
 
 class AuthorizationRequired(RuntimeError):
@@ -38,7 +39,7 @@ def _oauth_provider() -> OAuthClientProvider:
     return OAuthClientProvider(
         server_url=AUTH_SERVER_URL,
         client_metadata=OAuthClientMetadata(
-            client_name="Futures Mission Control",
+            client_name="FAB787 QUANTUM",
             redirect_uris=["http://127.0.0.1:8765/callback"],
             grant_types=["authorization_code", "refresh_token"],
             response_types=["code"],
@@ -84,14 +85,29 @@ def _find_bars(value: Any) -> list[dict[str, Any]]:
 async def call_readonly_tool(name: str, arguments: dict[str, Any]) -> Any:
     """Call only explicitly allow-listed read-only TradingView tools."""
     if name not in READ_ONLY_TOOLS:
-        raise ValueError(f"Tool is not enabled by Mission Control: {name}")
+        raise ValueError(f"Tool is not enabled by FAB787 QUANTUM: {name}")
     oauth = _oauth_provider()
     async with httpx2.AsyncClient(auth=oauth, timeout=httpx2.Timeout(30.0, read=90.0)) as http:
         transport = streamable_http_client(MCP_URL, http_client=http)
         async with Client(transport) as client:
-            result = await client.call_tool(name, arguments)
+            try:
+                result = await client.call_tool(name, arguments)
+            except Exception as exc:
+                if is_quota_error(exc):
+                    raise TradingViewQuotaExceeded(
+                        f"TradingView quota/rate limit transport failure: {exc}"
+                    ) from exc
+                raise
             if result.is_error:
-                raise RuntimeError(f"TradingView MCP returned an error for {name}")
+                details = _decode_content(result.content)
+                detail_text = json.dumps(details, default=str)[:1000]
+                if is_quota_error(details):
+                    raise TradingViewQuotaExceeded(
+                        f"TradingView quota/rate limit reached: {detail_text}"
+                    )
+                raise RuntimeError(
+                    f"TradingView MCP returned an error for {name}: {detail_text}"
+                )
             return result.structured_content or _decode_content(result.content)
 
 
@@ -114,7 +130,7 @@ async def market_snapshot(interval: str = "1m") -> dict[str, Any]:
                 "source": "TradingView MCP",
                 "interval": interval,
             }
-        except AuthorizationRequired:
+        except (AuthorizationRequired, TradingViewQuotaExceeded):
             raise
         except Exception as exc:
             return {
@@ -130,4 +146,10 @@ async def market_snapshot(interval: str = "1m") -> dict[str, Any]:
     results = []
     for symbol, tv_symbol in SYMBOLS.items():
         results.append(await one(symbol, tv_symbol))
-    return {"source": "TradingView MCP", "read_only": True, "interval": interval, "instruments": results}
+    return {
+        "source": "TradingView MCP",
+        "read_only": True,
+        "interval": interval,
+        "provider_requests": len(results),
+        "instruments": results,
+    }

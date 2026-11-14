@@ -63,7 +63,7 @@ class CallbackHandler(BaseHTTPRequestHandler):
             body = b"TradingView authorization received. You can close this browser tab."
             self.send_response(200)
         else:
-            body = b"TradingView authorization did not complete. Return to Mission Control."
+            body = b"TradingView authorization did not complete. Return to FAB787 QUANTUM."
             self.send_response(400)
         self.send_header("Content-Type", "text/plain; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -75,7 +75,7 @@ class CallbackHandler(BaseHTTPRequestHandler):
 
 
 async def _open_browser(url: str) -> None:
-    print("Opening TradingView sign-in. Approve access for Futures Mission Control.")
+    print("Opening TradingView sign-in. Approve access for FAB787 QUANTUM.")
     webbrowser.open(url)
 
 
@@ -94,7 +94,7 @@ async def main() -> None:
     oauth = OAuthClientProvider(
         server_url="https://mcp.tradingview.com/mcp",
         client_metadata=OAuthClientMetadata(
-            client_name="Futures Mission Control",
+            client_name="FAB787 QUANTUM",
             redirect_uris=[f"http://{CALLBACK_HOST}:{CALLBACK_PORT}/callback"],
             grant_types=["authorization_code", "refresh_token"],
             response_types=["code"],

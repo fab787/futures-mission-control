@@ -1,4 +1,4 @@
-name: Mission Control tests
+name: FAB787 QUANTUM tests
 
 on:
   pull_request:
