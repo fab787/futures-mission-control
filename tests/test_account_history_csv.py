@@ -45,7 +45,8 @@ def test_csv_mapping_suggestions_are_conservative():
     assert suggested["equity"] == "Equity"
     assert suggested["date"] == "Date"
     assert suggested["session"] == "Session"
-    assert suggested["daily_pnl"] is None
+    assert suggested["daily_pnl"] == "Daily PnL"
+    assert suggested["session_pnl"] == "Session PnL"
 
 
 def test_csv_preview_rejects_naive_timestamps():
@@ -71,3 +72,32 @@ def test_csv_preview_rejects_missing_mapping_and_oversized_file():
         preview_csv(sample_csv(), 50000, {**MAPPING, "session": "missing"})
     with pytest.raises(ValueError, match="2 MB"):
         preview_csv("x" * (2 * 1024 * 1024 + 1), 50000, MAPPING)
+
+
+
+def test_csv_preview_api_requires_profile_and_returns_unsaved_preview(monkeypatch):
+    from fastapi.testclient import TestClient
+    from mission_control import main
+
+    monkeypatch.setattr(main, "get_profile", lambda profile_id: {"profile_id": profile_id} if profile_id == "profile-fixture" else None)
+    client = TestClient(main.app)
+    response = client.post("/api/account-history/csv-preview", json={
+        "risk_profile_id": "profile-fixture",
+        "csv_text": sample_csv(),
+        "starting_balance": 50000,
+        "column_mapping": MAPPING,
+    })
+    assert response.status_code == 200
+    result = response.json()
+    assert result["status"] == "valid_preview"
+    assert result["saved"] is False
+    assert result["orders_created"] == 0
+    assert result["provider_requests_triggered"] == 0
+
+    rejected = client.post("/api/account-history/csv-preview", json={
+        "risk_profile_id": "unknown",
+        "csv_text": sample_csv(),
+        "starting_balance": 50000,
+        "column_mapping": MAPPING,
+    })
+    assert rejected.status_code == 400
