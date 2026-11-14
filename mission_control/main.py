@@ -7,6 +7,7 @@ import yaml
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
+from mission_control.analysis_agents import analyze_instruments
 from mission_control.gex import GexUnavailable, gex_service
 from mission_control.market_data_manager import market_data_manager
 from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
@@ -168,6 +169,13 @@ async def integrations() -> dict[str, Any]:
             },
         ]
     }
+
+
+@app.get("/api/agents/instruments")
+def instrument_agents() -> dict[str, Any]:
+    """Analyze the existing 1-minute cache only; never trigger provider refreshes."""
+    cached_snapshot = market_data_manager.peek_snapshot("1m")
+    return analyze_instruments(load_instruments(), cached_snapshot)
 
 
 @app.get("/api/news")
