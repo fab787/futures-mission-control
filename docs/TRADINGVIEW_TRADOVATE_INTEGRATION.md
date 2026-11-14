@@ -75,13 +75,41 @@ A valid first delivery returns HTTP 202 and `status: accepted`. A repeat deliver
 
 No TradingView market-data tools or Yahoo services are called. No Tradovate API request is made.
 
+## Tradovate API access: critical prop-account limitation
+
+The public Tradovate API is **not a safe assumption for evaluation or simulated-funded prop accounts**.
+
+- Tradovate's API documentation describes separate live, demo/simulation and market-data service hosts. Its API-access onboarding requirements include a LIVE Tradovate account with more than $1,000 equity and an API Access subscription.
+- NinjaTrader's official support article for Tradovate API Access (updated September 16, 2026) explicitly says prop-firm and evaluation accounts are not eligible for this API add-on. It also states the API subscription does not provide real-time market data.
+- Therefore, a Tradovate username, a Tradovate-powered prop account, or the ability to log into Tradovate does **not** establish API eligibility. A demo API endpoint also does not override the account eligibility requirements.
+- The project must not ask for, store or test API credentials on the assumption that an evaluation account is eligible. Do not add a paid API subscription to the user's free-first plan without a confirmed eligible use case and explicit approval.
+
+### Current prop-firm platform evidence (not API authorization)
+
+| Firm | Officially documented platform facts | What remains unconfirmed |
+|---|---|---|
+| Phidias | Advertises native TradingView execution on its Tradovate offering, without a third-party bridge. | Whether the user's account type permits any external API, webhook relay or programmatic order routing outside that native integration. |
+| Lucid | Lists Tradovate, NinjaTrader and TradingView on its CQG platform path; its rules say automated strategies and trade copiers are permitted when compliant. | Whether Lucid grants external Tradovate API access or supports a third-party app placing orders into its prop accounts. |
+| BluSky | Lists Tradovate Prop and TradingView among supported platforms. | Whether any external API access is enabled or authorized for evaluation / simulated-funded accounts. |
+| Legends | No authoritative API permission confirmation is recorded in this review. | Supported account-specific connection path and written permission for external API automation. |
+
+Platform compatibility is not the same as API permission. Each firm/account type must be verified before enabling an execution adapter. Keep firm-specific policy status as unknown until supported by its current official terms or written support confirmation.
+
+### Integration direction
+
+1. Keep the TradingView receiver and Master Risk Engine independent of the broker.
+2. Add a small broker-capability registry so each account records its actual provider/platform, account phase, allowed integration method, and verification status.
+3. Prefer a firm's documented native TradingView integration where it meets the user's workflow and policy requirements; do not pretend it passes through FAB787 QUANTUM's approval engine if it does not.
+4. For a firm that explicitly permits external automation, implement only its documented and supported connection method. Tradovate's standard API must not be selected for prop evaluation accounts unless Tradovate/NinjaTrader and the firm confirm eligibility in writing.
+5. Keep the local operator approval and risk-veto stages mandatory. No automatic fallback to another broker/platform is allowed.
+
 ## Required next phases
 
-1. Add a local-only Mission Control inbox view and map operator-approved route aliases to registered account IDs. Never accept a broker account ID from an alert as authority.
-2. Convert a received signal into a complete risk proposal using the selected account's own risk profile and history. Missing account state, stop/target, session, or account mapping must fail closed.
-3. Add a separate Tradovate demo adapter using the official API's OAuth/account/REST/WebSocket guidance. Pin every execution request to an explicitly selected account ID; never use `accounts[0]`.
-4. Reconcile order acknowledgments, fills, cancellations, positions and disconnects before considering any funded-account use.
-5. Keep order submission disabled until the user explicitly authorizes it and the applicable prop firms confirm automated TradingView-alert execution is permitted.
+1. Complete broker-capability registry and per-firm/account permission tracking; keep unknown permissions fail-closed.
+2. Confirm the actual supported external integration path for each account type with the firm and platform provider.
+3. Implement a non-ordering demo connectivity adapter only for an account/API combination explicitly documented as eligible.
+4. Reconcile account state, order acknowledgments, fills, cancellations and disconnects before considering any funded-account use.
+5. Keep order submission disabled until the user explicitly authorizes it and the applicable prop firms confirm the exact automation path is permitted.
 
 ## Provider and execution boundaries
 
