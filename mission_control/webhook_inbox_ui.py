@@ -140,6 +140,6 @@ loadAccounts();loadSignals();
 })();
 </script>
 '''
-    if "</body>" in html and 'id="tv-signal-refresh"' not in html:
+    if "</body>" in html and "async function loadSignals()" not in html:
         html = html.replace("</body>", script + "\n</body>", 1)
     return html
