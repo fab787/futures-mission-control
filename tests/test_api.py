@@ -109,3 +109,31 @@ def test_instrument_agents_endpoint_reads_cache_without_refresh(monkeypatch) -> 
     assert payload["summary"]["provider_requests_triggered"] == 0
     assert payload["summary"]["trade_proposals_created"] == 0
     assert calls == {"peek": 1, "refresh": 0}
+
+
+
+def test_market_structure_endpoint_uses_cache_only(monkeypatch) -> None:
+    from mission_control import main
+
+    calls = {"peek": 0, "refresh": 0}
+
+    def fake_peek(interval: str):
+        calls["peek"] += 1
+        assert interval == "1m"
+        return None
+
+    async def forbidden_refresh(*args, **kwargs):
+        calls["refresh"] += 1
+        raise AssertionError("Market Structure must never refresh provider data")
+
+    monkeypatch.setattr(main.market_data_manager, "peek_snapshot", fake_peek)
+    monkeypatch.setattr(main.market_data_manager, "get_snapshot", forbidden_refresh)
+    response = client.get("/api/agents/market-structure")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "blocked"
+    assert payload["specialist_id"] == "market_structure"
+    assert payload["provider_requests_triggered"] == 0
+    assert payload["trade_authority"] == "none"
+    assert calls == {"peek": 1, "refresh": 0}
