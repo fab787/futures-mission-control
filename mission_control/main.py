@@ -7,10 +7,10 @@ import yaml
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
-from mission_control.tradingview import AuthorizationRequired, market_snapshot
+from mission_control.gex import GexUnavailable, gex_service
 from mission_control.market_data_manager import market_data_manager
 from mission_control.provider_errors import ProviderCooldownActive
-from mission_control.gex import GexUnavailable, gex_service
+from mission_control.tradingview import AuthorizationRequired, market_snapshot
 from mission_control.tradingview_auth import KeyringTokenStorage
 
 ROOT = Path(__file__).resolve().parent.parent
