@@ -86,6 +86,10 @@
 - Instrument agents have no authority to modify risk settings, approve trades, or submit orders.
 - Every report must disclose freshness and confirm zero provider requests triggered by analysis.
 
+
+- Chief Decision Agent must block its downstream gate on Account Protection warnings, breaches, missing explicit permission, or unknown account state. A warning is not a pass to the Master Risk Engine.
+- Malformed sentiment or calendar specialist payloads must be surfaced as unavailable caveats, never interpreted as agreement or clean data.
+
 ## Fail-safe behavior
 
 Block new trade proposals when:
