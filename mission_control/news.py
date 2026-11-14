@@ -15,7 +15,7 @@ from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 from typing import Any
 from urllib.request import Request, urlopen
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 YAHOO_FEED_URL = "https://feeds.finance.yahoo.com/rss/2.0/headline"
 YAHOO_CALENDAR_URL = "https://finance.yahoo.com/calendar/economic/"
@@ -79,6 +79,8 @@ def parse_yahoo_rss(xml_text: str, *, received_at: datetime | None = None) -> li
     for item in root.findall(".//item"):
         title = _clean_text(item.findtext("title"))
         link = (item.findtext("link") or "").strip()
+        if urlsplit(link).scheme != "https" or not urlsplit(link).netloc:
+            continue
         guid = (item.findtext("guid") or link or title).strip()
         if not title or not link or guid in seen:
             continue
