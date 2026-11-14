@@ -104,3 +104,13 @@ Never commit API keys, access tokens, passwords, account identifiers, or populat
 ## TradingView Paper Trading
 
 Paper Trading is the intended initial simulation environment. Do not assume the available TradingView MCP exposes paper-account balances, positions, or simulated order submission. Verify each capability independently before enabling it. A chart-control tool is not automatically a trading tool.
+
+
+## Chief Decision Agent boundary
+
+- The Chief Decision Agent may coordinate specialist outputs but may not bypass or replace the independent Master Risk Engine.
+- It reads TradingView market data and Yahoo headlines only through existing cache-only accessors; it must never trigger provider refreshes.
+- Claude/ChatGPT reviews and account snapshots are caller-supplied, validated inputs; no automatic AI API or broker calls are enabled.
+- Missing, stale, malformed, or contradictory market/account inputs block downstream risk review. Model disagreement and missing news must be disclosed, not hidden.
+- The agent creates no entries, exits, stops, targets, contract sizes, or orders. It has no trade or risk-setting authority.
+- Master Risk Engine review and explicit human approval remain mandatory for every trade.

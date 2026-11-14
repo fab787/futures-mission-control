@@ -246,3 +246,18 @@ The UI reserves workspaces for additional instruments, analytics, strategy resea
 ## Observability
 
 Every data item and agent report should carry source, instrument, event time, received time and freshness status. Record decisions, risk checks, approvals, rejections and failures in an auditable event log.
+
+
+## Chief Decision Agent
+
+The Chief Decision Agent coordinates the existing instrument, Market Structure,
+Opportunity Scout, News & Catalyst, Sentiment, and Account Protection reports.
+Its `POST /api/agents/chief-decision` endpoint reads the existing market and
+Yahoo caches only; caller-supplied sentiment reviews and account snapshots are
+validated without external provider or broker calls. Missing, stale, invalid,
+or contradictory market/account inputs block downstream risk review. Model
+disagreement and unavailable news are surfaced as caveats rather than silently
+converted into consensus. The agent produces a context and readiness summary
+only: it does not generate trade setups, alter settings, or authorize orders.
+Every possible proposal remains subject to the independent Master Risk Engine
+and explicit human approval.

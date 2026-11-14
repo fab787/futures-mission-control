@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
 from mission_control.analysis_agents import analyze_instruments
+from mission_control.chief_decision_agent import compose_chief_decision
 from mission_control.account_protection import assess_account_protection
 from mission_control.gex import GexUnavailable, gex_service
 from mission_control.market_data_manager import market_data_manager
@@ -213,6 +214,23 @@ def opportunity_scout_agent() -> dict[str, Any]:
     structure_payload = analyze_market_structure(base_reports, cached_snapshot)
     catalyst_payload = analyze_news_catalysts(yahoo_news_service.peek_news())
     return scout_opportunities(base_reports, structure_payload, catalyst_payload)
+
+
+@app.post("/api/agents/chief-decision")
+def chief_decision_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    """Coordinate cache-only specialist reports; never create or authorize trades."""
+    cached_snapshot = market_data_manager.peek_snapshot("1m")
+    base_payload = analyze_instruments(load_instruments(), cached_snapshot)
+    base_reports = {report["symbol"]: report for report in base_payload["agents"]}
+    structure_payload = analyze_market_structure(base_reports, cached_snapshot)
+    catalyst_payload = analyze_news_catalysts(yahoo_news_service.peek_news())
+    scout_payload = scout_opportunities(base_reports, structure_payload, catalyst_payload)
+    sentiment_payload = compare_sentiment_assessments(payload.get("sentiment_assessments", []))
+    account_payload = assess_account_protection(payload.get("account_protection"))
+    return compose_chief_decision(
+        base_payload, structure_payload, scout_payload,
+        catalyst_payload, sentiment_payload, account_payload,
+    )
 
 
 @app.post("/api/agents/account-protection")
