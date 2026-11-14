@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 import pytest
 
 from mission_control.news import (
-    NEWS_SYMBOLS,
     YahooFinanceNewsService,
     YahooNewsUnavailable,
     parse_yahoo_rss,
