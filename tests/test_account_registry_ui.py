@@ -8,9 +8,19 @@ def test_registry_workspace_is_injected_into_existing_dashboard() -> None:
     assert '<button data-tab="accounts">Accounts</button>' in result
     assert '<section class="section" id="accounts">' in result
     assert 'id="registry-create-form"' in result
-    assert 'fetch("/api/accounts"' in result
-    assert 'fetch("/api/risk/profiles"' in result
+    assert 'fetch("/api/accounts?include_inactive=true")' in result
+    assert 'fetch("/api/risk/profiles")' in result
     assert 'data-tab="risk"' in result
+
+
+def test_registry_account_action_selects_its_risk_profile_and_history() -> None:
+    source = '<nav><button data-tab="risk">Risk & Approvals</button></nav><section class="section" id="integrations"></section></body>'
+    result = build_dashboard(source)
+
+    assert 'const profile=$("risk-profile-select"),history=$("history-profile-select")' in result
+    assert 'profile.value=account.risk_profile_id' in result
+    assert 'profile.dispatchEvent(new Event("change",{bubbles:true}))' in result
+    assert 'history.value=account.risk_profile_id' in result
 
 
 def test_registry_workspace_injection_is_idempotent() -> None:
