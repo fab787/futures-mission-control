@@ -123,6 +123,33 @@ reviews only after stable report contracts and provider boundaries are tested.
 
 
 
+
+### Account Protection Analyst
+
+The Account Protection Analyst is exposed at
+`POST /api/agents/account-protection`. It evaluates an explicitly supplied
+risk-limit configuration and point-in-time account snapshot. It does not
+connect to a broker, read positions from an account, persist account state,
+change settings, or continuously monitor an account. No default account size
+or prop-firm rules are assumed.
+
+Required limits are maximum daily loss, maximum session loss, maximum
+high-water drawdown, and maximum open contracts. Required state includes
+daily/session P&L, drawdown from high water, open contract count, and a
+verified flat/open position state. Optional profit-target and profit-protection
+settings are supported. When profit protection is configured, the caller must
+also provide the day's realized high-water P&L so a giveback rule can be
+evaluated correctly. A configured cap is treated as the maximum permitted
+value; exceeding it is a breach.
+
+The analyst reports limit utilization, warnings at 80%, breaches, profit-target
+status, and data-validation failures. Missing or invalid limits/state, unknown
+position state, and inconsistent position snapshots fail closed. Reaching a
+configured profit target blocks new proposals in this assessment output.
+A breach is a veto condition for new proposals, not an instruction to flatten
+an existing position. The independent Master Risk Engine remains the final
+risk veto and human approval remains mandatory.
+
 ### Sentiment Analyst
 
 The Sentiment Analyst exposes a provider-independent review contract through
