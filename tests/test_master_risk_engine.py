@@ -73,3 +73,11 @@ def test_master_risk_malformed_unhashable_fields_fail_closed():
     result=evaluate_master_risk(d)
     assert result["status"]=="veto"
     assert result["final_gate"]["trade_approved"] is False
+
+
+def test_master_risk_requires_saved_profile_for_production_review():
+    result = evaluate_master_risk(payload(), require_saved_profile=True)
+    assert result["status"] == "veto"
+    assert result["veto"] is True
+    assert any("saved, verified risk_profile_id is mandatory" in item for item in result["blockers"])
+    assert result["final_gate"]["trade_approved"] is False
