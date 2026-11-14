@@ -28,7 +28,7 @@ $env:FAB787_TRADINGVIEW_WEBHOOK_SECRET = "<generate-a-long-random-secret>"
 python -m uvicorn mission_control.tradingview_webhook:app --host 127.0.0.1 --port 8765 --workers 1
 ```
 
-The receiver exposes only:
+The isolated receiver exposes only:
 - `GET /health`
 - `POST /webhook/tradingview`
 - `GET /inbox?limit=50` (read-only recent signal list; maximum 200)
@@ -50,6 +50,8 @@ Do not expose the main Mission Control port to the public internet. If a public 
 - `route_key`: optional operator-defined alias only. It is not an account ID and grants no routing authority.
 
 The receiver rejects unknown instruments, malformed fields, bad secrets, timestamps older than 15 minutes, timestamps more than 60 seconds in the future, and incorrectly oriented brackets. Each alert ID is stored once in a local SQLite inbox. The secret is removed before persistence. A read-only inbox endpoint returns a bounded list of safe alert metadata; it never exposes the raw payload or secret.
+
+Mission Control also adds a **Signals** workspace with a read-only view of the latest 100 alerts. It shows action, symbol, quantity, bracket values, strategy, received time and the unverified route alias. It explicitly labels alerts as signals rather than orders or fills. The dashboard never approves or executes them.
 
 ### Response behavior
 
