@@ -38,6 +38,14 @@
 - Open interest is generally prior-session data; the options quote feed is delayed. GEX estimates are contextual reference levels, never trade authorization or standalone signals.
 - The current GEX integration supports NDX-to-MNQ/NQ mapping only. Do not imply MES or MGC coverage.
 
+## Opportunity Scout boundary
+
+- Opportunity Scout may read only the existing instrument, Market Structure and Yahoo news cache results.
+- It must not call TradingView or Yahoo provider refresh methods, Claude, ChatGPT, or any backup provider.
+- Context scores are deterministic confluence points, not probabilities, forecasts, expected returns, or win rates.
+- It must not generate entries, exits, stop-losses, profit targets, contract sizes, or executable trade proposals.
+- It has no risk authority and no trade authority. Any future trade proposal must pass the independent Master Risk Engine and explicit human approval.
+
 ## News specialist boundary
 
 - News & Catalyst Intelligence may read only the existing Yahoo RSS cache through the cache-only accessor.
