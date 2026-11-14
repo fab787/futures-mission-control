@@ -76,8 +76,23 @@ def create_profile(payload,actor,db_path=None):
  if verified not in {"unverified","user_verified"}: raise ValueError("verification_status must be unverified or user_verified.")
  p=_limits(payload.get("prop_firm_maximums"),"prop_firm_maximums",True); u=_limits(payload.get("user_limits",{}),"user_limits",False)
  rule=payload.get("consistency_rule")
- if rule is not None and not isinstance(rule,dict): raise ValueError("consistency_rule must be an object or null.")
- profile={"profile_name":name.strip(),"prop_firm":firm.strip(),"account_mode":mode,"drawdown_type":draw,"verification_status":verified,"prop_firm_maximums":p,"user_limits":u,"effective_limits":_combine(p,u),"consistency_rule":rule}
+ if rule is not None:
+  if not isinstance(rule,dict) or set(rule)!={"max_best_day_profit_share_pct"}:
+   raise ValueError("consistency_rule must contain only max_best_day_profit_share_pct.")
+  share=rule["max_best_day_profit_share_pct"]
+  if not _num(share) or not 0<float(share)<=100:
+   raise ValueError("max_best_day_profit_share_pct must be greater than 0 and at most 100.")
+  rule={"max_best_day_profit_share_pct":float(share)}
+ evaluation=payload.get("evaluation_rules",{})
+ if not isinstance(evaluation,dict) or set(evaluation)-{"minimum_trading_days"}:
+  raise ValueError("evaluation_rules may contain only minimum_trading_days.")
+ minimum_days=evaluation.get("minimum_trading_days")
+ if minimum_days is not None and (not _num(minimum_days) or minimum_days<1 or not float(minimum_days).is_integer()):
+  raise ValueError("minimum_trading_days must be a positive whole number or null to explicitly indicate no minimum.")
+ coverage=payload.get("rule_coverage_status","incomplete")
+ if coverage not in {"complete","incomplete"}:
+  raise ValueError("rule_coverage_status must be complete or incomplete.")
+ profile={"profile_name":name.strip(),"prop_firm":firm.strip(),"account_mode":mode,"drawdown_type":draw,"verification_status":verified,"rule_coverage_status":coverage,"prop_firm_maximums":p,"user_limits":u,"effective_limits":_combine(p,u),"consistency_rule":rule,"evaluation_rules":{"minimum_trading_days":int(minimum_days) if minimum_days is not None else None}}
  pid=str(payload.get("profile_id") or uuid.uuid4())
  if len(pid)>80: raise ValueError("profile_id is invalid.")
  now=datetime.now(timezone.utc).isoformat()
@@ -102,7 +117,7 @@ def resolve_effective_profile(pid,db_path=None):
  if item is None: raise ValueError("Configured risk profile was not found.")
  p=item["profile"]
  if p["verification_status"]!="user_verified": raise ValueError("Risk profile is unverified; verify the official firm maximums before risk review.")
- return {"profile_id":item["profile_id"],"version":item["version"],"effective_limits":p["effective_limits"],"profile_name":p["profile_name"],"prop_firm":p["prop_firm"],"account_mode":p["account_mode"],"drawdown_type":p["drawdown_type"]}
+ return {"profile_id":item["profile_id"],"version":item["version"],"effective_limits":p["effective_limits"],"profile_name":p["profile_name"],"prop_firm":p["prop_firm"],"account_mode":p["account_mode"],"drawdown_type":p["drawdown_type"],"rule_coverage_status":p["rule_coverage_status"],"consistency_rule":p["consistency_rule"],"evaluation_rules":p["evaluation_rules"]}
 
 def list_profile_versions(profile_id,db_path=None):
     if not isinstance(profile_id,str) or not profile_id.strip():

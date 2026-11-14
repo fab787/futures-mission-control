@@ -13,6 +13,8 @@ from mission_control.account_protection import assess_account_protection
 from mission_control.gex import GexUnavailable, gex_service
 from mission_control.market_data_manager import market_data_manager
 from mission_control.master_risk_engine import evaluate_master_risk
+from mission_control.prop_firm_rules import evaluate_prop_firm_rules
+from mission_control.risk_config import get_profile
 from mission_control.risk_config import create_profile, list_profile_versions, list_profiles
 from mission_control.audit_ledger import create_proposal, decide_proposal, list_audit_events, list_proposals
 from mission_control.market_structure import analyze_market_structure
@@ -284,6 +286,21 @@ def save_risk_profile(payload: dict[str, Any]) -> dict[str, Any]:
     try:
         actor = payload.pop("actor", "local_operator")
         return create_profile(payload, actor)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/risk/prop-firm-evaluate")
+def prop_firm_rules_review(payload: dict[str, Any]) -> dict[str, Any]:
+    """Evaluate a saved profile against caller-supplied account history; never executes."""
+    try:
+        profile_id = payload.get("risk_profile_id")
+        item = get_profile(profile_id) if isinstance(profile_id, str) else None
+        if item is None:
+            raise ValueError("A saved risk_profile_id is required.")
+        from mission_control.risk_config import resolve_effective_profile
+        profile = resolve_effective_profile(profile_id)
+        return evaluate_prop_firm_rules(profile, payload.get("account_history"), payload.get("account_state"))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

@@ -145,3 +145,14 @@ Paper Trading is the intended initial simulation environment. Do not assume the 
 - Profile mutation requires an explicit local API action. Actor labels are not authenticated; bind locally and do not expose mutation endpoints to untrusted networks.
 - The Master Risk Engine accepts `risk_profile_id` and resolves its latest verified version locally. Account state remains caller-supplied and unauthenticated in this phase.
 - Configuration causes zero provider requests, broker connections, or orders. AI agents cannot mutate profiles.
+
+
+## Prop-Firm Rules & Consistency Evaluator
+
+- Profiles must explicitly mark rule coverage complete or incomplete; incomplete rule sets cannot pass the Prop-Firm Rules Evaluator.
+- Consistency rules, minimum trading days, profit targets, drawdown method and firm maximums must come from current official rules entered and verified by the operator. A null minimum-day value explicitly means no minimum is applicable; a null consistency rule explicitly means no best-day consistency rule applies.
+- The evaluator recalculates trailing drawdown from chronological intraday equity observations, end-of-day drawdown from end-of-day observations only, and static drawdown from the configured starting balance.
+- Daily and session loss history, best-day profit share and minimum trading days require explicit account-history records. Missing or malformed records block new proposals.
+- Account history and account state remain caller-supplied and unauthenticated. These checks are analytical safeguards, not broker-side enforcement or proof of prop-firm compliance.
+- The Master Risk Engine runs this evaluator for saved-profile proposals and vetoes when it does not return within_rules.
+- The evaluator has no provider, broker, persistence, order, or risk-configuration mutation authority.

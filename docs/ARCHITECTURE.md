@@ -310,3 +310,16 @@ reject a profile. Unverified profiles cannot be used for risk review.
 creates a new immutable version. `POST /api/risk/master` accepts
 `risk_profile_id` and resolves the latest verified version locally. Account
 state remains caller-supplied. Actor labels are not authentication; bind locally.
+
+
+## Prop-Firm Rules & Consistency Evaluator
+
+The evaluator validates the saved profile's explicit rule-coverage status and
+recalculates configured trailing, end-of-day or static drawdown from supplied
+equity history. It also checks historical daily/session losses, configured
+best-day profit consistency, minimum trading days and configured profit
+targets. Missing or malformed history, incomplete rule coverage, rule
+violations, or an unmet minimum-day requirement block proposals. The Master
+Risk Engine invokes the evaluator whenever a saved risk profile is used.
+All account history remains caller-supplied and unauthenticated; the evaluator
+does not connect to a broker or external provider and cannot submit orders.

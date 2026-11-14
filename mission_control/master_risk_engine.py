@@ -33,6 +33,12 @@ def evaluate_master_risk(payload: Any) -> dict[str, Any]:
     else:
         limits = payload.get("risk_limits")
     state, proposal = payload.get("account_state"), payload.get("proposal")
+    prop_firm_assessment = None
+    if profile_resolution is not None:
+        from mission_control.prop_firm_rules import evaluate_prop_firm_rules
+        prop_firm_assessment = evaluate_prop_firm_rules(profile_resolution, payload.get("account_history"), state if isinstance(state, dict) else {})
+        if prop_firm_assessment.get("status") != "within_rules":
+            blockers.append("Prop-Firm Rules Evaluator did not return within_rules; missing history, incomplete rules, warnings or rule breaches veto this proposal.")
     if not isinstance(limits, dict):
         limits = {}
         blockers.append("A trusted configured risk profile or explicit risk_limits are required.")
@@ -130,4 +136,4 @@ def evaluate_master_risk(payload: Any) -> dict[str, Any]:
              "Stop-risk estimate excludes commissions, slippage, gaps, and execution uncertainty.",
              "A pass means eligible for separate human review only; it is not trade approval.",
              "No strategy signal, order routing, position management, or broker-side enforcement exists."],
-            "risk_profile": profile_resolution}
+            "risk_profile": profile_resolution,"prop_firm_rules": prop_firm_assessment}
