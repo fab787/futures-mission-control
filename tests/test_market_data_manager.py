@@ -177,3 +177,22 @@ def test_different_timeframes_share_one_upstream_gate() -> None:
     assert peak_active_loaders == 1
     assert manager.upstream_refreshes == 3
 
+
+def test_quota_detector_recognizes_transport_429_and_payloads() -> None:
+    from mission_control.provider_errors import is_quota_error
+
+    class Http429Error(RuntimeError):
+        status_code = 429
+
+    class Response:
+        status_code = 429
+
+    class WrappedHttpError(RuntimeError):
+        response = Response()
+
+    assert is_quota_error(Http429Error("upstream rejected request"))
+    assert is_quota_error(WrappedHttpError("request failed"))
+    assert is_quota_error({"error": "Too Many Requests"})
+    assert is_quota_error("HTTP 429 from upstream")
+    assert not is_quota_error("symbol not found")
+
