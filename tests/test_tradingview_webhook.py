@@ -84,6 +84,20 @@ def test_future_timestamp_beyond_tolerance_is_rejected():
         validate_signal(_payload(timestamp=future), SECRET, now=_now())
 
 
+@pytest.mark.parametrize("action", ["approaching_buy", "approaching_sell", "invalidated"])
+def test_early_warning_and_invalidation_events_need_no_order_bracket(action):
+    signal = validate_signal(
+        _payload(action=action, quantity=None, entry_price=None, stop_loss=None, take_profit=None),
+        SECRET,
+        now=_now(),
+    )
+    assert signal.action == action
+    assert signal.quantity is None
+    assert signal.entry_price is None
+    assert signal.stop_loss is None
+    assert signal.take_profit is None
+
+
 def test_close_signal_does_not_require_entry_bracket_or_quantity():
     signal = validate_signal(
         _payload(action="close", quantity=None, entry_price=None, stop_loss=None, take_profit=None),
