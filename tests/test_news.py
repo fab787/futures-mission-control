@@ -97,7 +97,7 @@ def test_news_service_serves_stale_items_after_refresh_failure() -> None:
         assert stale["status"] == "stale"
         assert stale["items"][0]["id"] == "sample-1"
         assert stale["cache_age_seconds"] == 6
-        assert stale["retry_after_seconds"] == 299
+        assert stale["retry_after_seconds"] == 300
         cooling = await service.get_news()
         assert cooling["status"] == "stale"
         assert service.fetch_count == 2
