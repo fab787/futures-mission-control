@@ -81,3 +81,31 @@ def test_tradingview_status_endpoint_is_read_only() -> None:
 def test_market_data_rejects_unsupported_interval() -> None:
     response = client.get("/api/market-data?interval=10m")
     assert response.status_code == 422
+
+
+
+def test_instrument_agents_endpoint_reads_cache_without_refresh(monkeypatch) -> None:
+    from mission_control import main
+
+    calls = {"peek": 0, "refresh": 0}
+
+    def fake_peek(interval: str):
+        calls["peek"] += 1
+        assert interval == "1m"
+        return None
+
+    async def forbidden_refresh(*args, **kwargs):
+        calls["refresh"] += 1
+        raise AssertionError("Agent endpoint must never refresh provider data")
+
+    monkeypatch.setattr(main.market_data_manager, "peek_snapshot", fake_peek)
+    monkeypatch.setattr(main.market_data_manager, "get_snapshot", forbidden_refresh)
+    response = client.get("/api/agents/instruments")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "blocked"
+    assert [agent["symbol"] for agent in payload["agents"]] == ["MNQ", "MES", "MGC"]
+    assert payload["summary"]["provider_requests_triggered"] == 0
+    assert payload["summary"]["trade_proposals_created"] == 0
+    assert calls == {"peek": 1, "refresh": 0}
