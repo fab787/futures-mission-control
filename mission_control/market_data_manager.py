@@ -38,6 +38,9 @@ class MarketDataRequestManager:
         self._clock = clock
         self._cache: dict[str, tuple[float, dict[str, Any], float]] = {}
         self._locks: dict[str, asyncio.Lock] = {}
+        # A single upstream gate prevents different timeframe cache misses from
+        # opening overlapping TradingView MCP sessions.
+        self._upstream_lock = asyncio.Lock()
         self._cooldown_until = 0.0
         self.upstream_refreshes = 0
         self.cache_hits = 0
@@ -130,33 +133,56 @@ class MarketDataRequestManager:
                     f"TradingView is in cooldown for {self._cooldown_until - now:.0f}s"
                 )
 
-            previous = cached
-            self.upstream_refreshes += 1
-            try:
-                fresh = await loader(interval)
-            except TradingViewQuotaExceeded as exc:
-                self.quota_events += 1
-                self._cooldown_until = self._clock() + self.cooldown_seconds
-                if previous is not None and self._has_data(previous[1]):
-                    return self._serve_stale(previous)
-                raise ProviderCooldownActive(
-                    f"TradingView quota reached; retry blocked for {self.cooldown_seconds:.0f}s"
-                ) from exc
-            except Exception:
-                if previous is not None and self._has_data(previous[1]):
-                    return self._serve_stale(previous)
-                raise
+            async with self._upstream_lock:
+                # Another timeframe may have been refreshing while this request
+                # waited. Recheck this interval's cache and provider cooldown
+                # before opening another upstream MCP session.
+                now = self._clock()
+                cached = self._cache.get(interval)
+                if cached is not None:
+                    stored_at, snapshot, ttl = cached
+                    age = now - stored_at
+                    if age < ttl:
+                        self.cache_hits += 1
+                        return self._decorate(
+                            snapshot, status="coalesced" if was_waiting else "hit",
+                            age_seconds=age, ttl_seconds=ttl,
+                        )
 
-            has_data = self._has_data(fresh)
-            if not has_data and previous is not None and self._has_data(previous[1]):
-                return self._serve_stale(previous)
+                if now < self._cooldown_until:
+                    if cached is not None and self._has_data(cached[1]):
+                        return self._serve_stale(cached)
+                    raise ProviderCooldownActive(
+                        f"TradingView is in cooldown for {self._cooldown_until - now:.0f}s"
+                    )
 
-            ttl = self.ttl_seconds if has_data else self.error_ttl_seconds
-            stored_at = self._clock()
-            self._cache[interval] = (stored_at, copy.deepcopy(fresh), ttl)
-            return self._decorate(
-                fresh, status="miss", age_seconds=0.0, ttl_seconds=ttl
-            )
+                previous = cached
+                self.upstream_refreshes += 1
+                try:
+                    fresh = await loader(interval)
+                except TradingViewQuotaExceeded as exc:
+                    self.quota_events += 1
+                    self._cooldown_until = self._clock() + self.cooldown_seconds
+                    if previous is not None and self._has_data(previous[1]):
+                        return self._serve_stale(previous)
+                    raise ProviderCooldownActive(
+                        f"TradingView quota reached; retry blocked for {self.cooldown_seconds:.0f}s"
+                    ) from exc
+                except Exception:
+                    if previous is not None and self._has_data(previous[1]):
+                        return self._serve_stale(previous)
+                    raise
+
+                has_data = self._has_data(fresh)
+                if not has_data and previous is not None and self._has_data(previous[1]):
+                    return self._serve_stale(previous)
+
+                ttl = self.ttl_seconds if has_data else self.error_ttl_seconds
+                stored_at = self._clock()
+                self._cache[interval] = (stored_at, copy.deepcopy(fresh), ttl)
+                return self._decorate(
+                    fresh, status="miss", age_seconds=0.0, ttl_seconds=ttl
+                )
 
 
 market_data_manager = MarketDataRequestManager()
