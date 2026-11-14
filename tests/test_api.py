@@ -333,3 +333,32 @@ def test_approval_api_never_creates_orders(tmp_path, monkeypatch) -> None:
     assert result["status"] == "vetoed"
     assert result["orders_created"] == 0
     assert client.get("/api/audit/events").status_code == 200
+
+
+
+def test_chief_decision_blocks_account_warning_before_risk_engine(monkeypatch) -> None:
+    from mission_control import main
+
+    def fake_peek(interval: str):
+        return None
+
+    def fake_news():
+        return {"status": "not_loaded", "items": []}
+
+    monkeypatch.setattr(main.market_data_manager, "peek_snapshot", fake_peek)
+    monkeypatch.setattr(main.yahoo_news_service, "peek_news", fake_news)
+    response = client.post(
+        "/api/agents/chief-decision",
+        json={
+            "account_protection": {
+                "risk_limits": {},
+                "account_state": {},
+            }
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["status"] == "blocked"
+    assert result["downstream_gate"]["inputs_ready_for_master_risk_engine"] is False
+    assert result["decision"]["orders_created"] == 0
+    assert result["provider_requests_triggered"] == 0
