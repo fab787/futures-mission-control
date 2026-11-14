@@ -28,6 +28,7 @@ from mission_control.sentiment_analyst import compare_sentiment_assessments, sen
 from mission_control.provider_errors import ProviderCooldownActive
 from mission_control.tradingview import AuthorizationRequired, market_snapshot
 from mission_control.tradingview_auth import KeyringTokenStorage
+from mission_control.tradingview_webhook import list_signals as list_tradingview_webhook_signals
 
 ROOT = Path(__file__).resolve().parent.parent
 INSTRUMENTS_FILE = ROOT / "config" / "instruments.yaml"
@@ -264,6 +265,15 @@ def record_approval_decision(proposal_id: str, payload: dict[str, Any]) -> dict[
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.get("/api/webhooks/tradingview/inbox")
+def tradingview_webhook_inbox(limit: int = Query(50, ge=1, le=200)) -> dict[str, Any]:
+    """Expose safe webhook metadata to the local dashboard; never approve or execute."""
+    try:
+        return list_tradingview_webhook_signals(limit=limit)
+    except (OSError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail="TradingView webhook inbox unavailable") from exc
 
 
 @app.get("/api/accounts")
