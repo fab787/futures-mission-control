@@ -17,6 +17,7 @@ from mission_control.prop_firm_rules import evaluate_prop_firm_rules
 from mission_control.risk_config import create_profile, get_profile, list_profile_versions, list_profiles
 from mission_control.audit_ledger import create_proposal, decide_proposal, list_audit_events, list_proposals
 from mission_control.account_history import get_current_history, list_history_versions, save_history_snapshot
+from mission_control.account_history_csv import preview_csv
 from mission_control.market_structure import analyze_market_structure
 from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
 from mission_control.news_catalyst import analyze_news_catalysts
@@ -284,6 +285,22 @@ def account_history_save(payload: dict[str, Any]) -> dict[str, Any]:
             raise ValueError("A valid saved risk_profile_id is required before importing account history.")
         return save_history_snapshot(payload.get("account_history"), payload.get("actor"),
                                      payload.get("source_label"), profile_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/account-history/csv-preview")
+def account_history_csv_preview(payload: dict[str, Any]) -> dict[str, Any]:
+    """Validate a mapped CSV statement without saving or contacting any provider."""
+    try:
+        profile_id = payload.get("risk_profile_id")
+        if not isinstance(profile_id, str) or get_profile(profile_id) is None:
+            raise ValueError("Select a valid saved risk_profile_id before previewing a CSV.")
+        return preview_csv(
+            payload.get("csv_text"),
+            payload.get("starting_balance"),
+            payload.get("column_mapping"),
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
