@@ -64,7 +64,9 @@ def test_news_service_uses_one_fetch_for_ten_minute_cache() -> None:
         first = await service.get_news()
         second = await service.get_news()
         assert first["status"] == "fresh"
+        assert first["upstream_requests"] == 1
         assert second["status"] == "cached"
+        assert second["upstream_requests"] == 1
         assert first["items"][0]["title"] == second["items"][0]["title"]
         assert service.fetch_count == 1
 
@@ -119,6 +121,7 @@ def test_news_service_does_not_retry_during_error_cooldown() -> None:
         second = await service.get_news()
         assert first["status"] == "unavailable"
         assert second["status"] == "cooldown"
+        assert second["upstream_requests"] == 1
         assert service.fetch_count == 1
 
     asyncio.run(run())
