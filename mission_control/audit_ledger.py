@@ -47,7 +47,16 @@ def _connect(db_path: str | Path | None = None) -> sqlite3.Connection:
     """)
     return conn
 
-@contextmanager\ndef _session(db_path: str | Path | None = None):\n    conn = _connect(db_path)\n    try:\n        with conn:\n            yield conn\n    finally:\n        conn.close()\n\ndef _event(conn: sqlite3.Connection, event_type: str, proposal_id: str | None,
+@contextmanager
+def _session(db_path: str | Path | None = None):
+    conn = _connect(db_path)
+    try:
+        with conn:
+            yield conn
+    finally:
+        conn.close()
+
+def _event(conn: sqlite3.Connection, event_type: str, proposal_id: str | None,
            actor: str, details: dict[str, Any]) -> None:
     conn.execute(
       "INSERT INTO audit_events(event_type,proposal_id,actor,occurred_at,details_json) VALUES(?,?,?,?,?)",
