@@ -12,6 +12,7 @@ import keyring
 from mcp import Client
 from mcp.client.auth import OAuthClientProvider, TokenStorage
 from mcp.client.streamable_http import streamable_http_client
+from mission_control.provider_errors import ProviderQuotaExceeded, is_quota_error
 from mcp.shared.auth import (
     AuthorizationCodeResult,
     OAuthClientInformationFull,
@@ -243,9 +244,21 @@ async def _call_with_client(
     if name not in READ_ONLY_TOOLS:
         raise ValueError(f"Webull tool is not enabled by FAB787 QUANTUM: {name}")
 
-    result = await client.call_tool(name, arguments)
+    try:
+        result = await client.call_tool(name, arguments)
+    except Exception as exc:
+        if is_quota_error(exc):
+            raise ProviderQuotaExceeded(
+                f"Webull quota/rate limit transport failure: {type(exc).__name__}"
+            ) from exc
+        raise
     if result.is_error:
         details = _decode_content(result.content)
+        if is_quota_error(details):
+            raise ProviderQuotaExceeded(
+                f"Webull quota/rate limit reached for {name}: "
+                f"{json.dumps(details, default=str)[:600]}"
+            )
         raise RuntimeError(
             f"Webull MCP returned an error for {name}: "
             f"{json.dumps(details, default=str)[:1000]}"
