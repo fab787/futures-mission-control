@@ -7,6 +7,7 @@ from mission_control.webull_news import (
     READ_ONLY_NEWS_TOOLS,
     WebullCalendarService,
     WebullNewsService,
+    _decode_tool_result,
     normalize_calendar_events,
     normalize_webull_news,
 )
@@ -137,3 +138,38 @@ def test_news_intelligence_includes_catalyst_tags_from_both_sources():
     assert catalysts["summary"]["high_priority"] >= 1
     assert len(catalysts["headlines"]) == 2
     assert catalysts["provider_requests_triggered"] == 0
+
+
+def test_webull_news_service_preserves_sanitized_provider_error_details():
+    async def failed_fetch():
+        raise RuntimeError("HTTP 429 rate limit access_token=do-not-leak")
+
+    service = WebullNewsService(fetcher=failed_fetch, clock=lambda: 100.0)
+
+    async def run():
+        result = await service.get_news()
+        assert result["status"] == "unavailable"
+        assert "429" in result["error_message"]
+        assert "rate limit" in result["error_message"]
+        assert "do-not-leak" not in result["error_message"]
+        assert result["provider_requests_triggered"] == 0
+
+    asyncio.run(run())
+
+
+def test_webull_mcp_tool_error_retains_provider_message():
+    class TextPart:
+        text = "HTTP 429 Too Many Requests"
+
+    class ToolResult:
+        is_error = True
+        structured_content = None
+        content = [TextPart()]
+
+    try:
+        _decode_tool_result(ToolResult())
+    except RuntimeError as exc:
+        assert "429" in str(exc)
+        assert "Too Many Requests" in str(exc)
+    else:
+        raise AssertionError("Expected Webull MCP tool error to be surfaced")
