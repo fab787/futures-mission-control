@@ -853,15 +853,25 @@ function renderYahooNews(data){
 }
 function renderWebullNews(data){
   setPill("webull-news-status",data.status,data.status==="fresh"?"WEBULL FRESH":String(data.status||"WEBULL").toUpperCase());
-  const instruments=data.instruments||{};const byInstrument=["MNQ","MES","MGC"].map(s=>s+": "+(instruments[s]?.item_count??0)).join(" · ");
-  document.getElementById("webull-news-meta").textContent=(data.item_count??(data.items||[]).length)+" headlines · "+byInstrument+" · cache age "+(data.cache_age_seconds??"—")+"s";
-  renderArticleFeed("webull-news-feed",data.items||[],data.error||"No Webull headlines available for the configured proxy symbols.");
+  const instruments=data.instruments||{};
+  const byInstrument=["MNQ","MES","MGC"].map(s=>{
+    const item=instruments[s]||{};
+    return s+": "+(item.item_count??0)+(item.status==="unavailable"?" (unavailable)":"");
+  }).join(" · ");
+  const failures=Object.entries(instruments)
+    .filter(([,item])=>item?.status==="unavailable")
+    .map(([symbol,item])=>symbol+": "+(item.error_message||item.error||"provider unavailable"))
+    .join(" | ");
+  const diagnostic=data.error_message||data.last_error_message||data.error||failures;
+  const updated=data.fetched_at?" · fetched "+formatNewsTime(data.fetched_at):"";
+  document.getElementById("webull-news-meta").textContent=(data.item_count??(data.items||[]).length)+" headlines · "+byInstrument+" · cache age "+(data.cache_age_seconds??"—")+"s"+updated;
+  renderArticleFeed("webull-news-feed",data.items||[],diagnostic||"No Webull headlines available for the configured proxy symbols.");
 }
 function renderCalendar(data){
   setPill("calendar-status",data.status,data.status==="fresh"?"WEBULL CALENDAR":String(data.status||"CALENDAR").toUpperCase());
   document.getElementById("calendar-meta").textContent=(data.event_count??(data.events||[]).length)+" events · "+(data.start_date||"")+" to "+(data.end_date||"")+" · source UTC / display New York · cache age "+(data.cache_age_seconds??"—")+"s";
   const feed=document.getElementById("calendar-feed");feed.replaceChildren();const events=data.events||[];
-  if(!events.length){const empty=document.createElement("div");empty.className="placeholder";empty.textContent=data.error||"No structured macro events returned.";feed.appendChild(empty);return;}
+  if(!events.length){const empty=document.createElement("div");empty.className="placeholder";empty.textContent=data.error_message||data.last_error_message||data.error||"No structured macro events returned.";feed.appendChild(empty);return;}
   events.slice(0,35).forEach(event=>{const row=document.createElement("div");row.className="calendar-event";const title=document.createElement("strong");title.textContent=event.event_name;const when=document.createElement("div");when.className="event-meta";when.textContent=(event.publish_time?formatNewsTime(event.publish_time):event.publish_date+" · time unavailable")+(event.is_fed_related?" · FED-RELATED":"")+(event.indicator_type?" · "+event.indicator_type.replaceAll(/([A-Z])/g," $1"):"");const values=document.createElement("div");values.className="event-meta";const bits=[];if(event.forecast_value!=null)bits.push("Forecast "+event.forecast_value);if(event.prior_value!=null)bits.push("Prior "+event.prior_value);if(event.period)bits.push(event.period);values.textContent=bits.join(" · ");if(event.is_fed_related)title.className="fed-flag";row.append(title,when,values);feed.appendChild(row);});
   if(data.pagination_remaining){const note=document.createElement("div");note.className="snapshot-note";note.textContent="More events may be available; page limit reached for this refresh.";feed.appendChild(note);}
 }
@@ -952,6 +962,7 @@ async function loadNews(){
 document.getElementById("refresh-news").addEventListener("click",loadNews);
 document.getElementById("market-data-provider").addEventListener("change",()=>loadHomeIntelligence());
 loadNews();
+setInterval(loadNews,600000);
 
 const riskProfilesById={};
 function fieldNumber(id){const v=document.getElementById(id).value.trim();return v===""?null:Number(v);}
