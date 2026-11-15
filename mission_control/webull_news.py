@@ -255,11 +255,15 @@ async def _fetch_news_from_webull() -> dict[str, Any]:
                 try:
                     payload = await _call_readonly_news_tool(client, NEWS_TOOL, {"symbol": proxy_symbol})
                     data = _unwrap_payload(payload)
+                    if not isinstance(data.get("data"), list):
+                        raise ValueError(
+                            "Webull news response did not contain the expected data array"
+                        )
                     items = normalize_webull_news(
                         data, requested_symbol=proxy_symbol, received_at=received
                     )
                     instruments[instrument] = {
-                        "status": "available",
+                        "status": "available" if items else "empty",
                         "proxy_symbol": proxy_symbol,
                         "item_count": len(items),
                         "pagination_available": bool(data.get("pagination_key")),
@@ -287,7 +291,7 @@ async def _fetch_news_from_webull() -> dict[str, Any]:
             existing["requested_symbols"] = sorted(set(existing.get("requested_symbols", [existing["requested_symbol"]]) + [item["requested_symbol"]]))
     items = list(deduped.values())
     items.sort(key=lambda item: item.get("published_at") or "", reverse=True)
-    available = sum(value["status"] == "available" for value in instruments.values())
+    available = sum(value["status"] in {"available", "empty"} for value in instruments.values())
     if available == 0:
         failures = "; ".join(
             f"{symbol}: {details.get('error_message') or details.get('error') or 'no data'}"
