@@ -134,7 +134,7 @@ def test_quota_error_activates_cooldown_and_serves_stale_data() -> None:
         assert stale["cache"]["status"] == "stale"
         assert stale["cache"]["cooldown_seconds"] == 900
         now[0] += 1
-        still_stale = await manager.get_snapshot("1m", quota_loader)
+        still_stale = await manager.get_snapshot("1m", quota_loader, force_refresh=True)
         assert still_stale["cache"]["status"] == "stale"
         assert calls == 1
         assert manager.quota_events == 1
@@ -240,5 +240,25 @@ def test_webull_quota_uses_provider_specific_cooldown_message():
             assert "quota/rate limit" in str(exc)
         else:
             raise AssertionError("Expected provider cooldown after quota response")
+
+    asyncio.run(run())
+
+
+def test_force_refresh_bypasses_fresh_cache_without_bypassing_cooldown():
+    now = [10.0]
+    manager = MarketDataRequestManager(ttl_seconds=300, clock=lambda: now[0])
+    calls = 0
+
+    async def loader(_interval: str) -> dict:
+        nonlocal calls
+        calls += 1
+        return snapshot(100 + calls)
+
+    async def run() -> None:
+        first = await manager.get_snapshot("1m", loader)
+        refreshed = await manager.get_snapshot("1m", loader, force_refresh=True)
+        assert first["instruments"][0]["bars"][0]["c"] == 101
+        assert refreshed["instruments"][0]["bars"][0]["c"] == 102
+        assert calls == 2
 
     asyncio.run(run())
