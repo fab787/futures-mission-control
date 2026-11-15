@@ -142,7 +142,7 @@ def test_news_intelligence_includes_catalyst_tags_from_both_sources():
 
 def test_webull_news_service_preserves_sanitized_provider_error_details():
     async def failed_fetch():
-        raise RuntimeError("HTTP 429 rate limit access_token=do-not-leak")
+        raise RuntimeError("HTTP 429 rate limit access_token=do-not-leak Authorization: Bearer bearer-secret")
 
     service = WebullNewsService(fetcher=failed_fetch, clock=lambda: 100.0)
 
@@ -152,6 +152,7 @@ def test_webull_news_service_preserves_sanitized_provider_error_details():
         assert "429" in result["error_message"]
         assert "rate limit" in result["error_message"]
         assert "do-not-leak" not in result["error_message"]
+        assert "bearer-secret" not in result["error_message"]
         assert result["provider_requests_triggered"] == 0
 
     asyncio.run(run())
