@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import time
 from collections.abc import Awaitable, Callable
 from datetime import UTC, date, datetime, timedelta
@@ -43,10 +44,31 @@ class WebullCalendarUnavailable(RuntimeError):
     """Webull's structured macro calendar could not be refreshed."""
 
 
+def _safe_error_message(error: BaseException | Any) -> str:
+    """Expose useful provider diagnostics while redacting credential-like values."""
+    message = str(error)
+    message = re.sub(
+        r"(?i)\b(authorization|bearer|access[_-]?token|refresh[_-]?token|api[_-]?key|password)\b"
+        r"(\s*[:=]\s*|\s+)[^\s,;]+",
+        r"\1=[REDACTED]",
+        message,
+    )
+    return message[:600]
+
+
 def _decode_tool_result(result: Any) -> Any:
-    if getattr(result, "is_error", False):
-        raise RuntimeError("Webull MCP tool returned an error")
     structured = getattr(result, "structured_content", None)
+    if getattr(result, "is_error", False):
+        details = structured
+        if details is None:
+            details = [
+                getattr(part, "text", str(part))
+                for part in (getattr(result, "content", []) or [])
+            ]
+        raise RuntimeError(
+            "Webull MCP tool returned an error: "
+            + _safe_error_message(json.dumps(details, default=str))
+        )
     if structured is not None:
         return structured
     decoded: list[Any] = []
@@ -244,6 +266,7 @@ async def _fetch_news_from_webull() -> dict[str, Any]:
                         "proxy_symbol": proxy_symbol,
                         "item_count": 0,
                         "error": type(exc).__name__,
+                        "error_message": _safe_error_message(exc),
                     }
     finally:
         await oauth_http.aclose()
@@ -261,7 +284,13 @@ async def _fetch_news_from_webull() -> dict[str, Any]:
     items.sort(key=lambda item: item.get("published_at") or "", reverse=True)
     available = sum(value["status"] == "available" for value in instruments.values())
     if available == 0:
-        raise WebullNewsUnavailable("Webull did not return news for any configured proxy symbol")
+        failures = "; ".join(
+            f"{symbol}: {details.get('error_message') or details.get('error') or 'no data'}"
+            for symbol, details in instruments.items()
+        )
+        raise WebullNewsUnavailable(
+            "Webull did not return news for any configured proxy symbol. " + failures
+        )
     return {
         "source": "Webull Cloud MCP",
         "status": "fresh" if available == len(NEWS_SYMBOLS) else "partial",
@@ -382,8 +411,17 @@ class _CachedService:
                 if self._cache:
                     response = self._response("stale", self._clock())
                     response["last_error"] = type(exc).__name__
+                    response["last_error_message"] = _safe_error_message(exc)
                     return response
-                return {**unavailable, "status": "unavailable", "upstream_refreshes": self.fetch_count, "error": type(exc).__name__, "retry_after_seconds": self.error_cooldown_seconds, "provider_requests_triggered": 0}
+                return {
+                    **unavailable,
+                    "status": "unavailable",
+                    "upstream_refreshes": self.fetch_count,
+                    "error": type(exc).__name__,
+                    "error_message": _safe_error_message(exc),
+                    "retry_after_seconds": self.error_cooldown_seconds,
+                    "provider_requests_triggered": 0,
+                }
             self._cache = (self._clock(), payload)
             return self._response(str(payload.get("status") or "fresh"), self._clock())
 
