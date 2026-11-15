@@ -74,7 +74,7 @@ def test_login_succeeds_and_failed_login_is_rejected(
 
         failed = client.post(
             "/api/auth/login",
-            json={"username": "local_admin", "password": "incorrect-password"},
+            json={"username": "local_admin", "password": secrets.token_urlsafe(24)},
         )
         assert failed.status_code == 401
 
@@ -94,7 +94,7 @@ def test_setup_cannot_be_repeated(isolated_auth: None) -> None:
         assert client.post("/api/auth/setup", json=payload).status_code == 200
         repeated = client.post(
             "/api/auth/setup",
-            json={"username": "another_admin", "password": "Another-strong-password-456"},
+            json={"username": "another_admin", "password": secrets.token_urlsafe(24)},
         )
         assert repeated.status_code == 409
 
