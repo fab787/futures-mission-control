@@ -1,7 +1,6 @@
-from fastapi.testclient import TestClient
-from mission_control.main import app
+from auth_client import authenticated_client
 
-client = TestClient(app)
+client = authenticated_client()
 
 
 def test_webull_news_endpoint_uses_service(monkeypatch):
