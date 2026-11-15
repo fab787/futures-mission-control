@@ -787,6 +787,7 @@ async function runHelpDiagnostics(){
  const checks=[
   ["Application API","/api/health"],
   ["TradingView authorization","/api/tradingview/status"],
+  ["TradingView last request","/api/tradingview/diagnostics"],
   ["Webull authorization","/api/webull/status"],
   ["Integration registry","/api/integrations"]
  ];
@@ -799,6 +800,10 @@ async function runHelpDiagnostics(){
    if(url.includes("/status"))detail=data.connected?"Authorized ? read-only":"Authorization required";
    if(url==="/api/health")detail=data.status==="ok"?"Healthy ? execution disabled":"Unexpected health response";
    if(url==="/api/integrations")detail=(data.integrations||[]).length+" integrations reported";
+   if(url==="/api/tradingview/diagnostics"){
+    const headers=Object.keys(data.rate_limit_headers||{}).join(", ")||"no rate-limit headers captured";
+    detail="HTTP "+(data.last_http_status??"not captured")+" · quota="+Boolean(data.quota_detected)+" · "+headers+" · error="+(data.last_error||"none");
+   }
    return "? "+name+": "+detail;
   }catch(error){return "? "+name+": "+error.message;}
  }));
