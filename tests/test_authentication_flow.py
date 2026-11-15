@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 import time
 from pathlib import Path
 
@@ -31,6 +32,7 @@ def isolated_auth(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
 def test_first_run_redirects_to_setup_and_setup_authenticates(
     isolated_auth: None,
 ) -> None:
+    password = secrets.token_urlsafe(24)
     with TestClient(app) as client:
         response = client.get("/")
         assert response.status_code == 200
@@ -41,7 +43,7 @@ def test_first_run_redirects_to_setup_and_setup_authenticates(
 
         setup = client.post(
             "/api/auth/setup",
-            json={"username": "local_admin", "password": "Strong-test-password-123"},
+            json={"username": "local_admin", "password": password},
         )
         assert setup.status_code == 200
         assert setup.json()["ok"] is True
@@ -61,10 +63,11 @@ def test_first_run_redirects_to_setup_and_setup_authenticates(
 def test_login_succeeds_and_failed_login_is_rejected(
     isolated_auth: None,
 ) -> None:
+    password = secrets.token_urlsafe(24)
     with TestClient(app) as client:
         setup = client.post(
             "/api/auth/setup",
-            json={"username": "local_admin", "password": "Strong-test-password-123"},
+            json={"username": "local_admin", "password": password},
         )
         assert setup.status_code == 200
         client.post("/api/auth/logout")
@@ -77,7 +80,7 @@ def test_login_succeeds_and_failed_login_is_rejected(
 
         successful = client.post(
             "/api/auth/login",
-            json={"username": "local_admin", "password": "Strong-test-password-123"},
+            json={"username": "local_admin", "password": password},
         )
         assert successful.status_code == 200
         assert successful.json()["ok"] is True
@@ -85,8 +88,9 @@ def test_login_succeeds_and_failed_login_is_rejected(
 
 
 def test_setup_cannot_be_repeated(isolated_auth: None) -> None:
+    password = secrets.token_urlsafe(24)
     with TestClient(app) as client:
-        payload = {"username": "local_admin", "password": "Strong-test-password-123"}
+        payload = {"username": "local_admin", "password": password}
         assert client.post("/api/auth/setup", json=payload).status_code == 200
         repeated = client.post(
             "/api/auth/setup",
@@ -99,7 +103,7 @@ def test_expired_session_is_rejected(
     isolated_auth: None,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    local_auth.create_user("local_admin", "Strong-test-password-123")
+    local_auth.create_user("local_admin", secrets.token_urlsafe(24))
     token = local_auth.create_session("local_admin")
     future = time.time() + local_auth.SESSION_TTL_SECONDS + 1
     monkeypatch.setattr(local_auth.time, "time", lambda: future)
