@@ -1,7 +1,10 @@
 """Read-only TradingView MCP adapter for FAB787 QUANTUM."""
 from __future__ import annotations
 
+import copy
 import json
+import re
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx2
@@ -25,6 +28,84 @@ TRADINGVIEW_TOOL_NAMES = {
     "get_ohlcv": "mcp-tv-get-ohlcv",
     "get_symbol_data_batch": "mcp-tv-get-symbol-data-batch",
 }
+RATE_LIMIT_HEADERS = (
+    "retry-after",
+    "ratelimit",
+    "ratelimit-limit",
+    "ratelimit-remaining",
+    "ratelimit-reset",
+    "x-ratelimit-limit",
+    "x-ratelimit-remaining",
+    "x-ratelimit-reset",
+    "x-rate-limit-limit",
+    "x-rate-limit-remaining",
+    "x-rate-limit-reset",
+    "x-request-id",
+)
+_LAST_DIAGNOSTIC: dict[str, Any] = {
+    "last_http_status": None,
+    "last_http_at": None,
+    "rate_limit_headers": {},
+    "last_tool": None,
+    "last_error": None,
+    "last_error_at": None,
+    "quota_detected": False,
+}
+
+
+def _safe_diagnostic_text(value: Any) -> str:
+    message = str(value)
+    message = re.sub(
+        r"(?i)\\b(authorization|bearer|access[_-]?token|refresh[_-]?token|api[_-]?key|password)\\b"
+        r"(\\s*[:=]\\s*|\\s+)[^\\s,;]+",
+        r"\\1=[REDACTED]",
+        message,
+    )
+    return message[:600]
+
+
+def diagnostics_snapshot() -> dict[str, Any]:
+    """Return sanitized in-memory TradingView HTTP and quota diagnostics."""
+    return copy.deepcopy(_LAST_DIAGNOSTIC)
+
+
+def _reset_diagnostics() -> None:
+    """Reset diagnostic state for isolated tests."""
+    _LAST_DIAGNOSTIC.update({
+        "last_http_status": None,
+        "last_http_at": None,
+        "rate_limit_headers": {},
+        "last_tool": None,
+        "last_error": None,
+        "last_error_at": None,
+        "quota_detected": False,
+    })
+
+
+async def _capture_response(response: httpx2.Response) -> None:
+    headers = {
+        name: response.headers.get(name)
+        for name in RATE_LIMIT_HEADERS
+        if response.headers.get(name) is not None
+    }
+    _LAST_DIAGNOSTIC.update({
+        "last_http_status": response.status_code,
+        "last_http_at": datetime.now(UTC).isoformat(),
+        "rate_limit_headers": headers,
+    })
+    if response.status_code == 429:
+        _LAST_DIAGNOSTIC["quota_detected"] = True
+    if response.status_code >= 400:
+        _LAST_DIAGNOSTIC["last_error"] = _safe_diagnostic_text(
+            f"HTTP {response.status_code} {getattr(response, 'reason_phrase', '')}"
+        )
+        _LAST_DIAGNOSTIC["last_error_at"] = datetime.now(UTC).isoformat()
+
+
+def _record_tool_error(name: str, details: Any) -> None:
+    _LAST_DIAGNOSTIC["last_tool"] = name
+    _LAST_DIAGNOSTIC["last_error"] = _safe_diagnostic_text(details)
+    _LAST_DIAGNOSTIC["last_error_at"] = datetime.now(UTC).isoformat()
 
 
 class AuthorizationRequired(RuntimeError):
@@ -99,22 +180,28 @@ async def call_readonly_tool(name: str, arguments: dict[str, Any]) -> Any:
     async with httpx2.AsyncClient(
         auth=oauth,
         timeout=httpx2.Timeout(30.0, read=90.0),
-        event_hooks={"request": [_stamp_user_agent]},
+        event_hooks={"request": [_stamp_user_agent], "response": [_capture_response]},
     ) as http:
         transport = streamable_http_client(MCP_URL, http_client=http)
         async with Client(transport) as client:
             try:
                 result = await client.call_tool(TRADINGVIEW_TOOL_NAMES[name], arguments)
             except Exception as exc:
+                _record_tool_error(name, exc)
                 if is_quota_error(exc):
+                    _LAST_DIAGNOSTIC["quota_detected"] = True
                     raise TradingViewQuotaExceeded(
-                        f"TradingView quota/rate limit transport failure: {exc}"
+                        f"TradingView quota/rate limit transport failure: "
+                        f"{_safe_diagnostic_text(exc)}"
                     ) from exc
                 raise
+            _LAST_DIAGNOSTIC["last_tool"] = name
             if result.is_error:
                 details = _decode_content(result.content)
-                detail_text = json.dumps(details, default=str)[:1000]
+                _record_tool_error(name, details)
+                detail_text = _safe_diagnostic_text(json.dumps(details, default=str))
                 if is_quota_error(details):
+                    _LAST_DIAGNOSTIC["quota_detected"] = True
                     raise TradingViewQuotaExceeded(
                         f"TradingView quota/rate limit reached: {detail_text}"
                     )
