@@ -62,6 +62,9 @@ from mission_control.tradingview import (
     AuthorizationRequired as TradingViewAuthorizationRequired,
 )
 from mission_control.tradingview import (
+    diagnostics_snapshot as tradingview_diagnostics_snapshot,
+)
+from mission_control.tradingview import (
     market_snapshot as tradingview_market_snapshot,
 )
 from mission_control.tradingview_auth import KeyringTokenStorage
@@ -319,6 +322,15 @@ async def tradingview_status() -> dict[str, Any]:
         "authentication": "OAuth 2.1",
         "mode": "read-only",
         "authorization_command": "python -m mission_control.tradingview_auth",
+    }
+
+
+@app.get("/api/tradingview/diagnostics")
+def tradingview_diagnostics() -> dict[str, Any]:
+    """Expose sanitized in-memory HTTP status and rate-limit headers."""
+    return {
+        "provider": "TradingView MCP",
+        **tradingview_diagnostics_snapshot(),
     }
 
 
