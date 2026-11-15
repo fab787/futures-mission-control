@@ -100,6 +100,10 @@ async def _capture_response(response: httpx2.Response) -> None:
     })
     if response.status_code == 429:
         _LAST_DIAGNOSTIC["quota_detected"] = True
+    elif response.status_code < 400:
+        _LAST_DIAGNOSTIC["last_error"] = None
+        _LAST_DIAGNOSTIC["last_error_at"] = None
+        _LAST_DIAGNOSTIC["quota_detected"] = False
     if response.status_code >= 400:
         _LAST_DIAGNOSTIC["last_error"] = _safe_diagnostic_text(
             f"HTTP {response.status_code} {getattr(response, 'reason_phrase', '')}"
