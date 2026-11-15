@@ -707,8 +707,18 @@ function renderOverview(symbol,data=marketCache[activeProvider]["1m"],provider=a
  document.getElementById("overview-volume").textContent=b.v==null?"?":fmt(b.v);
  document.getElementById("overview-range").textContent=(b.h==null?"?":fmt(b.h))+" / "+(b.l==null?"?":fmt(b.l));
  document.getElementById("overview-time").textContent=b.t?new Date(Number(b.t)*1000).toLocaleString("en-US",{timeZone:"UTC",hour12:false})+" UTC":"?";
- const delay=row.delay_minutes!=null?" ? reported delay "+row.delay_minutes+"m":"";
- document.getElementById("overview-source").textContent="Source: "+(data.source||providerLabel(provider))+" ? 1-minute historical bars"+delay+" ? retrieved "+new Date().toLocaleTimeString();
+ const delay=row.delay_minutes!=null?" · reported delay "+row.delay_minutes+"m":"";
+ const cacheStatus=data.cache?.status||"unknown";
+ const age=data.cache?.age_seconds;
+ const fetched=data.cache?.last_updated_at||data.fetched_at;
+ const updated=fetched?formatNewsTime(fetched):"update time unavailable";
+ const stale=cacheStatus==="stale";
+ document.getElementById("overview-source").textContent="Source: "+(data.source||providerLabel(provider))+" · 1-minute historical bars"+delay+" · last successful fetch "+updated+" · cache "+cacheStatus+(age!=null?" ("+age+"s old)":"");
+ if(provider===activeProvider){
+  const status=document.getElementById("market-data-status");
+  status.textContent=stale?"STALE DATA":cacheStatus==="miss"?"DATA UPDATED":"CACHED DATA";
+  status.className=stale?"pill warn":"pill ok";
+ }
 }
 function renderChart(data,provider=activeProvider){
  const symbol=document.getElementById("chart-symbol").value;
@@ -738,25 +748,37 @@ async function fetchMarketData(interval="1m",showChart=false,provider=activeProv
    document.getElementById("market-data-status").className="pill warn";
    document.getElementById("local-chart-status").textContent=providerLabel(provider)+" ? "+(response.status===429?"provider cooldown":"data unavailable");
    document.getElementById("chart-data-help").textContent=detail;
+   if(provider===activeProvider){
+    document.getElementById("overview-source").textContent=detail+" Last successful data, if present, is not refreshed.";
+    document.getElementById("market-data-status").textContent=response.status===429?"PROVIDER COOLDOWN":"REFRESH FAILED";
+    document.getElementById("market-data-status").className="pill warn";
+   }
    return;
   }
   const data=await response.json();
   marketCache[provider][timeframe]=data;
   if(data.cache){
-   document.getElementById("chart-data-help").textContent=providerLabel(provider)+" request manager: "+data.cache.status+". Cache age "+data.cache.age_seconds+"s; next refresh in about "+data.cache.next_refresh_seconds+"s. Snapshot refreshes: "+data.cache.upstream_refreshes+"; provider calls: "+(data.cache.provider_requests_per_snapshot??"not reported")+"; cache hits: "+data.cache.cache_hits+".";
+   const updated=data.cache.last_updated_at?formatNewsTime(data.cache.last_updated_at):"not reported";
+   document.getElementById("chart-data-help").textContent=providerLabel(provider)+" request manager: "+data.cache.status+". Last successful fetch: "+updated+". Cache age "+data.cache.age_seconds+"s; next refresh in about "+data.cache.next_refresh_seconds+"s. Snapshot refreshes: "+data.cache.upstream_refreshes+"; provider calls: "+(data.cache.provider_requests_per_snapshot??"not reported")+"; cache hits: "+data.cache.cache_hits+".";
   }
   if(timeframe==="1m"){
    const selected=document.getElementById("overview-selected").textContent.split(" ")[0];
    renderOverview(selected,data,provider);
    if(provider===activeProvider){
-    document.getElementById("market-data-status").textContent=providerLabel(provider).toUpperCase()+" DATA RECEIVED";
-    document.getElementById("market-data-status").className="pill ok";
+    const stale=data.cache?.status==="stale";
+    document.getElementById("market-data-status").textContent=stale?"STALE DATA":data.cache?.status==="miss"?"DATA UPDATED":"CACHED DATA";
+    document.getElementById("market-data-status").className=stale?"pill warn":"pill ok";
    }
   }
   if(showChart)renderChart(data,provider);
  }catch(error){
   document.getElementById("local-chart-status").textContent=providerLabel(provider)+" data temporarily unavailable";
-  document.getElementById("chart-data-help").textContent="The selected provider could not complete this request.";
+  document.getElementById("chart-data-help").textContent="The selected provider could not complete this request: "+String(error?.message||error);
+  if(provider===activeProvider){
+   document.getElementById("market-data-status").textContent="REFRESH FAILED";
+   document.getElementById("market-data-status").className="pill warn";
+   document.getElementById("overview-source").textContent="Refresh failed. Last successful data may be stale.";
+  }
  }
 }
 async function runHelpDiagnostics(){
