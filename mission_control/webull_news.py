@@ -19,6 +19,7 @@ from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
 
 from mission_control.webull import (
+    AuthorizationRequired as WebullAuthorizationRequired,
     MCP_URL,
     _oauth_provider,
     _stamp_user_agent,
@@ -99,25 +100,58 @@ async def _call_readonly_news_tool(client: Client, name: str, arguments: dict[st
 
 
 def _unwrap_payload(value: Any) -> dict[str, Any]:
-    if isinstance(value, list):
-        for child in value:
-            if isinstance(child, dict):
-                return child
-        return {}
-    if isinstance(value, dict):
-        # MCP wrappers occasionally nest a JSON result under "result" or "data".
-        if isinstance(value.get("result"), dict) and not value.get("data"):
-            nested = value["result"]
-            if "data" in nested or "pagination_key" in nested:
-                return nested
-        return value
+    """Normalize MCP structured content without discarding top-level result arrays."""
     if isinstance(value, str):
         try:
-            parsed = json.loads(value)
+            return _unwrap_payload(json.loads(value))
         except (TypeError, json.JSONDecodeError):
             return {}
-        return _unwrap_payload(parsed)
-    return {}
+    if isinstance(value, list):
+        return {"data": [item for item in value if isinstance(item, dict)]}
+    if not isinstance(value, dict):
+        return {}
+
+    for key in ("result", "payload", "response"):
+        nested_value = value.get(key)
+        if isinstance(nested_value, (dict, list, str)):
+            nested = _unwrap_payload(nested_value)
+            if _extract_news_rows(nested) is not None or "pagination_key" in nested:
+                merged = dict(nested)
+                if "pagination_key" not in merged and value.get("pagination_key") is not None:
+                    merged["pagination_key"] = value["pagination_key"]
+                return merged
+
+    data_value = value.get("data")
+    if isinstance(data_value, (dict, list, str)):
+        nested = _unwrap_payload(data_value)
+        if _extract_news_rows(nested) is not None or "pagination_key" in nested:
+            merged = dict(nested)
+            if "pagination_key" not in merged and value.get("pagination_key") is not None:
+                merged["pagination_key"] = value["pagination_key"]
+            return merged
+
+    for key in ("items", "articles", "news", "results", "records"):
+        rows = value.get(key)
+        if isinstance(rows, list):
+            merged = dict(value)
+            merged["data"] = rows
+            return merged
+    return value
+
+
+def _extract_news_rows(data: dict[str, Any]) -> list[dict[str, Any]] | None:
+    for key in ("data", "items", "articles", "news", "results", "records"):
+        rows = data.get(key)
+        if isinstance(rows, list):
+            return [row for row in rows if isinstance(row, dict)]
+    return None
+
+
+def _is_authorization_failure(error: BaseException) -> bool:
+    if isinstance(error, WebullAuthorizationRequired):
+        return True
+    message = str(error).casefold()
+    return "http 417" in message or "invalid_token" in message or "token refresh failed: 417" in message
 
 
 def _parse_iso(value: Any) -> datetime | None:
@@ -142,9 +176,7 @@ def normalize_webull_news(
     if requested_symbol not in NEWS_SYMBOLS:
         raise ValueError(f"Unsupported Webull news proxy: {requested_symbol}")
     data = _unwrap_payload(payload)
-    rows = data.get("data", [])
-    if not isinstance(rows, list):
-        return []
+    rows = _extract_news_rows(data) or []
     received = (received_at or datetime.now(UTC)).astimezone(UTC).isoformat()
     instrument = NEWS_SYMBOLS[requested_symbol]
     items: list[dict[str, Any]] = []
@@ -255,9 +287,9 @@ async def _fetch_news_from_webull() -> dict[str, Any]:
                 try:
                     payload = await _call_readonly_news_tool(client, NEWS_TOOL, {"symbol": proxy_symbol})
                     data = _unwrap_payload(payload)
-                    if not isinstance(data.get("data"), list):
+                    if _extract_news_rows(data) is None:
                         raise ValueError(
-                            "Webull news response did not contain the expected data array"
+                            "Webull news response did not contain a recognized article array"
                         )
                     items = normalize_webull_news(
                         data, requested_symbol=proxy_symbol, received_at=received
@@ -371,6 +403,7 @@ class _CachedService:
         self._cache: tuple[float, dict[str, Any]] | None = None
         self._lock = asyncio.Lock()
         self._cooldown_until = 0.0
+        self._last_error_kind: str | None = None
         self.fetch_count = 0
 
     def _response(self, status: str, now: float) -> dict[str, Any]:
@@ -396,26 +429,57 @@ class _CachedService:
             response["retry_after_seconds"] = round(self._cooldown_until - now, 1)
         return response
 
-    async def _get(self, fetcher: Callable[[], Awaitable[dict[str, Any]]], *, unavailable: dict[str, Any]) -> dict[str, Any]:
+    async def _get(
+        self,
+        fetcher: Callable[[], Awaitable[dict[str, Any]]],
+        *,
+        unavailable: dict[str, Any],
+        force_refresh: bool = False,
+    ) -> dict[str, Any]:
         now = self._clock()
-        if self._cache and now - self._cache[0] < self.ttl_seconds:
+        if self._cache and now - self._cache[0] < self.ttl_seconds and not force_refresh:
             return self._response("cached", now)
-        if now < self._cooldown_until:
+
+        # Only an auth-related cooldown may be cleared by an explicit user retry.
+        # Quota/rate-limit and other provider cooldowns remain enforced.
+        auth_retry = force_refresh and self._last_error_kind == "authorization"
+        if now < self._cooldown_until and not auth_retry:
             if self._cache:
                 return self._response("stale", now)
-            return {**unavailable, "status": "cooldown", "upstream_refreshes": self.fetch_count, "retry_after_seconds": round(self._cooldown_until - now, 1), "provider_requests_triggered": 0}
+            return {
+                **unavailable,
+                "status": "cooldown",
+                "upstream_refreshes": self.fetch_count,
+                "retry_after_seconds": round(self._cooldown_until - now, 1),
+                "provider_requests_triggered": 0,
+            }
+
         async with self._lock:
             now = self._clock()
-            if self._cache and now - self._cache[0] < self.ttl_seconds:
+            if self._cache and now - self._cache[0] < self.ttl_seconds and not force_refresh:
                 return self._response("cached", now)
-            if now < self._cooldown_until:
+            auth_retry = force_refresh and self._last_error_kind == "authorization"
+            if now < self._cooldown_until and not auth_retry:
                 if self._cache:
                     return self._response("stale", now)
-                return {**unavailable, "status": "cooldown", "upstream_refreshes": self.fetch_count, "retry_after_seconds": round(self._cooldown_until - now, 1), "provider_requests_triggered": 0}
+                return {
+                    **unavailable,
+                    "status": "cooldown",
+                    "upstream_refreshes": self.fetch_count,
+                    "retry_after_seconds": round(self._cooldown_until - now, 1),
+                    "provider_requests_triggered": 0,
+                }
+            if auth_retry:
+                self._cooldown_until = 0.0
+                self._last_error_kind = None
+
             self.fetch_count += 1
             try:
                 payload = await fetcher()
             except Exception as exc:
+                self._last_error_kind = (
+                    "authorization" if _is_authorization_failure(exc) else type(exc).__name__
+                )
                 self._cooldown_until = self._clock() + self.error_cooldown_seconds
                 if self._cache:
                     response = self._response("stale", self._clock())
@@ -431,6 +495,8 @@ class _CachedService:
                     "retry_after_seconds": self.error_cooldown_seconds,
                     "provider_requests_triggered": 0,
                 }
+            self._last_error_kind = None
+            self._cooldown_until = 0.0
             self._cache = (self._clock(), payload)
             return self._response(str(payload.get("status") or "fresh"), self._clock())
 
@@ -443,8 +509,12 @@ class WebullNewsService(_CachedService):
     def peek_news(self) -> dict[str, Any]:
         return self.peek(empty={"status": "not_loaded", "source": "Webull Cloud MCP", "items": [], "item_count": 0, "instruments": {}})
 
-    async def get_news(self) -> dict[str, Any]:
-        return await self._get(self._fetcher, unavailable={"source": "Webull Cloud MCP", "items": [], "item_count": 0, "instruments": {}})
+    async def get_news(self, *, force_refresh: bool = False) -> dict[str, Any]:
+        return await self._get(
+            self._fetcher,
+            unavailable={"source": "Webull Cloud MCP", "items": [], "item_count": 0, "instruments": {}},
+            force_refresh=force_refresh,
+        )
 
 
 class WebullCalendarService(_CachedService):

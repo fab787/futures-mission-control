@@ -560,7 +560,7 @@ document.getElementById("market-data-provider").addEventListener("change",()=>{
  fetchMarketData("1m",false,activeProvider,true);
  if(tf!=="1m"&&document.getElementById("charts").classList.contains("active"))fetchMarketData(tf,true,activeProvider,true);
 });
-function tick(){document.getElementById("clock").textContent=new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"medium"}).format(new Date());}tick();setInterval(tick,1000);
+function tick(){document.getElementById("clock").textContent=new Intl.DateTimeFormat("en-US",{dateStyle:"medium",timeStyle:"medium",hour12:true}).format(new Date());}tick();setInterval(tick,1000);
 fetch("/api/health").then(r=>r.json()).then(d=>{document.getElementById("api-health").textContent=d.status==="ok"?"API ONLINE":"API ERROR";document.getElementById("api-label").textContent=d.status==="ok"?"Online":"Error";}).catch(()=>{document.getElementById("api-health").textContent="API OFFLINE";document.getElementById("api-label").textContent="Offline";});
 function gexMoney(value){return (Number(value)/1000000).toFixed(2)+"M";}
 function gexLevelText(level){return level?fmt(level.futures_level)+" · "+gexMoney(level.gex):"Unavailable";}
@@ -706,7 +706,7 @@ function renderOverview(symbol,data=marketCache[activeProvider]["1m"],provider=a
  document.getElementById("overview-price").textContent=b.c==null?"?":fmt(b.c);
  document.getElementById("overview-volume").textContent=b.v==null?"?":fmt(b.v);
  document.getElementById("overview-range").textContent=(b.h==null?"?":fmt(b.h))+" / "+(b.l==null?"?":fmt(b.l));
- document.getElementById("overview-time").textContent=b.t?new Date(Number(b.t)*1000).toLocaleString("en-US",{timeZone:"UTC",hour12:false})+" UTC":"?";
+ document.getElementById("overview-time").textContent=b.t?new Date(Number(b.t)*1000).toLocaleString("en-US",{timeZone:"UTC",hour12:true})+" UTC":"?";
  const delay=row.delay_minutes!=null?" · reported delay "+row.delay_minutes+"m":"";
  const cacheStatus=data.cache?.status||"unknown";
  const age=data.cache?.age_seconds;
@@ -824,7 +824,7 @@ function formatNewsTime(value){
   if(!value)return "Time unavailable";
   const date=new Date(value);
   if(Number.isNaN(date.getTime()))return "Time unavailable";
-  return new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",dateStyle:"medium",timeStyle:"short",timeZoneName:"short"}).format(date);
+  return new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",dateStyle:"medium",timeStyle:"short",hour12:true,timeZoneName:"short"}).format(date);
 }
 function biasClass(value){return ({bullish:"bias-bullish",bearish:"bias-bearish",neutral:"bias-neutral",mixed:"bias-mixed"})[value]||"bias-unavailable";}
 function biasLabel(value){return ({bullish:"BULLISH",bearish:"BEARISH",neutral:"NEUTRAL",mixed:"MIXED",unavailable:"UNAVAILABLE",not_provided:"NOT PROVIDED"})[value]||String(value||"UNAVAILABLE").replaceAll("_"," ").toUpperCase();}
@@ -939,7 +939,7 @@ async function loadHomeIntelligence(){
   const tasks=await Promise.allSettled([
     fetch("/api/news/intelligence").then(r=>{if(!r.ok)throw new Error("News intelligence unavailable");return r.json()}),
     fetch("/api/gex/snapshot?provider="+encodeURIComponent(document.getElementById("market-data-provider")?.value||activeProvider||"tradingview")).then(r=>{if(!r.ok)throw new Error("GEX snapshot unavailable");return r.json()}),
-    fetch("/api/agents/opportunity-scout").then(r=>{if(!r.ok)throw new Error("Opportunity Scout unavailable");return r.json()})
+    fetch("/api/agents/opportunity-scout?provider="+encodeURIComponent(document.getElementById("market-data-provider")?.value||activeProvider||"tradingview")+"&refresh=true").then(r=>{if(!r.ok)throw new Error("Opportunity Scout unavailable");return r.json()})
   ]);
   if(tasks[0].status==="fulfilled"){renderNewsBias(tasks[0].value);renderWatchlistBias(tasks[0].value);}
   if(tasks[1].status==="fulfilled"){
@@ -977,11 +977,11 @@ async function fetchNewsJson(url){
  return data;
 }
 
-async function loadNews(){
+async function loadNews(forceWebullRefresh=false){
   setPill("news-status","checking","CHECKING YAHOO");setPill("webull-news-status","checking","CHECKING WEBULL");setPill("calendar-status","checking","CHECKING CALENDAR");
   const results=await Promise.allSettled([
     fetchNewsJson("/api/news"),
-    fetchNewsJson("/api/news/webull"),
+    fetchNewsJson("/api/news/webull"+(forceWebullRefresh?"?refresh=true":"")),
     fetchNewsJson("/api/calendar/events")
   ]);
   const yahoo=normalizeNewsPayload(results[0].status==="fulfilled"?results[0].value:{status:"unavailable",items:[],error:String(results[0].reason?.message||"Yahoo Finance RSS is temporarily unavailable.")});
@@ -990,8 +990,9 @@ async function loadNews(){
   renderYahooNews(yahoo);renderWebullNews(webull);renderCalendar(calendar);renderHomeHeadlines(yahoo,webull);
   await loadHomeIntelligence();
 }
-document.getElementById("refresh-news").addEventListener("click",loadNews);
+document.getElementById("refresh-news").addEventListener("click",()=>loadNews(true));
 document.getElementById("market-data-provider").addEventListener("change",()=>loadHomeIntelligence());
+loadHomeIntelligence();
 loadNews();
 setInterval(loadNews,600000);
 

@@ -31,6 +31,7 @@ KEYRING_SERVICE = "fab787-quantum-webull"
 TOKEN_KEY = "oauth_tokens"
 CLIENT_KEY = "oauth_client_info"
 EXPIRY_KEY = "oauth_token_expiry"
+REAUTH_REQUIRED_KEY = "oauth_reauthorization_required"
 PRM_URL = "https://api.webull.com/.well-known/oauth-protected-resource/mcp"
 OAUTH_METADATA_URL = "https://api.webull.com/.well-known/oauth-authorization-server"
 OAUTH_ISSUER = "https://api.webull.com"
@@ -87,6 +88,16 @@ class WebullTokenStorage(TokenStorage):
         )
         expiry = now + remaining if remaining > 0 else now - 1.0
         keyring.set_password(KEYRING_SERVICE, EXPIRY_KEY, str(expiry))
+        self.clear_reauthorization_required()
+
+    def needs_reauthorization(self) -> bool:
+        return keyring.get_password(KEYRING_SERVICE, REAUTH_REQUIRED_KEY) == "1"
+
+    def mark_reauthorization_required(self) -> None:
+        keyring.set_password(KEYRING_SERVICE, REAUTH_REQUIRED_KEY, "1")
+
+    def clear_reauthorization_required(self) -> None:
+        keyring.set_password(KEYRING_SERVICE, REAUTH_REQUIRED_KEY, "0")
 
     async def get_token_expiry(self) -> float | None:
         value = keyring.get_password(KEYRING_SERVICE, EXPIRY_KEY)
@@ -192,8 +203,19 @@ class WebullOAuthClientProvider(OAuthClientProvider):
 
 
 async def _no_browser_auth(_url: str) -> None:
+    # Background API calls cannot complete an interactive OAuth flow. If an
+    # existing saved token has been rejected, record that state so the dashboard
+    # does not misreport "authorized" merely because the token remains in keyring.
+    storage = WebullTokenStorage()
+    try:
+        if await storage.get_tokens() is not None:
+            storage.mark_reauthorization_required()
+    except Exception:
+        # Preserve the actionable authorization error if the OS keyring is unavailable.
+        pass
     raise AuthorizationRequired(
-        "Authorize Webull with: python -m mission_control.webull_auth"
+        "Webull rejected the saved authorization or requires sign-in. "
+        "Run: python -m mission_control.webull_auth"
     )
 
 
@@ -355,23 +377,34 @@ def _select_contract(
 
 
 def _extract_bar_groups(value: Any) -> dict[str, dict[str, Any]]:
+    """Accept grouped MCP results and raw top-level futures-bar arrays."""
     groups: dict[str, dict[str, Any]] = {}
 
-    def visit(node: Any) -> None:
+    def is_bar_row(node: dict[str, Any]) -> bool:
+        has_time = node.get("time", node.get("t")) is not None
+        has_open = node.get("open", node.get("o")) is not None
+        has_high = node.get("high", node.get("h")) is not None
+        has_low = node.get("low", node.get("l")) is not None
+        has_close = node.get("close", node.get("c")) is not None
+        return has_time and has_open and has_high and has_low and has_close
+
+    def visit(node: Any, inherited_symbol: str | None = None) -> None:
         if isinstance(node, list):
             for item in node:
-                visit(item)
+                visit(item, inherited_symbol)
         elif isinstance(node, dict):
-            symbol = node.get("symbol")
-            if symbol and (
-                isinstance(node.get("result"), list)
-                or isinstance(node.get("bars"), list)
-            ):
-                groups[str(symbol)] = node
+            symbol_value = node.get("symbol") or inherited_symbol
+            symbol = str(symbol_value) if symbol_value else None
+            result_rows = node.get("result", node.get("bars", node.get("data")))
+            if symbol and isinstance(result_rows, list):
+                groups[symbol] = {"symbol": symbol, "result": result_rows}
+            elif symbol and is_bar_row(node):
+                group = groups.setdefault(symbol, {"symbol": symbol, "result": []})
+                group["result"].append(node)
             else:
                 for child in node.values():
                     if isinstance(child, (dict, list)):
-                        visit(child)
+                        visit(child, symbol)
 
     visit(value)
     return groups

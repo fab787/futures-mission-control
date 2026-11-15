@@ -123,7 +123,11 @@ async def tradingview_authorized() -> bool:
 
 async def webull_authorized() -> bool:
     try:
-        return await WebullTokenStorage().get_tokens() is not None
+        storage = WebullTokenStorage()
+        return (
+            await storage.get_tokens() is not None
+            and not storage.needs_reauthorization()
+        )
     except Exception:
         return False
 
@@ -369,12 +373,18 @@ async def market_data(
     """Return cached market data from the selected, independently managed provider."""
     if provider == "webull":
         if not await webull_authorized():
+            reauthorization = WebullTokenStorage().needs_reauthorization()
             raise HTTPException(
                 status_code=503,
                 detail={
-                    "status": "authorization_required",
+                    "status": "reauthorization_required" if reauthorization else "authorization_required",
                     "provider": "webull",
-                    "message": "Authorize Webull: python -m mission_control.webull_auth",
+                    "message": (
+                        "Webull rejected the saved OAuth token. Reauthorize with: "
+                        "python -m mission_control.webull_auth"
+                        if reauthorization
+                        else "Authorize Webull: python -m mission_control.webull_auth"
+                    ),
                 },
             )
         try:
@@ -548,6 +558,7 @@ async def integrations() -> dict[str, Any]:
     """Report connection state from the local OS keyring, not Claude Desktop."""
     authorized = await tradingview_authorized()
     webull_connected = await webull_authorized()
+    webull_reauthorization = WebullTokenStorage().needs_reauthorization()
     return {
         "integrations": [
             {
@@ -568,8 +579,17 @@ async def integrations() -> dict[str, Any]:
                 "id": "webull",
                 "name": "Webull Cloud MCP",
                 "role": "Read-only futures market data and contract information",
-                "status": "authorized" if webull_connected else "authorization_required",
+                "status": (
+                    "reauthorization_required"
+                    if webull_reauthorization
+                    else "authorized" if webull_connected else "authorization_required"
+                ),
                 "connected": webull_connected,
+                "recovery_command": (
+                    "python -m mission_control.webull_auth"
+                    if webull_reauthorization or not webull_connected
+                    else None
+                ),
                 "capabilities": [
                     "get_futures_bars",
                     "get_futures_snapshot",
@@ -630,8 +650,10 @@ async def news() -> dict[str, Any]:
 
 
 @app.get("/api/news/webull")
-async def webull_news() -> dict[str, Any]:
+async def webull_news(refresh: bool = Query(default=False)) -> dict[str, Any]:
     """Return independently cached Webull stock-news headlines for futures proxies."""
+    if refresh:
+        return await webull_news_service.get_news(force_refresh=True)
     return await webull_news_service.get_news()
 
 
@@ -655,17 +677,64 @@ async def macro_calendar_events() -> dict[str, Any]:
 
 
 @app.get("/api/agents/opportunity-scout")
-def opportunity_scout_agent() -> dict[str, Any]:
-    """Rank cached cross-instrument context without triggering provider refreshes."""
-    cached_snapshot = market_data_manager.peek_snapshot("1m")
-    base_payload = analyze_instruments(load_instruments(), cached_snapshot)
+async def opportunity_scout_agent(
+    provider: str = Query(default="tradingview", pattern="^(tradingview|webull)$"),
+    refresh: bool = Query(default=False),
+) -> dict[str, Any]:
+    """Rank the selected provider's data; refresh only through its shared cache gate."""
+    manager = webull_market_data_manager if provider == "webull" else market_data_manager
+    loader = webull_market_snapshot if provider == "webull" else tradingview_market_snapshot
+    authorized = await webull_authorized() if provider == "webull" else await tradingview_authorized()
+    before_refreshes = manager.upstream_refreshes
+    snapshot = None
+    market_status = "cache_only"
+    market_error = None
+
+    if refresh and not authorized:
+        snapshot = manager.peek_snapshot("1m")
+        market_status = (
+            "reauthorization_required"
+            if provider == "webull" and WebullTokenStorage().needs_reauthorization()
+            else "authorization_required"
+        )
+    elif refresh:
+        try:
+            # Refresh only when the selected provider's cache is missing or stale.
+            # The manager still enforces single-flight, TTL and provider cooldowns.
+            snapshot = await manager.get_snapshot("1m", loader, force_refresh=False)
+            market_status = (snapshot.get("cache") or {}).get("status", "available")
+        except ProviderCooldownActive as exc:
+            snapshot = manager.peek_snapshot("1m")
+            market_status = "cooldown"
+            market_error = str(exc)
+        except (WebullAuthorizationRequired, TradingViewAuthorizationRequired) as exc:
+            snapshot = manager.peek_snapshot("1m")
+            market_status = "reauthorization_required" if provider == "webull" else "authorization_required"
+            market_error = str(exc)
+        except Exception as exc:
+            snapshot = manager.peek_snapshot("1m")
+            market_status = "error"
+            market_error = f"{type(exc).__name__}: {exc}"
+    else:
+        snapshot = manager.peek_snapshot("1m")
+        market_status = (snapshot or {}).get("cache", {}).get("status", "not_loaded")
+
+    base_payload = analyze_instruments(load_instruments(), snapshot)
     base_reports = {
         report["symbol"]: report
         for report in base_payload["agents"]
     }
-    structure_payload = analyze_market_structure(base_reports, cached_snapshot)
+    structure_payload = analyze_market_structure(base_reports, snapshot)
     catalyst_payload = analyze_news_catalysts(yahoo_news_service.peek_news())
-    return scout_opportunities(base_reports, structure_payload, catalyst_payload)
+    result = scout_opportunities(base_reports, structure_payload, catalyst_payload)
+    result.update({
+        "market_data_provider": provider,
+        "market_data_status": market_status,
+        "market_data_cache_status": (snapshot or {}).get("cache", {}).get("status", "not_loaded"),
+        "market_data_error": market_error,
+        "market_data_upstream_refreshes": manager.upstream_refreshes - before_refreshes,
+    })
+    return result
 
 
 @app.post("/api/agents/chief-decision")
