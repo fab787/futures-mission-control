@@ -106,6 +106,8 @@ class MarketDataRequestManager:
         self,
         interval: str,
         loader: SnapshotLoader,
+        *,
+        force_refresh: bool = False,
     ) -> dict[str, Any]:
         """Return cached data or perform one serialized upstream refresh."""
         now = self._clock()
@@ -113,7 +115,7 @@ class MarketDataRequestManager:
         if cached is not None:
             stored_at, snapshot, ttl = cached
             age = now - stored_at
-            if age < ttl:
+            if age < ttl and not force_refresh:
                 self.cache_hits += 1
                 return self._decorate(
                     snapshot, status="hit", age_seconds=age, ttl_seconds=ttl
@@ -136,7 +138,7 @@ class MarketDataRequestManager:
             if cached is not None:
                 stored_at, snapshot, ttl = cached
                 age = now - stored_at
-                if age < ttl:
+                if age < ttl and (not force_refresh or was_waiting):
                     self.cache_hits += 1
                     return self._decorate(
                         snapshot, status="coalesced" if was_waiting else "hit",
@@ -159,7 +161,7 @@ class MarketDataRequestManager:
                 if cached is not None:
                     stored_at, snapshot, ttl = cached
                     age = now - stored_at
-                    if age < ttl:
+                    if age < ttl and (not force_refresh or was_waiting):
                         self.cache_hits += 1
                         return self._decorate(
                             snapshot, status="coalesced" if was_waiting else "hit",
