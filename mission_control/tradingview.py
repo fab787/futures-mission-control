@@ -10,8 +10,8 @@ from mcp.client.auth import OAuthClientProvider
 from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.auth import OAuthClientMetadata
 
-from mission_control.tradingview_auth import KeyringTokenStorage
 from mission_control.provider_errors import TradingViewQuotaExceeded, is_quota_error
+from mission_control.tradingview_auth import KeyringTokenStorage
 
 MCP_URL = "https://mcp.tradingview.com/mcp"
 AUTH_SERVER_URL = "https://mcp.tradingview.com/mcp"
@@ -21,6 +21,10 @@ SYMBOLS = {
     "MGC": "COMEX:MGC1!",
 }
 READ_ONLY_TOOLS = {"get_ohlcv", "get_symbol_data_batch"}
+TRADINGVIEW_TOOL_NAMES = {
+    "get_ohlcv": "mcp-tv-get-ohlcv",
+    "get_symbol_data_batch": "mcp-tv-get-symbol-data-batch",
+}
 
 
 class AuthorizationRequired(RuntimeError):
@@ -87,11 +91,20 @@ async def call_readonly_tool(name: str, arguments: dict[str, Any]) -> Any:
     if name not in READ_ONLY_TOOLS:
         raise ValueError(f"Tool is not enabled by FAB787 QUANTUM: {name}")
     oauth = _oauth_provider()
-    async with httpx2.AsyncClient(auth=oauth, timeout=httpx2.Timeout(30.0, read=90.0)) as http:
+
+    async def _stamp_user_agent(request: httpx2.Request) -> None:
+        if "user-agent" not in request.headers:
+            request.headers["User-Agent"] = "FAB787-QUANTUM/1.0"
+
+    async with httpx2.AsyncClient(
+        auth=oauth,
+        timeout=httpx2.Timeout(30.0, read=90.0),
+        event_hooks={"request": [_stamp_user_agent]},
+    ) as http:
         transport = streamable_http_client(MCP_URL, http_client=http)
         async with Client(transport) as client:
             try:
-                result = await client.call_tool(name, arguments)
+                result = await client.call_tool(TRADINGVIEW_TOOL_NAMES[name], arguments)
             except Exception as exc:
                 if is_quota_error(exc):
                     raise TradingViewQuotaExceeded(

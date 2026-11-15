@@ -13,24 +13,259 @@ button,select{font:inherit}.shell{max-width:1780px;margin:auto;padding:20px}.top
 .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}select,.control{background:#0a1421;color:var(--text);border:1px solid #30445c;border-radius:7px;padding:8px 10px}.btn{background:#14263a;color:#d8eaff;border:1px solid #31516d;border-radius:7px;padding:8px 11px;cursor:pointer}.btn:hover{background:#1a354e}.tv-link{display:inline-flex;align-items:center;gap:6px;text-decoration:none;background:#17384a;color:#c9f1ff;border:1px solid #34728d;border-radius:7px;padding:8px 11px;font-weight:650}.tv-link:hover{background:#20516a}.chart-wrap{height:510px;border:1px solid #263951;border-radius:10px;overflow:hidden;background:radial-gradient(ellipse at center,#14283b,#09121e);display:grid;place-items:center;padding:24px}.local-chart{width:100%;height:100%;display:flex;flex-direction:column;gap:10px}.local-chart svg{width:100%;height:100%;min-height:280px;overflow:visible}.local-chart-meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:11px}.chart-launch{max-width:560px;text-align:center}.chart-launch .big-symbol{font-size:36px;font-weight:850;letter-spacing:.08em;color:#e8f0fa}.chart-launch .chart-state{margin:10px 0 18px;color:var(--muted);font-size:13px;line-height:1.7}.chart-launch .tv-link{font-size:13px;padding:11px 16px}.notice{margin-top:9px;padding:9px 11px;border:1px solid #51452e;background:#211c13;color:#d8bd83;border-radius:8px;font-size:11px}
 .cards2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.metric{padding:13px;background:#0b1421;border:1px solid #1e2e43;border-radius:9px}.metric small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.1em}.metric b{display:block;margin-top:7px;font-size:14px}.placeholder{min-height:150px;border:1px dashed #34475f;border-radius:10px;display:grid;place-items:center;text-align:center;padding:22px;color:var(--muted)}.placeholder strong{display:block;color:#d5e3f2;font-size:14px;margin-bottom:5px}.agent-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.agent{background:#0b1421;border:1px solid #203149;border-radius:9px;padding:13px}.agent b{display:block;font-size:12px}.agent span{color:var(--muted);font-size:10px}.status-row{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid #1e2d40}.status-row:last-child{border-bottom:0}.feed-item{padding:13px 0;border-bottom:1px solid #1e2d40}.feed-item:last-child{border-bottom:0}.feed-item b{display:block}.feed-item p{margin:5px 0;color:var(--muted)}.tag{font-size:9px;color:var(--cyan);text-transform:uppercase;letter-spacing:.1em}.future-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.future{border:1px dashed #34475f;border-radius:10px;padding:15px;min-height:105px;background:#0b1421}.future b{display:block;margin-bottom:5px}.future span{color:var(--muted);font-size:11px}.footer{margin-top:16px;color:#70849c;font-size:10px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 @media(max-width:900px){.grid2{grid-template-columns:1fr}.agent-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.shell{padding:12px}.top{align-items:flex-start;flex-direction:column}.grid3,.cards2,.future-grid{grid-template-columns:1fr}.title{font-size:18px}.chart-wrap{height:390px}}
+
+/* FAB787 QUANTUM workspace redesign */
+:root{
+ --bg:#060b14;--panel:#0e1929;--panel2:#0a1321;--line:#233852;
+ --muted:#91a7c2;--text:#eaf3ff;--cyan:#62d9f5;--green:#46d6a0;
+ --blue:#7c9dff;--amber:#edbd69;--red:#f07883;
+}
+body{
+ min-height:100vh;
+ background:
+ radial-gradient(ellipse at 72% -15%,rgba(39,111,155,.22),transparent 42%),
+ radial-gradient(ellipse at 0% 45%,rgba(42,66,125,.12),transparent 35%),
+ var(--bg);
+}
+.shell{
+ width:min(100%,2100px);max-width:none;margin:0 auto;padding:22px 28px 26px;
+ display:grid;grid-template-columns:244px minmax(0,1fr);
+ grid-template-rows:auto minmax(0,1fr) auto;column-gap:24px;row-gap:18px;
+}
+.top{
+ grid-column:1/-1;grid-row:1;position:relative;
+ padding:5px 0 17px;border-bottom:1px solid rgba(91,133,173,.2);
+ margin:0;min-width:0;
+}
+.mark{
+ width:48px;height:48px;border-radius:14px;
+ background:linear-gradient(145deg,#12334b,#101d35);
+ box-shadow:0 0 28px rgba(88,201,233,.13);
+ font-size:18px;
+}
+.title{font-size:24px;letter-spacing:.095em}
+.nav{
+ grid-column:1;grid-row:2;align-self:start;
+ position:sticky;top:18px;z-index:5;
+ display:flex;flex-direction:column;gap:5px;
+ padding:12px;background:rgba(9,19,32,.9);
+ border:1px solid rgba(73,111,149,.3);border-radius:16px;
+ box-shadow:0 14px 40px rgba(0,0,0,.2);
+}
+.nav:before{
+ content:"WORKSPACES";display:block;padding:5px 11px 9px;
+ color:#6985a5;font-size:9px;font-weight:800;letter-spacing:.18em;
+}
+.nav button{
+ width:100%;text-align:left;white-space:normal;
+ color:#9bb0c9;padding:11px 12px;border-radius:9px;
+ border:1px solid transparent;background:transparent;
+ transition:background .18s,border-color .18s,color .18s,transform .18s;
+}
+.nav button:before{content:"";display:inline-block;width:7px;height:7px;
+ border-radius:50%;background:#405873;margin:0 11px 1px 0}
+.nav button:hover{background:#12243a;color:#eaf5ff;transform:translateX(2px)}
+.nav button.active{
+ background:linear-gradient(100deg,rgba(48,113,151,.3),rgba(29,54,87,.35));
+ border-color:#37617e;color:#e9f8ff;
+ box-shadow:inset 2px 0 0 var(--cyan);
+}
+.nav button.active:before{background:var(--cyan);box-shadow:0 0 12px var(--cyan)}
+.section{grid-column:2;grid-row:2;min-width:0;animation:workspace-in .22s ease-out}
+@keyframes workspace-in{from{opacity:.55;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.panel,.tile{
+ border-color:rgba(75,111,151,.32);
+ box-shadow:0 12px 35px rgba(0,0,0,.12);
+}
+.panel{padding:20px;border-radius:15px}
+.tile{padding:18px;border-radius:14px}
+.panel-head{margin-bottom:17px;align-items:flex-start}
+.panel-title{font-size:13px;letter-spacing:.105em}
+.eyebrow{font-weight:750;color:#7f9bb9}
+.grid3,.grid2{gap:15px}
+.grid2{margin-top:15px}
+.instrument{position:relative;overflow:hidden}
+.instrument:after{
+ content:"";position:absolute;inset:auto -25px -45px auto;
+ width:130px;height:110px;border-radius:50%;
+ background:radial-gradient(circle,rgba(88,201,233,.09),transparent 70%);
+ pointer-events:none;
+}
+.instrument.active{border-color:#4a93b5;box-shadow:inset 0 0 0 1px rgba(88,201,233,.23),0 0 24px rgba(50,145,184,.08)}
+.symbol{font-size:22px}
+.price{font-size:27px;letter-spacing:-.025em}
+.metric{padding:16px;border-radius:12px}
+.metric b{font-size:17px}
+.pill{font-weight:750;letter-spacing:.035em;padding:5px 10px}
+button,select,.control{min-height:37px}
+.btn,.tv-link{padding:9px 13px;border-radius:9px;transition:.17s}
+.btn:hover,.tv-link:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.18)}
+select:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
+ outline:2px solid var(--cyan);outline-offset:2px;
+}
+.chart-wrap{height:560px;border-radius:14px}
+.status-row{padding:13px 0}
+.agent-grid{gap:13px}
+.agent{padding:16px;border-radius:12px}
+.future-grid{gap:13px}
+.future{border-style:solid;border-color:#273d58;border-radius:12px}
+.notice{line-height:1.65;padding:12px 14px}
+.session-controls{display:flex;align-items:center;gap:9px}
+.session-user{color:#a8c0d9;font-size:11px}
+.logout-button{
+ border:1px solid #38536e;background:#111f32;color:#d9e9f8;
+ border-radius:9px;padding:8px 12px;cursor:pointer;
+}
+.logout-button:hover{border-color:var(--cyan);color:white}
+.help-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+.help-card{background:linear-gradient(145deg,#101f32,#0b1625);border:1px solid #263d58;border-radius:13px;padding:17px;min-width:0}
+.help-card h3{font-size:12px;letter-spacing:.09em;text-transform:uppercase;margin:0 0 8px}
+.help-card p,.help-card li{color:var(--muted);font-size:11px;line-height:1.7}
+.help-card ul{padding-left:18px;margin:8px 0}
+.help-checks{white-space:pre-wrap;color:#c5d7e9;font-size:11px;line-height:1.8;background:#081321;border:1px solid #263b54;border-radius:10px;padding:13px;min-height:70px}
+.help-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.session-controls button{white-space:nowrap}
+.footer{grid-column:2;grid-row:3;padding-top:5px;border-top:1px solid rgba(91,133,173,.15)}
+@media(max-width:1120px){
+ .shell{grid-template-columns:190px minmax(0,1fr);padding:17px;column-gap:15px}
+ .nav{padding:9px}
+ .nav button{padding:10px 8px;font-size:11px}
+ .chart-wrap{height:470px}
+}
+@media(max-width:820px){
+ .shell{display:flex;flex-direction:column;gap:13px;padding:13px}
+ .top{width:100%;flex-wrap:wrap}
+ .nav{
+  position:sticky;top:0;width:100%;flex-direction:row;overflow-x:auto;
+  padding:7px;border-radius:12px;background:rgba(8,17,29,.96);backdrop-filter:blur(12px);
+ }
+ .nav:before{display:none}
+ .nav button{width:auto;min-width:max-content;text-align:center;padding:9px 12px}
+ .nav button:before{display:none}
+ .section{width:100%}
+ .footer{width:100%}
+ .help-grid{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+ .shell{padding:10px}
+ .top{align-items:flex-start;gap:10px}
+ .title{font-size:19px}
+ .top-right{gap:7px}
+ .session-controls{width:100%;justify-content:space-between}
+ .grid3,.grid2,.cards2,.agent-grid,.future-grid{grid-template-columns:1fr}
+ .panel{padding:14px}
+ .panel-head{flex-direction:column}
+ .toolbar{width:100%}
+ .toolbar select{max-width:100%}
+ .chart-wrap{height:370px;padding:10px}
+ .local-chart-meta{font-size:10px}
+ .footer{font-size:9px}
+}
+
+
+/* FAB787 intelligence workspace additions */
+.instrument .bias-line{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:8px 0 2px;color:var(--muted);font-size:11px}
+.bias-chip,.source-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:999px;padding:3px 8px;font-size:10px;font-weight:750;letter-spacing:.04em}
+.bias-bullish{color:var(--green);border-color:#28684f;background:#10271f}.bias-bearish{color:var(--red);border-color:#713b48;background:#2a1720}.bias-neutral{color:var(--amber);border-color:#715b36;background:#2a2114}.bias-mixed{color:var(--blue);border-color:#435b9a;background:#18213c}.bias-unavailable{color:var(--muted);background:#101a29}
+.home-intelligence{margin-top:12px}.home-intelligence .panel-title{color:var(--cyan)}.snapshot-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}.snapshot-metric{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px;min-width:0}.snapshot-metric small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em}.snapshot-metric b{display:block;margin-top:5px;font-size:18px;font-variant-numeric:tabular-nums}.news-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.news-column{min-width:0}.news-column .panel-title{color:var(--cyan)}.news-feed{max-height:610px;overflow:auto}.news-item{padding:12px 0;border-bottom:1px solid var(--line)}.news-item:last-child{border-bottom:0}.news-item .tag{margin-bottom:6px}.news-item a{display:block;line-height:1.45}.news-item p{margin:6px 0;color:#bac9dc;font-size:12px}.news-bias-card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px;min-width:0}.news-bias-card h4{margin:0 0 9px;color:var(--text);font-size:13px}.bias-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:7px 0;font-size:11px}.bias-note{color:var(--muted);font-size:10px;line-height:1.45;margin-top:8px}.priority-high{color:var(--amber);border-color:#715b36;background:#2a2114}.priority-medium{color:var(--cyan);border-color:#28566a;background:#102433}.priority-unclassified{color:var(--muted)}.calendar-event{padding:10px 0;border-bottom:1px solid var(--line)}.calendar-event:last-child{border-bottom:0}.calendar-event strong{display:block;font-size:12px}.calendar-event .event-meta{color:var(--muted);font-size:10px;margin-top:4px}.fed-flag{color:var(--amber);font-weight:800}.gex-visual{background:#091321;border:1px solid var(--line);border-radius:10px;padding:10px;margin:12px 0}.gex-legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:10px;margin:6px 2px}.gex-legend span{display:inline-flex;align-items:center;gap:5px}.legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block}.gex-table-wrap{overflow-x:auto}.gex-table-positive{color:var(--green)}.gex-table-negative{color:var(--red)}.context-meter{height:7px;background:#1b2a3e;border-radius:99px;overflow:hidden;margin:7px 0}.context-meter span{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:99px}.snapshot-note{font-size:10px;color:var(--muted);line-height:1.45;margin-top:8px}.news-refresh-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+@media(max-width:1100px){.news-columns{grid-template-columns:1fr 1fr}.news-columns>.news-column:last-child{grid-column:1/-1}}
+@media(max-width:760px){.news-columns{grid-template-columns:1fr}.news-columns>.news-column:last-child{grid-column:auto}.snapshot-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* FAB787 QUANTUM Home / overview layout refinement */
+.instrument .bias-line{min-height:22px;margin-top:8px}
+.home-intelligence{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch}
+.home-sentiment-panel{display:none}
+.home-gex-panel,.home-scout-panel{min-width:0;height:100%}
+.home-news-panel .news-feed{max-height:300px}
+.gex-ranked-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.gex-expected-grid{margin-top:12px}
+@media(min-width:1000px){
+ body{margin:0}
+ .shell{display:grid;grid-template-columns:214px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:12px;max-width:none;width:100%;min-height:100vh;margin:0;padding:12px;align-items:start}
+ header.top{grid-column:1/-1;grid-row:1;position:relative;z-index:5}
+ nav.nav{grid-column:1;grid-row:2;position:sticky;top:12px;height:calc(100vh - 48px);display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;flex-wrap:nowrap;overflow-y:auto;overflow-x:hidden;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+ nav.nav button{width:100%;text-align:left;white-space:normal}
+ .section{grid-column:2;grid-row:2;min-width:0;padding:0}
+ .home-intelligence{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}
+@media(max-width:999px){
+ .shell{display:block;width:auto;max-width:1600px;margin:0 auto;padding:16px}
+ nav.nav{display:flex;flex-direction:row;overflow-x:auto;flex-wrap:nowrap}
+ nav.nav button{flex:0 0 auto}
+ .section{padding:0}
+}
+@media(max-width:760px){
+ .gex-ranked-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .home-intelligence{grid-template-columns:1fr}
+}
+
 </style></head>
 <body><div class="shell">
-<header class="top"><div class="brand"><div class="mark">FQ</div><div><div class="eyebrow">Futures intelligence platform</div><div class="title">FAB787 QUANTUM</div></div></div><div class="top-right"><span class="clock" id="clock">LOCAL TIME</span><span class="safety">● READ-ONLY · EXECUTION DISABLED</span></div></header>
+<header class="top"><div class="brand"><div class="mark">FQ</div><div><div class="eyebrow">Futures intelligence platform</div><div class="title">FAB787 QUANTUM</div></div></div><div class="top-right"><span class="clock" id="clock">LOCAL TIME</span><span class="safety">● READ-ONLY · EXECUTION DISABLED</span></div><div class="session-controls"><span class="session-user" id="session-user">LOCAL SESSION</span><button class="logout-button" id="logout-button" type="button">Sign out</button></div></header>
 <nav class="nav" aria-label="FAB787 QUANTUM workspaces">
-<button class="active" data-tab="overview">Overview</button><button data-tab="charts">Charts</button><button data-tab="gex">GEX</button><button data-tab="news">News & Events</button><button data-tab="agents">AI Desk</button><button data-tab="risk">Risk & Approvals</button><button data-tab="integrations">Integrations</button><button data-tab="expansion">Expansion</button>
+<button class="active" data-tab="overview">Overview</button><button data-tab="charts">Charts</button><button data-tab="gex">GEX</button><button data-tab="news">News & Events</button><button data-tab="agents">AI Desk</button><button data-tab="risk">Risk & Approvals</button><button data-tab="help">Help Center</button>
 </nav>
 <section class="section active" id="overview">
 <div class="panel-head"><div><div class="eyebrow">Market overview</div><div class="panel-title">Instrument watchlist</div></div><span class="pill off">FEEDS NOT CONNECTED</span></div>
 <div class="grid3" id="instrument-cards">
-<article class="tile instrument active" data-symbol="MNQ"><div class="symbol">MNQ</div><div class="contract">Micro E-mini Nasdaq-100</div><div class="price">— — —</div><div class="change">Price awaiting verified feed</div><div class="tile-foot"><span>Market data</span><span>NOT CONNECTED</span></div></article>
-<article class="tile instrument" data-symbol="MES"><div class="symbol">MES</div><div class="contract">Micro E-mini S&amp;P 500</div><div class="price">— — —</div><div class="change">Price awaiting verified feed</div><div class="tile-foot"><span>Market data</span><span>NOT CONNECTED</span></div></article>
-<article class="tile instrument" data-symbol="MGC"><div class="symbol">MGC</div><div class="contract">Micro Gold</div><div class="price">— — —</div><div class="change">Price awaiting verified feed</div><div class="tile-foot"><span>Market data</span><span>NOT CONNECTED</span></div></article>
+<article class="tile instrument active" data-symbol="MNQ"><div class="symbol">MNQ</div><div class="contract">Micro E-mini Nasdaq-100</div><div class="price">— — —</div><div class="change">Price awaiting verified feed</div><div class="bias-line" id="instrument-bias-MNQ"><span class="bias-chip bias-unavailable">Sentiment awaiting sources</span></div><div class="tile-foot"><span>Market data</span><span>NOT CONNECTED</span></div></article>
+<article class="tile instrument" data-symbol="MES"><div class="symbol">MES</div><div class="contract">Micro E-mini S&amp;P 500</div><div class="price">— — —</div><div class="change">Price awaiting verified feed</div><div class="bias-line" id="instrument-bias-MES"><span class="bias-chip bias-unavailable">Sentiment awaiting sources</span></div><div class="tile-foot"><span>Market data</span><span>NOT CONNECTED</span></div></article>
+<article class="tile instrument" data-symbol="MGC"><div class="symbol">MGC</div><div class="contract">Micro Gold</div><div class="price">— — —</div><div class="change">Price awaiting verified feed</div><div class="bias-line" id="instrument-bias-MGC"><span class="bias-chip bias-unavailable">Sentiment awaiting sources</span></div><div class="tile-foot"><span>Market data</span><span>NOT CONNECTED</span></div></article>
 </div>
-<div class="grid2"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Selected instrument</div><div class="panel-title" id="overview-selected">MNQ · Market snapshot</div></div><div class="toolbar"><span class="pill off" id="market-data-status">WAITING FOR AUTHORIZATION</span><button class="btn" id="refresh-market">Refresh data</button><button class="btn" data-go="charts">Open chart workspace ↗</button></div></div><div class="cards2"><div class="metric"><small>Latest available close</small><b id="overview-price">—</b></div><div class="metric"><small>Latest bar volume</small><b id="overview-volume">—</b></div><div class="metric"><small>Latest bar high / low</small><b id="overview-range">—</b></div><div class="metric"><small>Bar timestamp (UTC)</small><b id="overview-time">—</b></div></div><p class="muted small" id="overview-source" style="margin:12px 0 0">TradingView MCP data will appear after separate FAB787 QUANTUM authorization.</p></div>
-<aside class="panel"><div class="panel-head"><div class="panel-title">Platform health</div><span class="pill ok" id="api-health">CHECKING</span></div><div class="status-row"><span class="muted">API service</span><b id="api-label">Checking…</b></div><div class="status-row"><span class="muted">TradingView MCP adapter</span><b id="tv-health-label">Checking…</b></div><div class="status-row"><span class="muted">Yahoo news adapter</span><b>Configured · awaiting first fetch</b></div><div class="status-row"><span class="muted">AI agents</span><b>Not started</b></div><div class="status-row"><span class="muted">Paper account</span><b>Not verified</b></div><div class="status-row"><span class="muted">Order execution</span><b style="color:var(--green)">Disabled</b></div></aside></div>
+<div class="grid2"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Selected instrument</div><div class="panel-title" id="overview-selected">MNQ · Market snapshot</div></div><div class="toolbar"><select id="market-data-provider" aria-label="Market data provider"><option value="tradingview">TradingView</option><option value="webull">Webull</option></select><span class="pill off" id="market-data-status">WAITING FOR AUTHORIZATION</span><button class="btn" id="refresh-market">Refresh data</button><button class="btn" data-go="charts">Open chart workspace ↗</button></div></div><div class="cards2"><div class="metric"><small>Latest available close</small><b id="overview-price">—</b></div><div class="metric"><small>Latest bar volume</small><b id="overview-volume">—</b></div><div class="metric"><small>Latest bar high / low</small><b id="overview-range">—</b></div><div class="metric"><small>Bar timestamp (UTC)</small><b id="overview-time">—</b></div></div><p class="muted small" id="overview-source" style="margin:12px 0 0">Select an authorized provider to load historical OHLCV bars.</p></div>
+<aside class="panel"><div class="panel-head"><div class="panel-title">Platform health</div><span class="pill ok" id="api-health">CHECKING</span></div><div class="status-row"><span class="muted">API service</span><b id="api-label">Checking…</b></div><div class="status-row"><span class="muted">TradingView MCP adapter</span><b id="tv-health-label">Checking…</b></div><div class="status-row"><span class="muted">Webull Cloud MCP adapter</span><b id="webull-health-label">Checking?</b></div><div class="status-row"><span class="muted">Yahoo news adapter</span><b>Configured · awaiting first fetch</b></div><div class="status-row"><span class="muted">AI agents</span><b>Not started</b></div><div class="status-row"><span class="muted">Paper account</span><b>Not verified</b></div><div class="status-row"><span class="muted">Order execution</span><b style="color:var(--green)">Disabled</b></div></aside></div>
+
+<div class="grid2 home-intelligence">
+ <div class="panel home-sentiment-panel">
+  <div class="panel-head"><div><div class="eyebrow">Source-aware news intelligence</div><div class="panel-title">Combined instrument sentiment</div></div><span class="pill off" id="home-sentiment-status">AWAITING SOURCES</span></div>
+  <div class="grid3" id="home-sentiment-grid">
+   <div class="news-bias-card"><h4>MNQ · QQQ</h4><span class="bias-chip bias-unavailable">Awaiting news</span></div>
+   <div class="news-bias-card"><h4>MES · SPY</h4><span class="bias-chip bias-unavailable">Awaiting news</span></div>
+   <div class="news-bias-card"><h4>MGC · GLD</h4><span class="bias-chip bias-unavailable">Awaiting news</span></div>
+  </div>
+  <p class="snapshot-note">Webull native article sentiment is used when Yahoo does not provide a sentiment field. ETF/index proxies are not futures-native news. Confidence is capped at medium without independent confirmation.</p>
+ </div>
+ <div class="panel home-gex-panel">
+  <div class="panel-head"><div><div class="eyebrow">Cached options positioning</div><div class="panel-title">GEX snapshot · NDX / MNQ proxy</div></div><span class="pill off" id="home-gex-status">NOT LOADED</span></div>
+  <div class="snapshot-grid">
+   <div class="snapshot-metric"><small>NDX underlying spot</small><b id="home-gex-spot">—</b></div>
+   <div class="snapshot-metric"><small>MNQ mapped price</small><b id="home-gex-futures">—</b></div>
+   <div class="snapshot-metric"><small>Call wall · MNQ level</small><b id="home-gex-call">—</b></div>
+   <div class="snapshot-metric"><small>Put wall · MNQ level</small><b id="home-gex-put">—</b></div>
+   <div class="snapshot-metric"><small>Gamma flip</small><b id="home-gex-flip">—</b></div>
+   <div class="snapshot-metric"><small>Net GEX / 1% move</small><b id="home-gex-net">—</b></div>
+  </div>
+<div class="snapshot-grid home-gex-detail-grid">
+   <div class="snapshot-metric"><small>C1 · strongest call GEX</small><b id="home-gex-c1">—</b></div>
+   <div class="snapshot-metric"><small>C2 · second call GEX</small><b id="home-gex-c2">—</b></div>
+   <div class="snapshot-metric"><small>C3 · third call GEX</small><b id="home-gex-c3">—</b></div>
+   <div class="snapshot-metric"><small>P1 · strongest put GEX</small><b id="home-gex-p1">—</b></div>
+   <div class="snapshot-metric"><small>P2 · second put GEX</small><b id="home-gex-p2">—</b></div>
+   <div class="snapshot-metric"><small>P3 · third put GEX</small><b id="home-gex-p3">—</b></div>
+   <div class="snapshot-metric"><small>Expected move · MNQ range</small><b id="home-gex-em-range">Unavailable</b></div>
+   <div class="snapshot-metric"><small>Expected move · IV / expiry</small><b id="home-gex-em-iv">Unavailable</b></div>
+   <div class="snapshot-metric"><small>Historical realized volatility</small><b id="home-gex-rv">Unavailable</b></div>
+  </div>
+  <p class="snapshot-note" id="home-gex-note">Cache-only snapshot. Open GEX workspace and load data to populate it. No additional Cboe request is made from Home.</p>
+ </div>
+
+<div class="panel home-scout-panel">
+ <div class="panel-head"><div><div class="eyebrow">Deterministic cache-only market context</div><div class="panel-title">Futures bot assessment · Opportunity Scout</div></div><span class="pill off" id="home-scout-status">AWAITING CACHE</span></div>
+ <div id="home-scout-content" class="muted">Waiting for verified market context. This is not an actionable trade recommendation.</div>
+ <p class="snapshot-note">Context points are not a probability, forecast, trade entry, or approval. Any future proposal must pass the Master Risk Engine and your explicit approval.</p>
+</div>
+</div>
+
+
+<div class="panel home-news-panel" style="margin-top:12px">
+ <div class="panel-head"><div><div class="eyebrow">Latest cached headlines</div><div class="panel-title">News watch · Yahoo + Webull</div></div><span class="pill off" id="home-news-status">AWAITING FEEDS</span><button class="btn" type="button" data-go="news">Open News & Events</button></div>
+ <div id="home-news-feed" class="news-feed" style="max-height:300px"><div class="placeholder">Loading cached headlines…</div></div>
+ <p class="snapshot-note">Headlines are displayed with their source and publication time. News and sentiment are context only, not trade instructions.</p>
+</div>
 </section>
-<section class="section" id="charts"><div class="panel"><div class="panel-head"><div><div class="eyebrow">TradingView chart workspace</div><div class="panel-title" id="chart-heading">MNQ · Micro E-mini Nasdaq-100</div></div><div class="toolbar"><select id="chart-symbol" aria-label="Chart instrument"><option value="MNQ">MNQ</option><option value="MES">MES</option><option value="MGC">MGC</option></select><select id="chart-timeframe" aria-label="Chart timeframe"><option value="1">1 minute</option><option value="5" selected>5 minutes</option><option value="15">15 minutes</option><option value="60">1 hour</option><option value="240">4 hours</option><option value="D">1 day</option></select><button class="btn" id="reload-chart">Reload chart</button><a class="tv-link" id="open-tv-chart" href="https://www.tradingview.com/chart/?symbol=CME_MINI%3AMNQ1%21" target="_blank" rel="noopener noreferrer">Open in TradingView ↗</a></div></div><div class="chart-wrap"><div class="local-chart"><div class="local-chart-meta"><span id="local-chart-status">Waiting for TradingView authorization</span><span id="local-chart-source">Source: TradingView MCP · historical bars</span></div><svg id="local-chart-svg" viewBox="0 0 1000 360" role="img" aria-label="Historical futures close-price chart"><text x="500" y="180" text-anchor="middle" fill="#8da1ba" font-size="16">Authorize TradingView to load chart data</text></svg></div></div><div class="toolbar" style="margin-top:10px"><a class="tv-link" id="chart-panel-link" href="https://www.tradingview.com/chart/?symbol=CME_MINI%3AMNQ1%21" target="_blank" rel="noopener noreferrer">Launch MNQ in TradingView ↗</a><span class="muted small">Local chart uses historical MCP candles; TradingView remains the authenticated full chart.</span></div><div class="notice">Historical data is polled on demand. This is not a live streaming feed. If a contract is unavailable or cannot be parsed, FAB787 QUANTUM will show unavailable rather than invent a price.</div></div>
-<div class="grid2"><div class="panel"><div class="panel-title">Chart data status</div><p class="muted" id="chart-data-help">Authorize TradingView for this FAB787 QUANTUM installation to retrieve historical OHLCV bars directly.</p></div><div class="panel"><div class="panel-title">Planned chart tools</div><div class="status-row"><span>Multiple chart layouts</span><span class="pill off">PLANNED</span></div><div class="status-row"><span>Saved chart templates</span><span class="pill off">PLANNED</span></div><div class="status-row"><span>AI annotations</span><span class="pill off">PLANNED</span></div></div></div></section>
+<section class="section" id="charts"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Historical futures chart workspace</div><div class="panel-title" id="chart-heading">MNQ · Micro E-mini Nasdaq-100</div></div><div class="toolbar"><select id="chart-symbol" aria-label="Chart instrument"><option value="MNQ">MNQ</option><option value="MES">MES</option><option value="MGC">MGC</option></select><select id="chart-timeframe" aria-label="Chart timeframe"><option value="1">1 minute</option><option value="5" selected>5 minutes</option><option value="15">15 minutes</option><option value="60">1 hour</option><option value="240">4 hours</option><option value="D">1 day</option></select><button class="btn" id="reload-chart">Reload chart</button><a class="tv-link" id="open-tv-chart" href="https://www.tradingview.com/chart/?symbol=CME_MINI%3AMNQ1%21" target="_blank" rel="noopener noreferrer">Open in TradingView ↗</a></div></div><div class="chart-wrap"><div class="local-chart"><div class="local-chart-meta"><span id="local-chart-status">Waiting for market-data provider</span><span id="local-chart-source">Source: TradingView MCP · historical bars</span></div><svg id="local-chart-svg" viewBox="0 0 1000 360" role="img" aria-label="Historical futures close-price chart"><text x="500" y="180" text-anchor="middle" fill="#8da1ba" font-size="16">Select an authorized provider to load chart data</text></svg></div></div><div class="toolbar" style="margin-top:10px"><a class="tv-link" id="chart-panel-link" href="https://www.tradingview.com/chart/?symbol=CME_MINI%3AMNQ1%21" target="_blank" rel="noopener noreferrer">Launch MNQ in TradingView ↗</a><span class="muted small">Local chart uses historical MCP candles; TradingView remains the authenticated full chart.</span></div><div class="notice">Historical data is polled on demand. This is not a live streaming feed. If a contract is unavailable or cannot be parsed, FAB787 QUANTUM will show unavailable rather than invent a price.</div></div>
+<div class="grid2"><div class="panel"><div class="panel-title">Chart data status</div><p class="muted" id="chart-data-help">Choose TradingView or Webull in the market-data provider selector. Each provider has independent authorization, caching and status reporting.</p></div><div class="panel"><div class="panel-title">Planned chart tools</div><div class="status-row"><span>Multiple chart layouts</span><span class="pill off">PLANNED</span></div><div class="status-row"><span>Saved chart templates</span><span class="pill off">PLANNED</span></div><div class="status-row"><span>AI annotations</span><span class="pill off">PLANNED</span></div></div></div></section>
 <section class="section" id="gex">
 <div class="panel">
   <div class="panel-head"><div><div class="eyebrow">Options positioning · NDX mapped to MNQ/NQ</div><div class="panel-title">Gamma exposure workspace</div></div><span class="pill warn" id="gex-status">NOT LOADED · ON DEMAND</span></div>
@@ -49,6 +284,36 @@ button,select{font:inherit}.shell{max-width:1780px;margin:auto;padding:20px}.top
   <div class="metric"><small>Put wall · futures level</small><b id="gex-put-wall">—</b></div>
   <div class="metric"><small>Gamma flip · futures level</small><b id="gex-flip">—</b></div>
 </div>
+<div class="grid3 gex-ranked-grid" style="margin-top:12px">
+  <div class="metric"><small>C1 · strongest call GEX</small><b id="gex-c1">—</b></div>
+  <div class="metric"><small>C2 · second call GEX</small><b id="gex-c2">—</b></div>
+  <div class="metric"><small>C3 · third call GEX</small><b id="gex-c3">—</b></div>
+  <div class="metric"><small>P1 · strongest negative put GEX</small><b id="gex-p1">—</b></div>
+  <div class="metric"><small>P2 · second put GEX</small><b id="gex-p2">—</b></div>
+  <div class="metric"><small>P3 · third put GEX</small><b id="gex-p3">—</b></div>
+</div>
+<div class="snapshot-grid gex-expected-grid">
+  <div class="snapshot-metric"><small>Expected move · NDX points</small><b id="gex-em-points">Unavailable</b></div>
+  <div class="snapshot-metric"><small>Expected move · percent</small><b id="gex-em-percent">Unavailable</b></div>
+  <div class="snapshot-metric"><small>Expected move · MNQ lower / upper</small><b id="gex-em-range">Unavailable</b></div>
+  <div class="snapshot-metric"><small>Nearest expiry · ATM IV</small><b id="gex-em-iv">Unavailable</b></div>
+  <div class="snapshot-metric"><small>Expected move expiry</small><b id="gex-em-expiry">Unavailable</b></div>
+  <div class="snapshot-metric"><small>Historical realized volatility</small><b id="gex-realized-vol">Unavailable</b></div>
+</div>
+
+<div class="gex-visual">
+ <div class="panel-head"><div><div class="eyebrow">Strike distribution · mapped futures levels</div><div class="panel-title">GEX exposure map</div></div><span class="muted small" id="gex-chart-caption">Load data to plot strike exposure</span></div>
+ <svg id="gex-chart" viewBox="0 0 1000 360" role="img" aria-label="Net gamma exposure by mapped futures strike with spot, call wall, put wall and gamma flip markers" style="width:100%;height:auto;display:block;min-height:210px"></svg>
+ <div class="gex-legend">
+  <span><i class="legend-dot" style="background:var(--green)"></i>Positive net GEX</span>
+  <span><i class="legend-dot" style="background:var(--red)"></i>Negative net GEX</span>
+  <span><i class="legend-dot" style="background:var(--cyan)"></i>Mapped futures spot</span>
+  <span><i class="legend-dot" style="background:var(--green)"></i>Call wall</span>
+  <span><i class="legend-dot" style="background:var(--red)"></i>Put wall</span>
+  <span><i class="legend-dot" style="background:var(--amber)"></i>Gamma flip</span>
+ </div>
+</div>
+
 <div class="panel" style="margin-top:12px">
   <div class="panel-head"><div class="panel-title">Largest strike exposures</div><span class="muted small" id="gex-count">No data</span></div>
   <div style="overflow-x:auto">
@@ -60,25 +325,43 @@ button,select{font:inherit}.shell{max-width:1780px;margin:auto;padding:20px}.top
 </div>
 <div class="notice" id="gex-assumptions">GEX is an estimate, not a trade signal. Calls-positive / puts-negative is a dealer-positioning assumption, not verified dealer inventory. Open interest is generally prior-session data.</div>
 </section>
+
 <section class="section" id="news">
-<div class="grid2">
-  <div class="panel">
-    <div class="panel-head">
-      <div><div class="eyebrow">Market intelligence · Yahoo Finance only</div><div class="panel-title">Ticker headline stream</div></div>
-      <div class="toolbar"><span class="pill off" id="news-status">CHECKING FEED</span><button class="btn" id="refresh-news">Check for updates</button></div>
-    </div>
-    <div class="muted small" id="news-meta">One combined Yahoo Finance RSS request covers MNQ, MES, MGC and related index / gold proxies. Ten-minute cache; no TradingView news requests.</div>
-    <div id="news-feed" style="margin-top:8px"><div class="placeholder"><div><strong>Loading Yahoo Finance headlines</strong>Headlines will appear only when a source item and timestamp are available.</div></div></div>
+ <div class="news-refresh-row"><div><div class="eyebrow">Multi-source market intelligence</div><div class="panel-title">News, sentiment & macro catalysts</div><div class="muted small">Yahoo and Webull remain separate source feeds. All displayed publication times are converted from source timestamps to New York time.</div></div><button class="btn" id="refresh-news">Refresh news & calendar</button></div>
+ <div class="news-columns">
+  <div class="panel news-column">
+   <div class="panel-head"><div><div class="eyebrow">Source 1 · RSS</div><div class="panel-title">Yahoo Finance</div></div><span class="pill off" id="news-status">CHECKING</span></div>
+   <div class="muted small" id="news-meta">Existing combined Yahoo RSS feed · 10-minute cache.</div>
+   <div class="news-feed" id="news-feed"><div class="placeholder">Loading Yahoo headlines…</div></div>
   </div>
-  <div class="panel">
-    <div class="panel-head"><div><div class="eyebrow">Scheduled macro releases</div><div class="panel-title">Economic catalyst calendar</div></div><span class="pill warn" id="calendar-status">YAHOO PAGE LINK</span></div>
-    <p class="muted">Yahoo Finance publishes a US and global economic-events calendar. Its page currently displays event times in UTC. A stable structured Yahoo event feed has not yet been verified, so this dashboard does not copy, convert, or invent calendar rows.</p>
-    <a class="tv-link" id="yahoo-calendar-link" href="https://finance.yahoo.com/calendar/economic/" target="_blank" rel="noopener noreferrer">Open Yahoo Finance Economic Calendar ↗</a>
-    <p class="muted small" style="margin-top:12px">New York time conversion and in-dashboard event rows will be added only after the Yahoo event fields and timestamps can be validated reliably.</p>
+  <div class="panel news-column">
+   <div class="panel-head"><div><div class="eyebrow">Source 2 · Read-only MCP</div><div class="panel-title">Webull News</div></div><span class="pill off" id="webull-news-status">CHECKING</span></div>
+   <div class="muted small" id="webull-news-meta">QQQ → MNQ · SPY → MES · GLD → MGC · independent 10-minute cache.</div>
+   <div class="news-feed" id="webull-news-feed"><div class="placeholder">Loading Webull headlines…</div></div>
   </div>
-</div>
-<div class="notice" style="margin-top:12px">Provider protection: one combined Yahoo ticker RSS feed, cached for 10 minutes with a 15-minute failure cooldown. Repeated dashboard visits and manual checks inside the cache window do not create another upstream request. TradingView is not used for news or the economic calendar.</div>
+  <div class="panel news-column">
+   <div class="panel-head"><div><div class="eyebrow">Source 3 · Structured macro data</div><div class="panel-title">Economic Calendar</div></div><span class="pill off" id="calendar-status">CHECKING</span></div>
+   <div class="muted small" id="calendar-meta">Webull US macro calendar · UTC source times displayed in America/New_York.</div>
+   <div class="news-feed" id="calendar-feed"><div class="placeholder">Loading macro events…</div></div>
+   <a class="tv-link" id="yahoo-calendar-link" href="https://finance.yahoo.com/calendar/economic/" target="_blank" rel="noopener noreferrer">Yahoo Finance calendar fallback ↗</a>
+  </div>
+ </div>
+ <div class="panel" style="margin-top:12px">
+  <div class="panel-head"><div><div class="eyebrow">Catalyst intelligence · both sources</div><div class="panel-title">Catalyst watch</div></div><span class="pill off" id="catalyst-status">AWAITING HEADLINES</span></div>
+  <div id="catalyst-feed" class="news-feed" style="max-height:280px"><div class="placeholder">Catalyst tags will appear when headlines are cached.</div></div>
+  <p class="snapshot-note">Catalyst tags identify themes and priority for review. They do not infer bullish/bearish market impact.</p>
+ </div>
+ <div class="panel" style="margin-top:12px">
+  <div class="panel-head"><div><div class="eyebrow">Per-provider comparison</div><div class="panel-title">Yahoo bias · Webull bias · Combined instrument bias</div></div><span class="muted small">MNQ · MES · MGC</span></div>
+  <div class="grid3" id="news-bias-grid">
+   <div class="news-bias-card"><h4>MNQ · QQQ</h4><div class="bias-row"><span>Yahoo</span><span>Not supplied</span></div><div class="bias-row"><span>Webull</span><span>Awaiting feed</span></div><div class="bias-row"><strong>Combined</strong><span>Unavailable</span></div></div>
+   <div class="news-bias-card"><h4>MES · SPY</h4><div class="bias-row"><span>Yahoo</span><span>Not supplied</span></div><div class="bias-row"><span>Webull</span><span>Awaiting feed</span></div><div class="bias-row"><strong>Combined</strong><span>Unavailable</span></div></div>
+   <div class="news-bias-card"><h4>MGC · GLD</h4><div class="bias-row"><span>Yahoo</span><span>Not supplied</span></div><div class="bias-row"><span>Webull</span><span>Awaiting feed</span></div><div class="bias-row"><strong>Combined</strong><span>Unavailable</span></div></div>
+  </div>
+  <p class="snapshot-note">Yahoo RSS currently provides no native sentiment or reliable per-contract mapping. Webull sentiment is its own article label. A one-provider result is marked single-source; stale items older than 24 hours do not contribute to directional bias.</p>
+ </div>
 </section>
+
 <section class="section" id="agents"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Hybrid multi-agent architecture</div><div class="panel-title">AI operations desk</div></div><span class="pill off">PLANNED · NOT ACTIVE</span></div><div class="agent-grid">
 <div class="agent"><b>MNQ Instrument Agent</b><span>Independent Nasdaq futures analysis</span></div><div class="agent"><b>MES Instrument Agent</b><span>Independent S&amp;P futures analysis</span></div><div class="agent"><b>MGC Instrument Agent</b><span>Independent gold futures analysis</span></div>
 <div class="agent"><b>Opportunity Scout</b><span>Candidate discovery and ranking</span></div><div class="agent"><b>News &amp; Catalyst Intelligence</b><span>Events, headlines and source checks</span></div><div class="agent"><b>Sentiment Analyst</b><span>Sourced sentiment with confidence limits</span></div><div class="agent"><b>Market Structure Analyst</b><span>Trend, levels, volatility and context</span></div><div class="agent"><b>Account Protection Analyst</b><span>Independent risk surveillance</span></div><div class="agent"><b>Chief Decision Agent</b><span>Coordinates analysis and drafts proposals</span></div></div></div><div class="panel" style="margin-top:12px"><div class="panel-title">Agent communication & audit trail</div><div class="placeholder"><div><strong>Agent activity stream reserved</strong>Reports will show source data, timestamps, confidence, disagreements, reasoning summaries and failure states.</div></div></div></section>
@@ -209,29 +492,110 @@ button,select{font:inherit}.shell{max-width:1780px;margin:auto;padding:20px}.top
  <div id="risk-audit-events" class="muted small">Loading local audit events…</div>
 </div>
 </section>
-<section class="section" id="integrations"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Data connections</div><div class="panel-title">Integration control center</div></div><span class="pill warn">ADAPTERS NOT CONNECTED</span></div><div class="status-row"><div><b>TradingView MCP</b><div class="muted small">Official OAuth connection · read-only market history</div></div><span class="pill warn" id="tv-integration-state">AUTHORIZATION REQUIRED</span></div><div class="status-row"><div><b>Yahoo Finance / News</b><div class="muted small">Combined ticker RSS · ten-minute cache · stale fallback</div></div><span class="pill warn">CONFIGURED · VERIFY ON FETCH</span></div><div class="status-row"><div><b>Economic calendar</b><div class="muted small">Yahoo Finance economic calendar page · structured feed unverified</div></div><span class="pill warn">PAGE LINK ONLY</span></div><div class="status-row"><div><b>Cboe delayed options / GEX</b><div class="muted small">NDX options chain · on-demand · 15-minute cache · MNQ/NQ mapping</div></div><span class="pill off">ON DEMAND</span></div><div class="status-row"><div><b>Broker / paper account</b><div class="muted small">Read-only account verification first</div></div><span class="pill off">NOT CONNECTED</span></div><div class="status-row"><div><b>Market data fallback</b><div class="muted small">Secondary source and data-health comparison</div></div><span class="pill off">FUTURE</span></div></div><div class="notice">Claude Desktop MCP servers do not automatically expose their tools to this FastAPI app. We will build and test a local adapter for each approved capability; no credentials or tokens belong in dashboard HTML or Git.</div></section>
-<section class="section" id="expansion"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Modular platform roadmap</div><div class="panel-title">Reserved expansion bays</div></div><span class="pill off">READY FOR FUTURE MODULES</span></div><div class="future-grid">
-<div class="future"><b>More instruments</b><span>ES, NQ, YM, RTY, SI, CL and configurable futures watchlists</span></div><div class="future"><b>Additional workspaces</b><span>Multi-chart layouts, replay, session review and trade journal</span></div><div class="future"><b>Advanced analytics</b><span>Volatility, breadth, correlations and cross-market dashboards</span></div><div class="future"><b>Strategy laboratory</b><span>Backtests, paper results, versioned strategy configurations</span></div><div class="future"><b>Prop-firm account manager</b><span>Evaluation/funded profiles and configurable rule sets</span></div><div class="future"><b>Notifications</b><span>Desktop/mobile alerts, health warnings and approval reminders</span></div><div class="future"><b>Additional AI specialists</b><span>Dedicated agents added without coupling instrument bots</span></div><div class="future"><b>Research library</b><span>Session notes, catalyst archive and source-linked reports</span></div><div class="future"><b>Plugin / adapter bay</b><span>New providers with explicit permissions and health checks</span></div></div></div></section>
+<section class="section" id="help"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Data connections</div><div class="panel-title">Integration control center</div></div><span class="pill warn" id="integration-summary">CHECKING CONNECTIONS</span></div><div class="status-row"><div><b>TradingView MCP</b><div class="muted small">Official OAuth connection · read-only market history</div></div><span class="pill warn" id="tv-integration-state">AUTHORIZATION REQUIRED</span></div><div class="status-row"><div><b>Webull Cloud MCP</b><div class="muted small">Separate OAuth ? read-only futures bars, snapshots, depth and contracts</div></div><span class="pill warn" id="webull-integration-state">CHECKING</span></div><div class="status-row"><div><b>Yahoo Finance / News</b><div class="muted small">Combined ticker RSS · ten-minute cache · stale fallback</div></div><span class="pill warn">CONFIGURED · VERIFY ON FETCH</span></div><div class="status-row"><div><b>Economic calendar</b><div class="muted small">Yahoo Finance economic calendar page · structured feed unverified</div></div><span class="pill warn">PAGE LINK ONLY</span></div><div class="status-row"><div><b>Cboe delayed options / GEX</b><div class="muted small">NDX options chain · on-demand · 15-minute cache · MNQ/NQ mapping</div></div><span class="pill off">ON DEMAND</span></div><div class="status-row"><div><b>Broker / paper account</b><div class="muted small">Read-only account verification first</div></div><span class="pill off">NOT CONNECTED</span></div><div class="status-row"><div><b>Market data fallback</b><div class="muted small">Secondary source and data-health comparison</div></div><span class="pill off">FUTURE</span></div></div><div class="notice">The local application uses its own separately authorized provider connections. Webull is restricted to market:read and instrument:read. Credentials remain outside dashboard HTML and Git.</div>
+<div class="panel" style="margin-top:14px">
+ <div class="panel-head">
+  <div><div class="eyebrow">System support</div><div class="panel-title">Help Center ? Diagnostics &amp; Troubleshooting</div></div>
+  <button class="btn" id="help-run-checks" type="button">Run system checks</button>
+ </div>
+ <p class="muted small">Check local API health, both market-data authorizations, provider permissions and application safety status. Diagnostics do not submit orders or request market data.</p>
+ <div class="help-checks" id="help-check-results" aria-live="polite">Ready to run local system checks.</div>
+</div>
+<div class="help-grid">
+ <div class="help-card">
+  <h3>Getting started</h3>
+  <p>Use this order when setting up a new local installation.</p>
+  <ul><li>Sign in with your local administrator account.</li><li>Authorize each data provider separately from the project terminal.</li><li>Select TradingView or Webull in the Overview provider control.</li><li>Choose an instrument and timeframe in Charts.</li><li>Review data source, delay and cache status before relying on a value.</li></ul>
+ </div>
+ <div class="help-card">
+  <h3>Market-data connections</h3>
+  <p><b>TradingView:</b> separate OAuth authorization; read-only history.</p>
+  <p><b>Webull:</b> separate Cloud MCP OAuth; market:read and instrument:read only.</p>
+  <p><b>Yahoo Finance:</b> news and calendar context, not a guaranteed real-time futures feed.</p>
+  <p><b>GEX:</b> on-demand options-derived estimates with source and timing limitations.</p>
+ </div>
+ <div class="help-card">
+  <h3>Local terminal commands</h3>
+  <p>Run from the Futures Mission Control project directory with the virtual environment.</p>
+  <ul><li><code>python -m mission_control.webull_auth</code> ? Webull authorization.</li><li><code>python -m mission_control.tradingview_auth</code> ? TradingView authorization.</li><li><code>python -m pytest -q</code> ? project regression tests.</li><li><code>python -m mission_control.main</code> ? use the project's documented server command if available.</li></ul>
+ </div>
+ <div class="help-card">
+  <h3>Security &amp; trading safeguards</h3>
+  <ul><li>Local administrator login protects dashboard and API routes.</li><li>Provider credentials are not stored in dashboard HTML.</li><li>Webull adapter exposes an explicit read-only tool allowlist.</li><li>TradingView remains read-only.</li><li>Master Risk Engine and human approval remain separate from data providers.</li><li>Order execution remains disabled.</li></ul>
+ </div>
+</div>
+<div class="panel" style="margin-top:14px">
+ <div class="panel-head"><div><div class="eyebrow">Platform roadmap</div><div class="panel-title">Expansion &amp; support reference</div></div><span class="pill off">PLANNED MODULES</span></div>
+<div class="panel"><div class="panel-head"><div><div class="eyebrow">Modular platform roadmap</div><div class="panel-title">Reserved expansion bays</div></div><span class="pill off">READY FOR FUTURE MODULES</span></div><div class="future-grid">
+<div class="future"><b>More instruments</b><span>ES, NQ, YM, RTY, SI, CL and configurable futures watchlists</span></div><div class="future"><b>Additional workspaces</b><span>Multi-chart layouts, replay, session review and trade journal</span></div><div class="future"><b>Advanced analytics</b><span>Volatility, breadth, correlations and cross-market dashboards</span></div><div class="future"><b>Strategy laboratory</b><span>Backtests, paper results, versioned strategy configurations</span></div><div class="future"><b>Prop-firm account manager</b><span>Evaluation/funded profiles and configurable rule sets</span></div><div class="future"><b>Notifications</b><span>Desktop/mobile alerts, health warnings and approval reminders</span></div><div class="future"><b>Additional AI specialists</b><span>Dedicated agents added without coupling instrument bots</span></div><div class="future"><b>Research library</b><span>Session notes, catalyst archive and source-linked reports</span></div><div class="future"><b>Plugin / adapter bay</b><span>New providers with explicit permissions and health checks</span></div></div></div>
+</div>
+</section>
+
 <footer class="footer"><span>FAB787 QUANTUM · Workspace foundation v0.3</span><span>MNQ / MES / MGC · Human approval required · No live execution</span></footer>
 </div>
 <script>
 const names={MNQ:"Micro E-mini Nasdaq-100",MES:"Micro E-mini S&P 500",MGC:"Micro Gold"};
 const symbols={MNQ:"CME_MINI:MNQ1!",MES:"CME_MINI:MES1!",MGC:"COMEX:MGC1!"};
-const marketCache={};
+const marketCache={tradingview:{},webull:{}};let activeProvider="tradingview";const providerStatus={tradingview:false,webull:false};
 function tradingViewPageUrl(){const s=document.getElementById("chart-symbol").value;const tf=document.getElementById("chart-timeframe").value;return "https://www.tradingview.com/chart/?symbol="+encodeURIComponent(symbols[s])+"&interval="+encodeURIComponent(tf);}
 function loadChart(){const s=document.getElementById("chart-symbol").value;const url=tradingViewPageUrl();document.getElementById("chart-heading").textContent=s+" · "+names[s];document.getElementById("chart-panel-symbol").textContent=s;document.getElementById("open-tv-chart").href=url;document.getElementById("open-tv-chart").textContent="Open "+s+" in TradingView ↗";document.getElementById("chart-panel-link").href=url;document.getElementById("chart-panel-link").textContent="Launch "+s+" in TradingView ↗";}
-function selectInstrument(s){document.querySelectorAll(".instrument").forEach(x=>x.classList.toggle("active",x.dataset.symbol===s));document.getElementById("overview-selected").textContent=s+" · Market snapshot";document.getElementById("chart-symbol").value=s;loadChart();renderOverview(s);}
-document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".section").forEach(x=>x.classList.toggle("active",x.id===b.dataset.tab));if(b.dataset.tab==="charts"){loadChart();const tf=intervalName(document.getElementById("chart-timeframe").value);if(marketCache[tf])renderChart(marketCache[tf]);else fetchMarketData(tf,true);}}));
+function selectInstrument(s){document.querySelectorAll(".instrument").forEach(x=>x.classList.toggle("active",x.dataset.symbol===s));document.getElementById("overview-selected").textContent=s+" · Market snapshot";document.getElementById("chart-symbol").value=s;loadChart();renderOverview(s,marketCache[activeProvider]["1m"],activeProvider);}
+document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".section").forEach(x=>x.classList.toggle("active",x.id===b.dataset.tab));if(b.dataset.tab==="charts"){loadChart();const tf=intervalName(document.getElementById("chart-timeframe").value);if(marketCache[activeProvider][tf])renderChart(marketCache[activeProvider][tf],activeProvider);else fetchMarketData(tf,true,activeProvider);}}));
 document.querySelectorAll(".instrument").forEach(x=>x.addEventListener("click",()=>selectInstrument(x.dataset.symbol)));
 document.querySelectorAll("[data-go]").forEach(x=>x.addEventListener("click",()=>document.querySelector('[data-tab="'+x.dataset.go+'"]').click()));
-document.getElementById("chart-symbol").addEventListener("change",()=>{loadChart();const cached=marketCache[intervalName(document.getElementById("chart-timeframe").value)];if(cached)renderChart(cached);});document.getElementById("chart-timeframe").addEventListener("change",()=>fetchMarketData(document.getElementById("chart-timeframe").value,true));document.getElementById("reload-chart").addEventListener("click",()=>fetchMarketData(document.getElementById("chart-timeframe").value,true));document.getElementById("refresh-market").addEventListener("click",()=>fetchMarketData("1m",false));
+document.getElementById("chart-symbol").addEventListener("change",()=>{loadChart();const cached=marketCache[activeProvider][intervalName(document.getElementById("chart-timeframe").value)];if(cached)renderChart(cached,activeProvider);});document.getElementById("chart-timeframe").addEventListener("change",()=>fetchMarketData(document.getElementById("chart-timeframe").value,true));document.getElementById("reload-chart").addEventListener("click",()=>fetchMarketData(document.getElementById("chart-timeframe").value,true));document.getElementById("refresh-market").addEventListener("click",()=>fetchMarketData("1m",false,activeProvider));
+document.getElementById("market-data-provider").addEventListener("change",()=>{
+ activeProvider=document.getElementById("market-data-provider").value;
+ const selected=document.getElementById("overview-selected").textContent.split(" ")[0];
+ const tf=intervalName(document.getElementById("chart-timeframe").value);
+ const overview=marketCache[activeProvider]["1m"];
+ document.getElementById("overview-price").textContent="?";
+ document.getElementById("overview-volume").textContent="?";
+ document.getElementById("overview-range").textContent="?";
+ document.getElementById("overview-time").textContent="?";
+ document.getElementById("overview-source").textContent="Waiting for "+providerLabel(activeProvider)+".";
+ if(overview)renderOverview(selected,overview,activeProvider);
+ const chart=marketCache[activeProvider][tf];
+ if(chart&&document.getElementById("charts").classList.contains("active"))renderChart(chart,activeProvider);
+ fetchMarketData("1m",false,activeProvider);
+ if(tf!=="1m"&&document.getElementById("charts").classList.contains("active"))fetchMarketData(tf,true,activeProvider);
+});
 function tick(){document.getElementById("clock").textContent=new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"medium"}).format(new Date());}tick();setInterval(tick,1000);
 fetch("/api/health").then(r=>r.json()).then(d=>{document.getElementById("api-health").textContent=d.status==="ok"?"API ONLINE":"API ERROR";document.getElementById("api-label").textContent=d.status==="ok"?"Online":"Error";}).catch(()=>{document.getElementById("api-health").textContent="API OFFLINE";document.getElementById("api-label").textContent="Offline";});
 function gexMoney(value){return (Number(value)/1000000).toFixed(2)+"M";}
+function gexLevelText(level){return level?fmt(level.futures_level)+" · "+gexMoney(level.gex):"Unavailable";}
+function gexVolText(item){return item?.status==="ready"&&item.annualized_pct!=null?Number(item.annualized_pct).toFixed(2)+"%":"Unavailable";}
+function renderGexChart(data){
+ const svg=document.getElementById("gex-chart");if(!svg)return;
+ const rows=(data.all_strikes||[]).filter(x=>Number.isFinite(Number(x.futures_level))&&Number.isFinite(Number(x.net_gex))).sort((a,b)=>Number(a.futures_level)-Number(b.futures_level));
+ if(!rows.length){svg.innerHTML='<text x="500" y="180" text-anchor="middle" fill="#91a7c2" font-size="16">No strike exposure rows available</text>';return;}
+ const min=Math.min(...rows.map(x=>Number(x.futures_level))),max=Math.max(...rows.map(x=>Number(x.futures_level))),span=max-min||1;
+ const maxAbs=Math.max(1,...rows.map(x=>Math.abs(Number(x.net_gex))));
+ const left=72,right=960,zero=190,barMax=115,step=(right-left)/Math.max(1,rows.length),barW=Math.max(2,Math.min(13,step*.72));
+ let parts=['<line x1="'+left+'" y1="'+zero+'" x2="'+right+'" y2="'+zero+'" stroke="#53657b" stroke-width="1"/>'];
+ rows.forEach(item=>{const x=left+(Number(item.futures_level)-min)/span*(right-left)-barW/2;const value=Number(item.net_gex);const h=Math.max(1,Math.abs(value)/maxAbs*barMax);const y=value>=0?zero-h:zero;const color=value>=0?'#46d6a0':'#f07883';parts.push('<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="1.5" fill="'+color+'" opacity=".82"><title>MNQ '+Number(item.futures_level).toFixed(2)+' · Net GEX '+value.toLocaleString()+'</title></rect>');});
+ const markers=[
+  {value:Number(data.futures_price),label:'SPOT',color:'#62d9f5'},
+  {value:data.gamma_flip_futures==null?NaN:Number(data.gamma_flip_futures),label:'GAMMA FLIP',color:'#edbd69'},
+  {value:data.expected_move_lower_futures==null?NaN:Number(data.expected_move_lower_futures),label:'EM −',color:'#a78bfa'},
+  {value:data.expected_move_upper_futures==null?NaN:Number(data.expected_move_upper_futures),label:'EM +',color:'#a78bfa'}
+ ];
+ (data.call_levels||[]).forEach(level=>markers.push({value:Number(level.futures_level),label:level.label,color:'#46d6a0'}));
+ (data.put_levels||[]).forEach(level=>markers.push({value:Number(level.futures_level),label:level.label,color:'#f07883'}));
+ markers.forEach((m,index)=>{if(!Number.isFinite(m.value)||m.value<min||m.value>max)return;const x=left+(m.value-min)/span*(right-left);parts.push('<line x1="'+x.toFixed(1)+'" y1="42" x2="'+x.toFixed(1)+'" y2="315" stroke="'+m.color+'" stroke-width="2" stroke-dasharray="'+(index===0?'0':'6 4')+'" opacity=".95"/><text x="'+Math.max(left,Math.min(right-8,x)).toFixed(1)+'" y="'+(index%2?34:20)+'" text-anchor="middle" fill="'+m.color+'" font-size="10" font-weight="700">'+m.label+'</text>');});
+ parts.push('<text x="'+left+'" y="340" fill="#91a7c2" font-size="11">'+min.toLocaleString(undefined,{maximumFractionDigits:2})+'</text>');
+ parts.push('<text x="'+right+'" y="340" text-anchor="end" fill="#91a7c2" font-size="11">'+max.toLocaleString(undefined,{maximumFractionDigits:2})+'</text>');
+ parts.push('<text x="'+left+'" y="65" fill="#91a7c2" font-size="10">POSITIVE GEX</text><text x="'+left+'" y="312" fill="#91a7c2" font-size="10">NEGATIVE GEX</text>');
+ svg.innerHTML=parts.join('');
+ const caption=document.getElementById("gex-chart-caption");if(caption)caption.textContent=rows.length+" strikes · levels mapped to MNQ/NQ";
+}
+
 async function loadGex(){
   const status=document.getElementById("gex-status");
   const rawPrice=document.getElementById("gex-futures-price").value.trim();
-  const query=rawPrice?"?futures_price="+encodeURIComponent(rawPrice):"";
+  const provider=document.getElementById("market-data-provider")?.value||activeProvider||"tradingview";
+  const params=new URLSearchParams({provider});if(rawPrice)params.set("futures_price",rawPrice);
+  const query="?"+params.toString();
   status.textContent="REQUESTING CBOE DATA";
   status.className="pill warn";
   try{
@@ -247,65 +611,346 @@ async function loadGex(){
     document.getElementById("gex-call-wall").textContent=fmt(data.call_wall_futures);
     document.getElementById("gex-put-wall").textContent=fmt(data.put_wall_futures);
     document.getElementById("gex-flip").textContent=data.gamma_flip_futures==null?"Not detected":fmt(data.gamma_flip_futures);
+    ["c1","c2","c3"].forEach((key,i)=>{document.getElementById("gex-"+key).textContent=gexLevelText((data.call_levels||[])[i]);});
+    ["p1","p2","p3"].forEach((key,i)=>{document.getElementById("gex-"+key).textContent=gexLevelText((data.put_levels||[])[i]);});
+    const em=data.expected_move||{};document.getElementById("gex-em-points").textContent=em.status==="ready"?fmt(data.expected_move_points_ndx)+" pts":"Unavailable";
+    document.getElementById("gex-em-percent").textContent=em.status==="ready"?Number(data.expected_move_pct).toFixed(2)+"%":"Unavailable";
+    document.getElementById("gex-em-range").textContent=em.status==="ready"?fmt(data.expected_move_lower_futures)+" – "+fmt(data.expected_move_upper_futures):"Unavailable";
+    document.getElementById("gex-em-iv").textContent=em.status==="ready"?Number(data.expected_move_atm_iv_pct).toFixed(2)+"%":"Unavailable";
+    document.getElementById("gex-em-expiry").textContent=em.status==="ready"?data.expected_move_expiration+" · "+data.expected_move_trading_days+" weekdays":"Unavailable";
+    document.getElementById("gex-realized-vol").textContent=gexVolText(data.realized_volatility);
     document.getElementById("gex-count").textContent=data.contracts_used+" contracts · "+data.expirations_used.length+" expirations · "+data.top_strikes.length+" largest strikes";
     const body=document.querySelector("#gex-table tbody");
     body.replaceChildren();
     (data.top_strikes||[]).forEach(item=>{
       const tr=document.createElement("tr");
       tr.style.borderBottom="1px solid #1e2d40";
-      [fmt(item.futures_level),gexMoney(item.net_gex),gexMoney(item.call_gex),gexMoney(item.put_gex),fmt(item.call_oi),fmt(item.put_oi)].forEach(value=>{
-        const td=document.createElement("td");td.style.padding="9px";td.textContent=value;tr.appendChild(td);
+      [fmt(item.futures_level),gexMoney(item.net_gex),gexMoney(item.call_gex),gexMoney(item.put_gex),fmt(item.call_oi),fmt(item.put_oi)].forEach((value,index)=>{
+        const td=document.createElement("td");td.style.padding="9px";td.textContent=value;
+        if(index===0)td.style.fontWeight="750";
+        if(index===1)td.style.color=Number(item.net_gex)>=0?"var(--green)":"var(--red)";
+        if(index===2)td.style.color="var(--green)";
+        if(index===3)td.style.color="var(--red)";
+        tr.appendChild(td);
       });
       body.appendChild(tr);
     });
+    renderGexChart(data);
     document.getElementById("gex-assumptions").textContent=data.assumptions.join(" ");
+    await loadHomeIntelligence();
   }catch(error){status.textContent="GEX TEMPORARILY UNAVAILABLE";status.className="pill warn";document.getElementById("gex-help").textContent="Could not load the Cboe delayed options chain. Existing cached results, if any, remain separate from this request.";}
 }
 document.getElementById("load-gex").addEventListener("click",loadGex);
-async function checkTradingView(){try{const r=await fetch("/api/tradingview/status");const d=await r.json();const label=d.connected?"Authorized":"Authorization required";document.getElementById("tv-health-label").textContent=label;document.getElementById("tv-integration-state").textContent=d.connected?"AUTHORIZED":"AUTHORIZATION REQUIRED";document.getElementById("tv-integration-state").className=d.connected?"pill ok":"pill warn";document.getElementById("market-data-status").textContent=d.connected?"TRADINGVIEW AUTHORIZED":"AUTHORIZATION REQUIRED";if(d.connected){document.getElementById("market-data-status").className="pill ok";fetchMarketData("1m",false);}else{document.getElementById("market-data-status").className="pill warn";}}catch(e){document.getElementById("tv-health-label").textContent="Unavailable";}}
+function providerLabel(provider){return provider==="webull"?"Webull Cloud MCP":"TradingView MCP";}
+async function checkIntegrations(){
+ try{
+  const auth=await fetch("/api/auth/status").then(r=>r.json());
+  document.getElementById("session-user").textContent=auth.username?"SIGNED IN ? "+auth.username:"LOCAL SESSION";
+  const [tvResult,webullResult]=await Promise.allSettled([
+   fetch("/api/tradingview/status").then(r=>{if(!r.ok)throw new Error("TradingView status unavailable");return r.json();}),
+   fetch("/api/webull/status").then(r=>{if(!r.ok)throw new Error("Webull status unavailable");return r.json();})
+  ]);
+  if(tvResult.status==="fulfilled"){
+   const tv=tvResult.value;providerStatus.tradingview=!!tv.connected;
+   document.getElementById("tv-health-label").textContent=tv.connected?"Authorized":"Authorization required";
+   document.getElementById("tv-integration-state").textContent=tv.connected?"AUTHORIZED":"AUTHORIZATION REQUIRED";
+   document.getElementById("tv-integration-state").className=tv.connected?"pill ok":"pill warn";
+  }else{
+   document.getElementById("tv-health-label").textContent="Unavailable";
+   document.getElementById("tv-integration-state").textContent="STATUS UNAVAILABLE";
+   document.getElementById("tv-integration-state").className="pill warn";
+  }
+  if(webullResult.status==="fulfilled"){
+   const webull=webullResult.value;providerStatus.webull=!!webull.connected;
+   document.getElementById("webull-health-label").textContent=webull.connected?"Authorized":"Authorization required";
+   document.getElementById("webull-integration-state").textContent=webull.connected?"AUTHORIZED ? READ ONLY":"AUTHORIZATION REQUIRED";
+   document.getElementById("webull-integration-state").className=webull.connected?"pill ok":"pill warn";
+  }else{
+   document.getElementById("webull-health-label").textContent="Unavailable";
+   document.getElementById("webull-integration-state").textContent="STATUS UNAVAILABLE";
+   document.getElementById("webull-integration-state").className="pill warn";
+  }
+  const count=[providerStatus.tradingview,providerStatus.webull].filter(Boolean).length;
+  const summary=document.getElementById("integration-summary");
+  summary.textContent=count===2?"2 MARKET FEEDS AUTHORIZED":count===1?"1 MARKET FEED AUTHORIZED":"NO MARKET FEEDS AUTHORIZED";
+  summary.className=count?"pill ok":"pill warn";
+  const status=document.getElementById("market-data-status");
+  status.textContent=providerStatus[activeProvider]?providerLabel(activeProvider).toUpperCase()+" AUTHORIZED":providerLabel(activeProvider).toUpperCase()+" AUTHORIZATION REQUIRED";
+  status.className=providerStatus[activeProvider]?"pill ok":"pill warn";
+  if(providerStatus[activeProvider])await fetchMarketData("1m",false,activeProvider);
+  else document.getElementById("chart-data-help").textContent="Authorize "+providerLabel(activeProvider)+" from the project terminal to retrieve historical data.";
+ }catch(error){
+  document.getElementById("session-user").textContent="SESSION STATUS UNAVAILABLE";
+ }
+}
 function intervalName(tf){return ({1:"1m",5:"5m",15:"15m",60:"1h",240:"4h",D:"1D","1m":"1m","5m":"5m","15m":"15m","1h":"1h","4h":"4h","1D":"1D"})[tf]||"5m";}
 function fmt(v){return Number(v).toLocaleString(undefined,{maximumFractionDigits:2});}
-function renderOverview(symbol){const rows=marketCache["1m"]?.instruments||[];rows.forEach(row=>{const card=document.querySelector(`.instrument[data-symbol="${row.symbol}"]`);if(!card)return;if(row.latest){card.querySelector(".price").textContent=fmt(row.latest.c);card.querySelector(".change").textContent="Latest available 1m close";card.querySelector(".tile-foot span:last-child").textContent="CONNECTED";}else{card.querySelector(".price").textContent="— — —";card.querySelector(".change").textContent="Data unavailable";card.querySelector(".tile-foot span:last-child").textContent="UNAVAILABLE";}});const row=rows.find(x=>x.symbol===symbol);if(!row||!row.latest){return;}const b=row.latest;document.getElementById("overview-price").textContent=b.c==null?"—":fmt(b.c);document.getElementById("overview-volume").textContent=b.v==null?"—":fmt(b.v);document.getElementById("overview-range").textContent=(b.h==null?"—":fmt(b.h))+" / "+(b.l==null?"—":fmt(b.l));document.getElementById("overview-time").textContent=b.t?new Date(Number(b.t)*1000).toLocaleString("en-US",{timeZone:"UTC",hour12:false})+" UTC":"—";document.getElementById("overview-source").textContent="Source: TradingView MCP · 1-minute historical bars · retrieved "+new Date().toLocaleTimeString();}
-function renderChart(data){const symbol=document.getElementById("chart-symbol").value;const row=data.instruments?.find(x=>x.symbol===symbol);const svg=document.getElementById("local-chart-svg");if(!row||!row.bars?.length){svg.innerHTML=`<text x="500" y="180" text-anchor="middle" fill="#e8b45c" font-size="16">${row?.status==="unavailable"?"Data unavailable for "+symbol:"No historical bars returned for "+symbol}</text>`;document.getElementById("local-chart-status").textContent="DATA UNAVAILABLE";return;}const bars=row.bars.filter(b=>Number.isFinite(Number(b.c)));if(!bars.length){document.getElementById("local-chart-status").textContent="DATA FORMAT NOT RECOGNIZED";return;}const vals=bars.map(b=>Number(b.c));const lo=Math.min(...vals),hi=Math.max(...vals),span=hi-lo||1;const points=vals.map((v,i)=>`${30+i*940/Math.max(1,vals.length-1)},${320-(v-lo)/span*270}`).join(" ");svg.innerHTML=`<line x1="30" y1="50" x2="970" y2="50" stroke="#263951"/><line x1="30" y1="185" x2="970" y2="185" stroke="#263951"/><line x1="30" y1="320" x2="970" y2="320" stroke="#263951"/><polyline points="${points}" fill="none" stroke="#58c9e9" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><text x="30" y="24" fill="#8da1ba" font-size="13">${fmt(hi)}</text><text x="30" y="348" fill="#8da1ba" font-size="13">${fmt(lo)}</text><text x="970" y="24" text-anchor="end" fill="#e8f0fa" font-size="15">${fmt(vals[vals.length-1])}</text>`;document.getElementById("local-chart-status").textContent=`${symbol} · ${bars.length} historical bars · ${intervalName(document.getElementById("chart-timeframe").value)}`;document.getElementById("local-chart-source").textContent="TradingView MCP · retrieved "+new Date().toLocaleTimeString();}
-async function fetchMarketData(interval="1m",showChart=false){try{const response=await fetch("/api/market-data?interval="+encodeURIComponent(intervalName(interval)));if(!response.ok){const err=await response.json();if(response.status===503){document.getElementById("market-data-status").textContent="AUTHORIZATION REQUIRED";document.getElementById("local-chart-status").textContent="Authorize TradingView from the local project terminal";document.getElementById("chart-data-help").textContent=err.detail?.message||"TradingView authorization is required.";return;}throw new Error("Market data request failed");}const data=await response.json();marketCache[intervalName(interval)]=data;if(data.cache){document.getElementById("chart-data-help").textContent=`Central request manager: ${data.cache.status}. Cache age ${data.cache.age_seconds}s; next upstream refresh in about ${data.cache.next_refresh_seconds}s. Snapshot refresh groups: ${data.cache.upstream_refreshes}; provider calls per group: ${data.cache.provider_requests_per_snapshot??"up to 3"}; cache hits: ${data.cache.cache_hits}.`;}if(interval==="1m"){const selected=document.getElementById("overview-selected").textContent.split(" ")[0];renderOverview(selected);document.getElementById("market-data-status").textContent="DATA RECEIVED";document.getElementById("market-data-status").className="pill ok";}if(showChart)renderChart(data);}catch(e){document.getElementById("local-chart-status").textContent="TradingView data temporarily unavailable";}}
-checkTradingView();setInterval(()=>{if(document.getElementById("tv-health-label").textContent==="Authorized")fetchMarketData("1m",false);},300000);
+function renderOverview(symbol,data=marketCache[activeProvider]["1m"],provider=activeProvider){
+ const rows=data?.instruments||[];
+ rows.forEach(row=>{
+  const card=document.querySelector(`.instrument[data-symbol="${row.symbol}"]`);
+  if(!card)return;
+  if(row.latest){
+   card.querySelector(".price").textContent=fmt(row.latest.c);
+   card.querySelector(".change").textContent="Latest available 1m close";
+   card.querySelector(".tile-foot span:last-child").textContent="CONNECTED";
+  }else{
+   card.querySelector(".price").textContent="? ? ?";
+   card.querySelector(".change").textContent="Data unavailable";
+   card.querySelector(".tile-foot span:last-child").textContent="UNAVAILABLE";
+  }
+ });
+ const row=rows.find(x=>x.symbol===symbol);
+ if(!row||!row.latest)return;
+ const b=row.latest;
+ document.getElementById("overview-price").textContent=b.c==null?"?":fmt(b.c);
+ document.getElementById("overview-volume").textContent=b.v==null?"?":fmt(b.v);
+ document.getElementById("overview-range").textContent=(b.h==null?"?":fmt(b.h))+" / "+(b.l==null?"?":fmt(b.l));
+ document.getElementById("overview-time").textContent=b.t?new Date(Number(b.t)*1000).toLocaleString("en-US",{timeZone:"UTC",hour12:false})+" UTC":"?";
+ const delay=row.delay_minutes!=null?" ? reported delay "+row.delay_minutes+"m":"";
+ document.getElementById("overview-source").textContent="Source: "+(data.source||providerLabel(provider))+" ? 1-minute historical bars"+delay+" ? retrieved "+new Date().toLocaleTimeString();
+}
+function renderChart(data,provider=activeProvider){
+ const symbol=document.getElementById("chart-symbol").value;
+ const row=data.instruments?.find(x=>x.symbol===symbol);
+ const svg=document.getElementById("local-chart-svg");
+ if(!row||!row.bars?.length){
+  svg.innerHTML=`<text x="500" y="180" text-anchor="middle" fill="#e8b45c" font-size="16">${row?.status==="unavailable"?"Data unavailable for "+symbol:"No historical bars returned for "+symbol}</text>`;
+  document.getElementById("local-chart-status").textContent="DATA UNAVAILABLE";
+  document.getElementById("local-chart-source").textContent=providerLabel(provider)+" ? no bars returned";
+  return;
+ }
+ const bars=row.bars.filter(b=>Number.isFinite(Number(b.c)));
+ if(!bars.length){document.getElementById("local-chart-status").textContent="DATA FORMAT NOT RECOGNIZED";return;}
+ const vals=bars.map(b=>Number(b.c)),lo=Math.min(...vals),hi=Math.max(...vals),span=hi-lo||1;
+ const points=vals.map((v,i)=>`${30+i*940/Math.max(1,vals.length-1)},${320-(v-lo)/span*270}`).join(" ");
+ svg.innerHTML=`<line x1="30" y1="50" x2="970" y2="50" stroke="#263951"/><line x1="30" y1="185" x2="970" y2="185" stroke="#263951"/><line x1="30" y1="320" x2="970" y2="320" stroke="#263951"/><polyline points="${points}" fill="none" stroke="#58c9e9" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><text x="30" y="24" fill="#8da1ba" font-size="13">${fmt(hi)}</text><text x="30" y="348" fill="#8da1ba" font-size="13">${fmt(lo)}</text><text x="970" y="24" text-anchor="end" fill="#e8f0fa" font-size="15">${fmt(vals[vals.length-1])}</text>`;
+ document.getElementById("local-chart-status").textContent=`${symbol} ? ${bars.length} historical bars ? ${intervalName(document.getElementById("chart-timeframe").value)}`;
+ document.getElementById("local-chart-source").textContent=(data.source||providerLabel(provider))+" ? retrieved "+new Date().toLocaleTimeString();
+}
+async function fetchMarketData(interval="1m",showChart=false,provider=activeProvider){
+ const timeframe=intervalName(interval);
+ try{
+  const response=await fetch("/api/market-data?interval="+encodeURIComponent(timeframe)+"&provider="+encodeURIComponent(provider));
+  if(!response.ok){
+   const err=await response.json(),detail=err.detail?.message||"Provider authorization or data request failed.";
+   document.getElementById("market-data-status").textContent=response.status===503?"AUTHORIZATION REQUIRED":response.status===429?"PROVIDER COOLDOWN":"DATA ERROR";
+   document.getElementById("market-data-status").className="pill warn";
+   document.getElementById("local-chart-status").textContent=providerLabel(provider)+" ? "+(response.status===429?"provider cooldown":"data unavailable");
+   document.getElementById("chart-data-help").textContent=detail;
+   return;
+  }
+  const data=await response.json();
+  marketCache[provider][timeframe]=data;
+  if(data.cache){
+   document.getElementById("chart-data-help").textContent=providerLabel(provider)+" request manager: "+data.cache.status+". Cache age "+data.cache.age_seconds+"s; next refresh in about "+data.cache.next_refresh_seconds+"s. Snapshot refreshes: "+data.cache.upstream_refreshes+"; provider calls: "+(data.cache.provider_requests_per_snapshot??"not reported")+"; cache hits: "+data.cache.cache_hits+".";
+  }
+  if(timeframe==="1m"){
+   const selected=document.getElementById("overview-selected").textContent.split(" ")[0];
+   renderOverview(selected,data,provider);
+   if(provider===activeProvider){
+    document.getElementById("market-data-status").textContent=providerLabel(provider).toUpperCase()+" DATA RECEIVED";
+    document.getElementById("market-data-status").className="pill ok";
+   }
+  }
+  if(showChart)renderChart(data,provider);
+ }catch(error){
+  document.getElementById("local-chart-status").textContent=providerLabel(provider)+" data temporarily unavailable";
+  document.getElementById("chart-data-help").textContent="The selected provider could not complete this request.";
+ }
+}
+async function runHelpDiagnostics(){
+ const output=document.getElementById("help-check-results");
+ output.textContent="Running local checks?";
+ const checks=[
+  ["Application API","/api/health"],
+  ["TradingView authorization","/api/tradingview/status"],
+  ["Webull authorization","/api/webull/status"],
+  ["Integration registry","/api/integrations"]
+ ];
+ const results=await Promise.all(checks.map(async ([name,url])=>{
+  try{
+   const response=await fetch(url);
+   const data=await response.json();
+   if(!response.ok)throw new Error("HTTP "+response.status);
+   let detail=data.status||"Available";
+   if(url.includes("/status"))detail=data.connected?"Authorized ? read-only":"Authorization required";
+   if(url==="/api/health")detail=data.status==="ok"?"Healthy ? execution disabled":"Unexpected health response";
+   if(url==="/api/integrations")detail=(data.integrations||[]).length+" integrations reported";
+   return "? "+name+": "+detail;
+  }catch(error){return "? "+name+": "+error.message;}
+ }));
+ output.textContent=results.join("\n")+"\n\nChecks are read-only. No order or account action was performed.";
+}
+document.getElementById("help-run-checks").addEventListener("click",runHelpDiagnostics);
+document.getElementById("logout-button").addEventListener("click",async()=>{
+ try{await fetch("/api/auth/logout",{method:"POST"});}finally{window.location.assign("/login");}
+});
+checkIntegrations();
+runHelpDiagnostics();
+setInterval(()=>{if(providerStatus[activeProvider])fetchMarketData("1m",false,activeProvider);},300000);
 function formatNewsTime(value){
-  if(!value)return "Published time unavailable";
+  if(!value)return "Time unavailable";
   const date=new Date(value);
-  if(Number.isNaN(date.getTime()))return "Published time unavailable";
+  if(Number.isNaN(date.getTime()))return "Time unavailable";
   return new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",dateStyle:"medium",timeStyle:"short",timeZoneName:"short"}).format(date);
 }
-function renderNews(data){
-  const status=document.getElementById("news-status");
-  status.textContent=(data.status||"unavailable").toUpperCase()+" · YAHOO";
-  status.className=["fresh","cached"].includes(data.status)?"pill ok":data.status==="stale"?"pill warn":"pill off";
-  document.getElementById("news-meta").textContent=
-    (data.item_count??(data.items||[]).length)+" headlines · cache age "+(data.cache_age_seconds??"—")+"s · upstream requests "+(data.upstream_requests??0)+" · next refresh in about "+(data.next_refresh_seconds??data.retry_after_seconds??"—")+"s · source: Yahoo Finance RSS.";
-  const feed=document.getElementById("news-feed");
-  feed.replaceChildren();
-  const items=data.items||[];
-  if(!items.length){
-    const empty=document.createElement("div");empty.className="placeholder";
-    const inner=document.createElement("div");
-    const strong=document.createElement("strong");strong.textContent=data.error||"No Yahoo Finance headlines returned";
-    const note=document.createElement("span");note.className="small";note.textContent="No headlines are fabricated. Check the feed again after the provider cooldown or open Yahoo Finance directly.";
-    inner.append(strong,note);empty.appendChild(inner);feed.appendChild(empty);return;
-  }
+function biasClass(value){return ({bullish:"bias-bullish",bearish:"bias-bearish",neutral:"bias-neutral",mixed:"bias-mixed"})[value]||"bias-unavailable";}
+function biasLabel(value){return ({bullish:"BULLISH",bearish:"BEARISH",neutral:"NEUTRAL",mixed:"MIXED",unavailable:"UNAVAILABLE",not_provided:"NOT PROVIDED"})[value]||String(value||"UNAVAILABLE").replaceAll("_"," ").toUpperCase();}
+function setPill(id,status,label){const el=document.getElementById(id);if(!el)return;el.textContent=label||String(status||"unavailable").toUpperCase();el.className=["fresh","cached","partial","ready"].includes(status)?"pill ok":status==="stale"?"pill warn":"pill off";}
+function renderArticleFeed(containerId,items,emptyText){
+  const feed=document.getElementById(containerId);if(!feed)return;feed.replaceChildren();
+  if(!items||!items.length){const empty=document.createElement("div");empty.className="placeholder";empty.textContent=emptyText;feed.appendChild(empty);return;}
   items.forEach(item=>{
-    const article=document.createElement("article");article.className="feed-item";
-    const tag=document.createElement("div");tag.className="tag";tag.textContent=(item.publisher||"Yahoo Finance")+" · "+formatNewsTime(item.published_at);
-    const title=document.createElement("a");title.href=item.url;title.target="_blank";title.rel="noopener noreferrer";title.textContent=item.title;title.style.color="var(--text)";title.style.fontWeight="700";title.style.textDecoration="none";
+    const article=document.createElement("article");article.className="news-item";
+    const tag=document.createElement("div");tag.className="tag";tag.textContent=(item.publisher||item.source||"Provider")+" · "+formatNewsTime(item.published_at);
+    const title=document.createElement("a");title.textContent=item.title||"Untitled headline";title.style.color="var(--text)";title.style.fontWeight="700";title.style.textDecoration="none";
+    if(typeof item.url==="string"&&item.url.startsWith("https://")){title.href=item.url;title.target="_blank";title.rel="noopener noreferrer";}else title.removeAttribute("href");
     const summary=document.createElement("p");summary.textContent=item.summary||"No summary supplied by the publisher.";
-    const received=document.createElement("div");received.className="muted small";received.textContent="Received "+formatNewsTime(item.received_at)+" · timestamps shown in New York time.";
-    article.append(tag,title,summary,received);feed.appendChild(article);
+    const meta=document.createElement("div");meta.className="muted small";
+    const labels=[];if(item.proxy_symbol)labels.push("Proxy: "+item.proxy_symbol);if(item.sentiment&&item.sentiment!=="unavailable")labels.push("Webull label: "+biasLabel(item.sentiment));if(item.related_symbols?.length)labels.push("Related: "+item.related_symbols.slice(0,5).join(", "));
+    meta.textContent=labels.join(" · ")||"Provider sentiment not supplied";
+    article.append(tag,title,summary,meta);feed.appendChild(article);
   });
 }
+function renderArticleFeed(feedId,items,emptyMessage){
+ const feed=document.getElementById(feedId);if(!feed)return;feed.replaceChildren();
+ const rows=Array.isArray(items)?items:[];
+ if(!rows.length){const empty=document.createElement("div");empty.className="placeholder";empty.textContent=emptyMessage||"No headlines are currently available.";feed.appendChild(empty);return;}
+ rows.slice(0,30).forEach(item=>{
+  if(!item||typeof item!=="object")return;
+  const article=document.createElement("article");article.className="news-item";
+  const publisher=item.publisher||item.source||item.provider||item.provider_name||"Market news";
+  const rawTime=item.published_at||item.published||item.pub_date||item.publish_time||item.date||item.timestamp||item.created_at;
+  const meta=document.createElement("div");meta.className="tag";
+  let timeText="Timestamp unavailable";
+  if(rawTime!=null&&rawTime!==""){
+   const normalizedTime=typeof rawTime==="number"?new Date(rawTime<1000000000000?rawTime*1000:rawTime).toISOString():rawTime;
+   try{timeText=formatNewsTime(normalizedTime);}catch(_){timeText=String(rawTime);}
+  }
+  meta.textContent=publisher+" · "+timeText;
+  const titleText=String(item.title||item.headline||item.name||item.subject||"Untitled headline");
+  const target=item.url||item.link||item.article_url||item.web_url||item.href||item.canonical_url;
+  let title;
+  if(typeof target==="string"&&/^https?:\/\//i.test(target)){
+   title=document.createElement("a");title.href=target;title.target="_blank";title.rel="noopener noreferrer";title.textContent=titleText;
+  }else{title=document.createElement("div");title.textContent=titleText;}
+  title.style.fontWeight="700";
+  article.append(meta,title);
+  const summary=item.summary||item.description||item.snippet||item.content_text||item.content;
+  if(typeof summary==="string"&&summary.trim()){
+   const excerpt=document.createElement("p");excerpt.textContent=summary.trim().slice(0,420);article.appendChild(excerpt);
+  }
+  feed.appendChild(article);
+ });
+ if(!feed.children.length){const empty=document.createElement("div");empty.className="placeholder";empty.textContent=emptyMessage||"No usable headlines were returned.";feed.appendChild(empty);}
+}
+
+function renderYahooNews(data){
+  setPill("news-status",data.status,data.status==="fresh"?"YAHOO FRESH":String(data.status||"YAHOO").toUpperCase());
+  document.getElementById("news-meta").textContent=(data.item_count??(data.items||[]).length)+" headlines · cache age "+(data.cache_age_seconds??"—")+"s · refreshes "+(data.upstream_requests??data.upstream_refreshes??0)+" · Yahoo RSS";
+  renderArticleFeed("news-feed",data.items||[],data.error||"No Yahoo Finance headlines returned.");
+}
+function renderWebullNews(data){
+  setPill("webull-news-status",data.status,data.status==="fresh"?"WEBULL FRESH":String(data.status||"WEBULL").toUpperCase());
+  const instruments=data.instruments||{};const byInstrument=["MNQ","MES","MGC"].map(s=>s+": "+(instruments[s]?.item_count??0)).join(" · ");
+  document.getElementById("webull-news-meta").textContent=(data.item_count??(data.items||[]).length)+" headlines · "+byInstrument+" · cache age "+(data.cache_age_seconds??"—")+"s";
+  renderArticleFeed("webull-news-feed",data.items||[],data.error||"No Webull headlines available for the configured proxy symbols.");
+}
+function renderCalendar(data){
+  setPill("calendar-status",data.status,data.status==="fresh"?"WEBULL CALENDAR":String(data.status||"CALENDAR").toUpperCase());
+  document.getElementById("calendar-meta").textContent=(data.event_count??(data.events||[]).length)+" events · "+(data.start_date||"")+" to "+(data.end_date||"")+" · source UTC / display New York · cache age "+(data.cache_age_seconds??"—")+"s";
+  const feed=document.getElementById("calendar-feed");feed.replaceChildren();const events=data.events||[];
+  if(!events.length){const empty=document.createElement("div");empty.className="placeholder";empty.textContent=data.error||"No structured macro events returned.";feed.appendChild(empty);return;}
+  events.slice(0,35).forEach(event=>{const row=document.createElement("div");row.className="calendar-event";const title=document.createElement("strong");title.textContent=event.event_name;const when=document.createElement("div");when.className="event-meta";when.textContent=(event.publish_time?formatNewsTime(event.publish_time):event.publish_date+" · time unavailable")+(event.is_fed_related?" · FED-RELATED":"")+(event.indicator_type?" · "+event.indicator_type.replaceAll(/([A-Z])/g," $1"):"");const values=document.createElement("div");values.className="event-meta";const bits=[];if(event.forecast_value!=null)bits.push("Forecast "+event.forecast_value);if(event.prior_value!=null)bits.push("Prior "+event.prior_value);if(event.period)bits.push(event.period);values.textContent=bits.join(" · ");if(event.is_fed_related)title.className="fed-flag";row.append(title,when,values);feed.appendChild(row);});
+  if(data.pagination_remaining){const note=document.createElement("div");note.className="snapshot-note";note.textContent="More events may be available; page limit reached for this refresh.";feed.appendChild(note);}
+}
+function renderCatalystWatch(data){
+  setPill("catalyst-status",data.status,data.status==="ready"?((data.summary?.high_priority||0)+" HIGH PRIORITY") :String(data.status||"blocked").toUpperCase());
+  const host=document.getElementById("catalyst-feed");if(!host)return;host.replaceChildren();const items=data.headlines||[];
+  if(!items.length){const empty=document.createElement("div");empty.className="placeholder";empty.textContent="No catalyst headlines are currently classified.";host.appendChild(empty);return;}
+  items.slice(0,24).forEach(item=>{const row=document.createElement("article");row.className="news-item";const meta=document.createElement("div");meta.className="tag";meta.textContent=(item.publisher||"Provider")+" · "+formatNewsTime(item.published_at);const title=document.createElement("div");title.style.fontWeight="700";title.textContent=item.title;const tag=document.createElement("span");tag.className="bias-chip "+(item.priority==="high"?"priority-high":item.priority==="medium"?"priority-medium":"priority-unclassified");tag.textContent=String(item.priority||"unclassified").toUpperCase();const themes=document.createElement("div");themes.className="muted small";themes.textContent=(item.themes||[]).map(x=>x.replaceAll("_"," ")).join(" · ")||"No theme keyword matched";row.append(meta,title,tag,themes);host.appendChild(row);});
+}
+function renderNewsBias(data){
+  renderCatalystWatch(data.catalyst_watch||{});
+  const grid=document.getElementById("news-bias-grid");if(!grid)return;grid.replaceChildren();
+  (data.instruments||[]).forEach(item=>{
+    const card=document.createElement("div");card.className="news-bias-card";const heading=document.createElement("h4");heading.textContent=item.symbol+" · "+item.proxy_symbol;card.appendChild(heading);
+    [["Yahoo",item.yahoo_bias], ["Webull",item.webull_bias], ["Combined",item.combined_bias]].forEach(([label,bias])=>{
+      const line=document.createElement("div");line.className="bias-row";const name=document.createElement("span");name.textContent=label;const value=document.createElement("span");value.textContent=biasLabel(bias?.stance)+(bias?.confidence&&bias.confidence!=="unavailable"?" · "+bias.confidence:" ");if(label==="Combined")value.className="bias-chip "+biasClass(bias?.stance);line.append(name,value);card.appendChild(line);
+    });
+    const note=document.createElement("p");note.className="bias-note";note.textContent=item.combined_bias?.disclosure||"No source disclosure available.";card.appendChild(note);grid.appendChild(card);
+  });
+  setPill("home-sentiment-status",data.status,data.status==="ready"?"NEWS BIAS READY":"AWAITING SOURCES");
+  const home=document.getElementById("home-sentiment-grid");if(home){home.replaceChildren();(data.instruments||[]).forEach(item=>{const card=document.createElement("div");card.className="news-bias-card";const h=document.createElement("h4");h.textContent=item.symbol+" · "+item.proxy_symbol;const chip=document.createElement("span");chip.className="bias-chip "+biasClass(item.combined_bias?.stance);chip.textContent=biasLabel(item.combined_bias?.stance)+" · "+(item.combined_bias?.confidence||"no confidence");const note=document.createElement("p");note.className="bias-note";note.textContent=item.combined_bias?.status==="single_source"?"Single source: "+(item.combined_bias.sources||[]).join(", "):item.combined_bias?.status.replaceAll("_"," ")||"No fresh sentiment";card.append(h,chip,note);home.appendChild(card);const tile=document.querySelector('.instrument[data-symbol="'+item.symbol+'"]');if(tile){let biasLine=tile.querySelector(".bias-line");if(!biasLine){biasLine=document.createElement("div");biasLine.className="bias-line";const foot=tile.querySelector(".tile-foot");tile.insertBefore(biasLine,foot||null);}biasLine.replaceChildren();const small=document.createElement("span");small.textContent="News bias";const b=document.createElement("span");b.className="bias-chip "+biasClass(item.combined_bias?.stance);b.textContent=biasLabel(item.combined_bias?.stance);biasLine.append(small,b);}});}
+}
+function renderWatchlistBias(data){
+ (data.instruments||[]).forEach(item=>{
+  const host=document.getElementById("instrument-bias-"+item.symbol);if(!host)return;
+  host.replaceChildren();const bias=item.combined_bias||{};
+  const chip=document.createElement("span");chip.className="bias-chip "+biasClass(bias.stance);
+  chip.textContent="Combined · "+biasLabel(bias.stance)+(bias.confidence&&bias.confidence!=="unavailable"?" · "+bias.confidence:"");
+  host.appendChild(chip);
+ });
+}
+
+async function loadHomeIntelligence(){
+  const tasks=await Promise.allSettled([
+    fetch("/api/news/intelligence").then(r=>{if(!r.ok)throw new Error("News intelligence unavailable");return r.json()}),
+    fetch("/api/gex/snapshot?provider="+encodeURIComponent(document.getElementById("market-data-provider")?.value||activeProvider||"tradingview")).then(r=>{if(!r.ok)throw new Error("GEX snapshot unavailable");return r.json()}),
+    fetch("/api/agents/opportunity-scout").then(r=>{if(!r.ok)throw new Error("Opportunity Scout unavailable");return r.json()})
+  ]);
+  if(tasks[0].status==="fulfilled"){renderNewsBias(tasks[0].value);renderWatchlistBias(tasks[0].value);}
+  if(tasks[1].status==="fulfilled"){
+    const d=tasks[1].value;if(d.status&&d.status!=="not_loaded"){
+      setPill("home-gex-status",d.status,String(d.status).toUpperCase()+" · CBOE");
+      document.getElementById("home-gex-spot").textContent=fmt(d.underlying_spot);document.getElementById("home-gex-futures").textContent=fmt(d.futures_price);document.getElementById("home-gex-call").textContent=d.call_wall_futures==null?"Unavailable":fmt(d.call_wall_futures);document.getElementById("home-gex-put").textContent=d.put_wall_futures==null?"Unavailable":fmt(d.put_wall_futures);document.getElementById("home-gex-flip").textContent=d.gamma_flip_futures==null?"Not detected":fmt(d.gamma_flip_futures);document.getElementById("home-gex-net").textContent=gexMoney(d.net_gex_per_1pct_move);
+      ["c1","c2","c3"].forEach((key,i)=>{document.getElementById("home-gex-"+key).textContent=gexLevelText((d.call_levels||[])[i]);});["p1","p2","p3"].forEach((key,i)=>{document.getElementById("home-gex-"+key).textContent=gexLevelText((d.put_levels||[])[i]);});
+      const em=d.expected_move||{};document.getElementById("home-gex-em-range").textContent=em.status==="ready"?fmt(d.expected_move_lower_futures)+" – "+fmt(d.expected_move_upper_futures):"Unavailable";document.getElementById("home-gex-em-iv").textContent=em.status==="ready"?Number(d.expected_move_atm_iv_pct).toFixed(2)+"% · "+d.expected_move_expiration:"Unavailable";document.getElementById("home-gex-rv").textContent=gexVolText(d.realized_volatility);
+      document.getElementById("home-gex-note").textContent="Cboe delayed NDX options mapped to MNQ/NQ · chain age "+(d.cache_age_seconds??"—")+"s · futures price source: "+(d.futures_price_source||"cached")+". Cache-only; no new options request.";
+    }else{setPill("home-gex-status","not_loaded","NOT LOADED");}
+  }
+  if(tasks[2].status==="fulfilled"){
+    const d=tasks[2].value;setPill("home-scout-status",d.status,d.status==="ready"?"CONTEXT RANKED":String(d.status||"BLOCKED").toUpperCase());const host=document.getElementById("home-scout-content");host.replaceChildren();const ranked=d.ranked_instruments||[];if(!ranked.length){host.textContent=d.reason||"No ready market-context ranking. No trade recommendation is generated.";}else{ranked.slice(0,3).forEach(item=>{const row=document.createElement("div");row.style.margin="9px 0";const line=document.createElement("div");line.className="bias-row";const label=document.createElement("strong");label.textContent=(item.rank?"#"+item.rank+" ":"")+item.symbol+" · "+String(item.context||item.status).replaceAll("_"," ");const score=document.createElement("span");score.textContent=item.context_score==null?"Blocked":item.context_score+" / 80 pts";line.append(label,score);row.append(line);if(item.context_score!=null){const meter=document.createElement("div");meter.className="context-meter";const fill=document.createElement("span");fill.style.width=Math.max(0,Math.min(100,item.context_score/80*100))+"%";meter.appendChild(fill);row.appendChild(meter);}host.appendChild(row);});}
+  }else{document.getElementById("home-scout-content").textContent="Opportunity Scout context unavailable. No recommendation has been generated.";}
+}
+function normalizeNewsPayload(data){
+ const payload=data&&typeof data==="object"?data:{};
+ const candidates=payload.items||payload.articles||payload.headlines||payload.news||payload.data?.items||[];
+ return {...payload,items:Array.isArray(candidates)?candidates:[]};
+}
+function renderHomeHeadlines(yahooData,webullData){
+ const yahoo=normalizeNewsPayload(yahooData).items.map(item=>({...item,publisher:item.publisher||item.source||"Yahoo Finance"}));
+ const webull=normalizeNewsPayload(webullData).items.map(item=>({...item,publisher:item.publisher||item.source||"Webull News"}));
+ const items=[...yahoo,...webull];
+ const stamp=item=>new Date(item.published_at||item.published||item.pub_date||item.date||0).getTime()||0;
+ items.sort((a,b)=>stamp(b)-stamp(a));
+ renderArticleFeed("home-news-feed",items.slice(0,8),"No cached Yahoo or Webull headlines are available. Open News & Events to inspect source status.");
+ const status=document.getElementById("home-news-status");
+ if(status){status.textContent=items.length?items.length+" HEADLINES":"NO HEADLINES";status.className=items.length?"pill ok":"pill warn";}
+}
+async function fetchNewsJson(url){
+ const response=await fetch(url);let data={};
+ try{data=await response.json();}catch(_){data={};}
+ if(!response.ok)throw new Error(data.detail||data.error||("Request failed · HTTP "+response.status));
+ return data;
+}
+
 async function loadNews(){
-  const status=document.getElementById("news-status");status.textContent="CHECKING YAHOO";status.className="pill warn";
-  try{const response=await fetch("/api/news");const data=await response.json();renderNews(data);}
-  catch(error){renderNews({status:"unavailable",items:[],error:"Yahoo Finance RSS is temporarily unavailable."});}
+  setPill("news-status","checking","CHECKING YAHOO");setPill("webull-news-status","checking","CHECKING WEBULL");setPill("calendar-status","checking","CHECKING CALENDAR");
+  const results=await Promise.allSettled([
+    fetchNewsJson("/api/news"),
+    fetchNewsJson("/api/news/webull"),
+    fetchNewsJson("/api/calendar/events")
+  ]);
+  const yahoo=normalizeNewsPayload(results[0].status==="fulfilled"?results[0].value:{status:"unavailable",items:[],error:String(results[0].reason?.message||"Yahoo Finance RSS is temporarily unavailable.")});
+  const webull=normalizeNewsPayload(results[1].status==="fulfilled"?results[1].value:{status:"unavailable",items:[],error:String(results[1].reason?.message||"Webull news is temporarily unavailable.")});
+  const calendar=results[2].status==="fulfilled"?results[2].value:{status:"unavailable",events:[],error:String(results[2].reason?.message||"Webull macro calendar is temporarily unavailable. Yahoo fallback link remains available.")};
+  renderYahooNews(yahoo);renderWebullNews(webull);renderCalendar(calendar);renderHomeHeadlines(yahoo,webull);
+  await loadHomeIntelligence();
 }
 document.getElementById("refresh-news").addEventListener("click",loadNews);
+document.getElementById("market-data-provider").addEventListener("change",()=>loadHomeIntelligence());
 loadNews();
 
 const riskProfilesById={};

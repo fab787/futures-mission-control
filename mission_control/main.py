@@ -1,50 +1,101 @@
 from __future__ import annotations
 
+import ipaddress
+import math
+import time
+from datetime import UTC
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 import yaml
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
-from mission_control.analysis_agents import analyze_instruments
-from mission_control.chief_decision_agent import compose_chief_decision
+from mission_control import local_auth
+from mission_control.account_history import (
+    get_current_history,
+    list_history_versions,
+    save_history_snapshot,
+)
+from mission_control.account_history_csv import preview_csv
 from mission_control.account_protection import assess_account_protection
-from mission_control.account_registry import create_account, list_account_events, list_accounts, update_account
+from mission_control.account_registry import (
+    create_account,
+    list_account_events,
+    list_accounts,
+    update_account,
+)
+from mission_control.account_registry_ui import build_dashboard
+from mission_control.analysis_agents import analyze_instruments
+from mission_control.audit_ledger import (
+    create_proposal,
+    decide_proposal,
+    list_audit_events,
+    list_proposals,
+)
 from mission_control.broker_capabilities import list_broker_capabilities, upsert_broker_capability
 from mission_control.broker_capabilities_ui import build_broker_capabilities_dashboard
-from mission_control.account_registry_ui import build_dashboard
+from mission_control.chief_decision_agent import compose_chief_decision
 from mission_control.gex import GexUnavailable, gex_service
-from mission_control.market_data_manager import market_data_manager
-from mission_control.master_risk_engine import evaluate_master_risk
-from mission_control.prop_firm_rules import evaluate_prop_firm_rules
-from mission_control.risk_config import create_profile, get_profile, list_profile_versions, list_profiles
-from mission_control.audit_ledger import create_proposal, decide_proposal, list_audit_events, list_proposals
-from mission_control.account_history import get_current_history, list_history_versions, save_history_snapshot
-from mission_control.account_history_csv import preview_csv
+from mission_control.market_data_manager import MarketDataRequestManager, market_data_manager
 from mission_control.market_structure import analyze_market_structure
+from mission_control.master_risk_engine import evaluate_master_risk
 from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
+from mission_control.webull_news import webull_calendar_service, webull_news_service
+from mission_control.news_intelligence import build_instrument_news_intelligence
 from mission_control.news_catalyst import analyze_news_catalysts
 from mission_control.opportunity_scout import scout_opportunities
-from mission_control.sentiment_analyst import compare_sentiment_assessments, sentiment_interface_status
+from mission_control.prop_firm_rules import evaluate_prop_firm_rules
 from mission_control.provider_errors import ProviderCooldownActive
-from mission_control.tradingview import AuthorizationRequired, market_snapshot
+from mission_control.risk_config import (
+    create_profile,
+    get_profile,
+    list_profile_versions,
+    list_profiles,
+)
+from mission_control.sentiment_analyst import (
+    compare_sentiment_assessments,
+    sentiment_interface_status,
+)
+from mission_control.tradingview import (
+    AuthorizationRequired as TradingViewAuthorizationRequired,
+)
+from mission_control.tradingview import (
+    market_snapshot as tradingview_market_snapshot,
+)
 from mission_control.tradingview_auth import KeyringTokenStorage
 from mission_control.tradingview_webhook import (
     claim_signal_for_review,
-    get_signal as get_tradingview_signal,
-    list_signals as list_tradingview_webhook_signals,
     set_signal_status,
 )
+from mission_control.tradingview_webhook import (
+    get_signal as get_tradingview_signal,
+)
+from mission_control.tradingview_webhook import (
+    list_signals as list_tradingview_webhook_signals,
+)
 from mission_control.webhook_inbox_ui import build_webhook_dashboard
+from mission_control.webull import (
+    AuthorizationRequired as WebullAuthorizationRequired,
+)
+from mission_control.webull import (
+    WebullTokenStorage,
+)
+from mission_control.webull import (
+    market_snapshot as webull_market_snapshot,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 INSTRUMENTS_FILE = ROOT / "config" / "instruments.yaml"
+# Separate provider caches prevent one provider's limits or failures from
+# affecting the other provider's market-data path.
+webull_market_data_manager = MarketDataRequestManager()
 
 app = FastAPI(
     title="FAB787 QUANTUM",
     version="0.3.0",
-    description="Read-only futures intelligence dashboard with optional TradingView MCP data.",
+    description="Read-only futures intelligence dashboard with TradingView and Webull Cloud MCP data.",
 )
 
 
@@ -65,6 +116,171 @@ async def tradingview_authorized() -> bool:
         return await KeyringTokenStorage().get_tokens() is not None
     except Exception:
         return False
+
+
+async def webull_authorized() -> bool:
+    try:
+        return await WebullTokenStorage().get_tokens() is not None
+    except Exception:
+        return False
+
+
+
+AUTH_COOKIE = "fq_session"
+AUTH_EXEMPT_PATHS = {
+    "/login",
+    "/api/health",
+    "/api/auth/status",
+    "/api/auth/setup",
+    "/api/auth/login",
+    "/api/auth/logout",
+}
+_auth_failures: dict[str, list[float]] = {}
+
+
+def _request_is_local(request: Request) -> bool:
+    host = request.client.host if request.client else ""
+    if host == "testclient":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def _same_origin(request: Request) -> bool:
+    origin = request.headers.get("origin")
+    if not origin:
+        return True
+    try:
+        return urlsplit(origin).netloc == request.headers.get("host", "")
+    except ValueError:
+        return False
+
+
+@app.middleware("http")
+async def local_authentication_gate(request: Request, call_next):
+    """Keep Mission Control accessible only from this computer."""
+    if not _request_is_local(request):
+        return JSONResponse(
+            {"detail": "FAB787 QUANTUM is restricted to this computer."},
+            status_code=403,
+        )
+    return await call_next(request)
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page() -> str:
+    return (
+        ROOT / "mission_control" / "login.html"
+    ).read_text(encoding="utf-8")
+
+
+@app.get("/api/auth/status")
+def authentication_status(request: Request) -> dict[str, Any]:
+    username = local_auth.get_session_username(
+        request.cookies.get(AUTH_COOKIE)
+    )
+    return {
+        "configured": local_auth.is_configured(),
+        "authenticated": username is not None,
+        "username": username,
+        "setup_required": not local_auth.is_configured(),
+    }
+
+
+@app.post("/api/auth/setup")
+async def authentication_setup(request: Request) -> JSONResponse:
+    if not _same_origin(request):
+        raise HTTPException(status_code=403, detail="Cross-origin setup denied.")
+    try:
+        payload = await request.json()
+        username = str(payload.get("username", ""))
+        password = str(payload.get("password", ""))
+        local_auth.create_user(username, password)
+        token = local_auth.create_session(username)
+    except local_auth.AuthenticationError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid setup request.") from exc
+
+    response = JSONResponse({"ok": True, "username": username.strip()})
+    response.set_cookie(
+        AUTH_COOKIE,
+        token,
+        max_age=local_auth.SESSION_TTL_SECONDS,
+        httponly=True,
+        secure=request.url.scheme == "https",
+        samesite="strict",
+        path="/",
+    )
+    return response
+
+
+@app.post("/api/auth/login")
+async def authentication_login(request: Request) -> JSONResponse:
+    if not _same_origin(request):
+        raise HTTPException(status_code=403, detail="Cross-origin login denied.")
+    if not local_auth.is_configured():
+        raise HTTPException(
+            status_code=409,
+            detail="Complete first-run administrator setup first.",
+        )
+
+    host = request.client.host if request.client else "local"
+    now = time.time()
+    recent = [
+        stamp for stamp in _auth_failures.get(host, [])
+        if now - stamp < 600
+    ]
+    _auth_failures[host] = recent
+    if len(recent) >= 8:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many failed attempts. Try again in ten minutes.",
+        )
+
+    try:
+        payload = await request.json()
+        username = str(payload.get("username", ""))
+        password = str(payload.get("password", ""))
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid login request.") from exc
+
+    if not local_auth.verify_credentials(username, password):
+        _auth_failures[host] = recent + [now]
+        raise HTTPException(
+            status_code=401,
+            detail="Username or password is incorrect.",
+        )
+
+    _auth_failures.pop(host, None)
+    token = local_auth.create_session(username.strip())
+    response = JSONResponse({"ok": True, "username": username.strip()})
+    response.set_cookie(
+        AUTH_COOKIE,
+        token,
+        max_age=local_auth.SESSION_TTL_SECONDS,
+        httponly=True,
+        secure=request.url.scheme == "https",
+        samesite="strict",
+        path="/",
+    )
+    return response
+
+
+@app.post("/api/auth/logout")
+def authentication_logout(request: Request) -> JSONResponse:
+    if not _same_origin(request):
+        raise HTTPException(status_code=403, detail="Cross-origin logout denied.")
+    response = JSONResponse({"ok": True})
+    response.delete_cookie(
+        AUTH_COOKIE,
+        path="/",
+        httponly=True,
+        samesite="strict",
+    )
+    return response
 
 
 @app.get("/api/health")
@@ -93,74 +309,219 @@ async def tradingview_status() -> dict[str, Any]:
     }
 
 
+@app.get("/api/webull/status")
+async def webull_status() -> dict[str, Any]:
+    authorized = await webull_authorized()
+    return {
+        "id": "webull",
+        "name": "Webull Cloud MCP",
+        "connected": authorized,
+        "status": "authorized" if authorized else "authorization_required",
+        "endpoint": "https://api.webull.com/mcp",
+        "transport": "Streamable HTTP",
+        "authentication": "OAuth 2.1",
+        "mode": "read-only",
+        "scopes": ["market:read", "instrument:read"],
+        "capabilities": [
+            "get_futures_bars",
+            "get_futures_snapshot",
+            "get_futures_depth",
+            "get_futures_tick",
+            "get_futures_instruments",
+            "get_futures_products",
+            "get_futures_product_class",
+        ],
+        "authorization_command": "python -m mission_control.webull_auth",
+    }
+
+
 @app.get("/api/market-data")
-async def market_data(interval: str = Query(default="1m", pattern="^(1m|5m|15m|1h|4h|1D)$")) -> dict[str, Any]:
+async def market_data(
+    interval: str = Query(default="1m", pattern="^(1m|5m|15m|1h|4h|1D)$"),
+    provider: str = Query(default="tradingview", pattern="^(tradingview|webull)$"),
+) -> dict[str, Any]:
+    """Return cached market data from the selected, independently managed provider."""
+    if provider == "webull":
+        if not await webull_authorized():
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "status": "authorization_required",
+                    "provider": "webull",
+                    "message": "Authorize Webull: python -m mission_control.webull_auth",
+                },
+            )
+        try:
+            return await webull_market_data_manager.get_snapshot(
+                interval, webull_market_snapshot
+            )
+        except WebullAuthorizationRequired as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ProviderCooldownActive as exc:
+            raise HTTPException(status_code=429, detail=str(exc)) from exc
+
     if not await tradingview_authorized():
         raise HTTPException(
             status_code=503,
             detail={
                 "status": "authorization_required",
+                "provider": "tradingview",
                 "message": "Authorize TradingView first: python -m mission_control.tradingview_auth",
             },
         )
     try:
-        return await market_data_manager.get_snapshot(interval, market_snapshot)
-    except AuthorizationRequired as exc:
+        return await market_data_manager.get_snapshot(
+            interval, tradingview_market_snapshot
+        )
+    except TradingViewAuthorizationRequired as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ProviderCooldownActive as exc:
         raise HTTPException(status_code=429, detail=str(exc)) from exc
 
 
+def _gex_provider_manager(provider: str) -> MarketDataRequestManager:
+    if provider == "tradingview":
+        return market_data_manager
+    if provider == "webull":
+        return webull_market_data_manager
+    raise HTTPException(status_code=400, detail="Provider must be tradingview or webull")
+
+
+def _cached_gex_mnq_price(provider: str) -> tuple[float | None, str]:
+    """Read only the selected provider's fresh MNQ 1-minute cache."""
+    manager = _gex_provider_manager(provider)
+    cached = manager.peek_snapshot("1m")
+    cache_meta = (cached.get("cache") or {}) if cached else {}
+    if cached is None or cache_meta.get("status") != "hit":
+        return None, ""
+    mnq = next(
+        (item for item in cached.get("instruments", []) if item.get("symbol") == "MNQ"),
+        None,
+    )
+    latest = mnq.get("latest") if isinstance(mnq, dict) else None
+    raw = latest.get("c") if isinstance(latest, dict) else None
+    try:
+        price = float(raw)
+    except (TypeError, ValueError):
+        price = 0.0
+    if not math.isfinite(price) or price <= 0:
+        return None, ""
+    source = f"cached MNQ {'TradingView' if provider == 'tradingview' else 'Webull'} snapshot ({cache_meta.get('age_seconds', 'unknown')}s old)"
+    return price, source
+
+
+def _attach_cached_realized_volatility(result: dict[str, Any], provider: str) -> dict[str, Any]:
+    """Calculate annualized RV only from a fresh, already-cached daily MNQ series."""
+    manager = _gex_provider_manager(provider)
+    for interval in ("1d", "D", "1D"):
+        snapshot = manager.peek_snapshot(interval)
+        cache_meta = (snapshot.get("cache") or {}) if snapshot else {}
+        if snapshot is None or cache_meta.get("status") != "hit":
+            continue
+        mnq = next(
+            (item for item in snapshot.get("instruments", []) if item.get("symbol") == "MNQ"),
+            None,
+        )
+        bars = mnq.get("bars", []) if isinstance(mnq, dict) else []
+        closes: list[float] = []
+        for bar in bars if isinstance(bars, list) else []:
+            if not isinstance(bar, dict):
+                continue
+            try:
+                close = float(bar.get("c"))
+            except (TypeError, ValueError):
+                continue
+            if math.isfinite(close) and close > 0:
+                closes.append(close)
+        if len(closes) < 21:
+            continue
+        returns = [closes[i] / closes[i - 1] - 1.0 for i in range(1, len(closes))]
+        if len(returns) < 20:
+            continue
+        mean = sum(returns) / len(returns)
+        variance = sum((value - mean) ** 2 for value in returns) / (len(returns) - 1)
+        annualized = math.sqrt(max(0.0, variance) * 252.0) * 100.0
+        result["realized_volatility"] = {
+            "status": "ready",
+            "annualized_pct": round(annualized, 2),
+            "source": f"{provider.upper()} cached MNQ daily bars",
+            "observations": len(returns),
+            "interval": interval,
+            "cache_age_seconds": cache_meta.get("age_seconds"),
+            "method": "Sample standard deviation of daily close-to-close returns × sqrt(252)",
+        }
+        return result
+    result["realized_volatility"] = {
+        "status": "unavailable",
+        "annualized_pct": None,
+        "source": None,
+        "observations": 0,
+        "reason": f"No fresh cached daily MNQ history with at least 21 closes is available from {provider.upper()}; no extra market-data request was made.",
+    }
+    return result
+
+
 @app.get("/api/gex")
-async def gex(futures_price: float | None = Query(default=None, gt=0)) -> dict[str, Any]:
-    """Return cached Cboe NDX GEX estimates mapped to MNQ/NQ futures levels."""
+async def gex(
+    futures_price: float | None = Query(default=None, gt=0),
+    provider: str = Query(default="tradingview", pattern="^(tradingview|webull)$"),
+) -> dict[str, Any]:
+    """Return Cboe NDX GEX mapped using manual price or selected provider cache."""
     price_source = "manual input"
     resolved_price = futures_price
 
     if resolved_price is None:
-        cached = market_data_manager.peek_snapshot("1m")
-        cache_meta = cached.get("cache", {}) if cached else {}
-        if cached is not None and cache_meta.get("status") == "hit":
-            mnq = next(
-                (
-                    item for item in cached.get("instruments", [])
-                    if item.get("symbol") == "MNQ"
-                ),
-                None,
-            )
-            latest = mnq.get("latest") if mnq else None
-            close = latest.get("c") if isinstance(latest, dict) else None
-            try:
-                resolved_price = float(close)
-            except (TypeError, ValueError):
-                resolved_price = None
-            if resolved_price and resolved_price > 0:
-                price_source = (
-                    "cached MNQ TradingView snapshot "
-                    f"({cache_meta.get('age_seconds', 'unknown')}s old)"
-                )
+        resolved_price, price_source = _cached_gex_mnq_price(provider)
 
-    if resolved_price is None or resolved_price <= 0:
+    if resolved_price is None or not math.isfinite(resolved_price) or resolved_price <= 0:
         raise HTTPException(
             status_code=400,
             detail=(
-                "No fresh cached MNQ price is available. Enter the current MNQ/NQ "
-                "futures price manually; this endpoint will not trigger a TradingView request."
+                f"No fresh cached MNQ price is available from {'TradingView' if provider == 'tradingview' else 'Webull'}. "
+                "Select an authorized provider with a fresh MNQ 1-minute cache or enter "
+                "the current MNQ/NQ price manually. GEX will not trigger a TradingView request."
             ),
         )
 
     try:
-        return await gex_service.get_levels(
-            resolved_price, price_source=price_source
-        )
+        result = await gex_service.get_levels(resolved_price, price_source=price_source)
+        return _attach_cached_realized_volatility(result, provider)
     except GexUnavailable as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        message = str(exc)
+        status_code = 400 if "proxy ratio" in message.lower() else 503
+        raise HTTPException(status_code=status_code, detail=message) from exc
+
+
+@app.get("/api/gex/snapshot")
+def gex_snapshot(
+    provider: str = Query(default="tradingview", pattern="^(tradingview|webull)$"),
+) -> dict[str, Any]:
+    """Cache-only Home GEX snapshot; never fetch Cboe or market data."""
+    price, price_source = _cached_gex_mnq_price(provider)
+    if price is None:
+        return {
+            "status": "not_loaded",
+            "source": "Cboe delayed NDX options",
+            "message": f"No fresh cached MNQ price is available from {provider.upper()}; Home will not request market data.",
+        }
+    try:
+        result = gex_service.peek_levels(price, price_source=price_source)
+        if result is None:
+            return {
+                "status": "not_loaded",
+                "source": "Cboe delayed NDX options",
+                "message": "No cached options chain is available. Open GEX and request an update.",
+            }
+        return _attach_cached_realized_volatility(result, provider)
+    except GexUnavailable as exc:
+        return {"status": "unavailable", "source": "Cboe delayed NDX options", "message": str(exc)}
 
 
 @app.get("/api/integrations")
 async def integrations() -> dict[str, Any]:
     """Report connection state from the local OS keyring, not Claude Desktop."""
     authorized = await tradingview_authorized()
+    webull_connected = await webull_authorized()
     return {
         "integrations": [
             {
@@ -175,6 +536,28 @@ async def integrations() -> dict[str, Any]:
                     "Market history is polled on demand; no continuous streaming feed is promised.",
                     "TradingView symbol coverage and exchange permissions apply.",
                     "TradingView MCP is beta and rate-limited.",
+                ],
+            },
+            {
+                "id": "webull",
+                "name": "Webull Cloud MCP",
+                "role": "Read-only futures market data and contract information",
+                "status": "authorized" if webull_connected else "authorization_required",
+                "connected": webull_connected,
+                "capabilities": [
+                    "get_futures_bars",
+                    "get_futures_snapshot",
+                    "get_futures_depth",
+                    "get_futures_tick",
+                    "get_futures_instruments",
+                    "get_futures_products",
+                    "get_futures_product_class",
+                ],
+                "limitations": [
+                    "Uses a separate local Webull OAuth authorization; Claude Desktop credentials are not reused.",
+                    "Market-data delays and depth depend on Webull account subscriptions.",
+                    "This integration does not enable account, order, instruction, or watchlist operations.",
+                    "Market history is polled on demand; continuous streaming is not claimed.",
                 ],
             },
             {
@@ -217,6 +600,32 @@ def market_structure_agent() -> dict[str, Any]:
 async def news() -> dict[str, Any]:
     """Return cached Yahoo Finance ticker headlines; never call TradingView."""
     return await yahoo_news_service.get_news()
+
+
+
+@app.get("/api/news/webull")
+async def webull_news() -> dict[str, Any]:
+    """Return independently cached Webull stock-news headlines for futures proxies."""
+    return await webull_news_service.get_news()
+
+
+@app.get("/api/news/intelligence")
+def news_intelligence() -> dict[str, Any]:
+    """Build combined per-instrument sentiment from existing provider caches only."""
+    return build_instrument_news_intelligence(
+        yahoo_news_service.peek_news(),
+        webull_news_service.peek_news(),
+    )
+
+
+@app.get("/api/calendar/events")
+async def macro_calendar_events() -> dict[str, Any]:
+    """Return Webull's structured US macro calendar with bounded pagination."""
+    try:
+        return await webull_calendar_service.get_calendar()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
 
 
 @app.get("/api/agents/opportunity-scout")
@@ -293,9 +702,9 @@ def create_proposal_from_webhook(alert_id: str, payload: dict[str, Any]) -> dict
             raise HTTPException(status_code=409, detail="This alert has already entered the proposal-review workflow.")
         if signal["action"] not in {"buy", "sell"}:
             raise HTTPException(status_code=400, detail="CLOSE/FLATTEN alerts remain review-only and cannot create entry proposals.")
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
         event_time = datetime.fromisoformat(signal["event_timestamp"])
-        if event_time.tzinfo is None or datetime.now(timezone.utc) - event_time.astimezone(timezone.utc) > timedelta(minutes=15):
+        if event_time.tzinfo is None or datetime.now(UTC) - event_time.astimezone(UTC) > timedelta(minutes=15):
             raise HTTPException(status_code=409, detail="This alert is stale; only alerts within 15 minutes can enter risk review.")
         accounts = list_accounts(include_inactive=True).get("accounts", [])
         account = next((item for item in accounts if item.get("account_id") == account_id), None)
@@ -543,7 +952,13 @@ def economic_calendar() -> dict[str, Any]:
     }
 
 
+@app.get("/welcome", response_class=HTMLResponse)
+def welcome_page() -> str:
+    return (ROOT / "mission_control" / "welcome.html").read_text(encoding="utf-8")
+
+
 @app.get("/", response_class=HTMLResponse)
+@app.get("/mission-control", response_class=HTMLResponse)
 def dashboard() -> str:
     template = (ROOT / "mission_control" / "dashboard.html").read_text(encoding="utf-8")
     return build_broker_capabilities_dashboard(build_webhook_dashboard(build_dashboard(template)))

@@ -6,7 +6,7 @@ from __future__ import annotations
 def build_webhook_dashboard(html: str) -> str:
     """Add a controlled Signals workspace without changing the dashboard template."""
     nav_marker = '<button data-tab="accounts">Accounts</button>'
-    section_marker = '<section class="section" id="integrations">'
+    section_marker = '<section class="section" id="help">'
     section = r'''
 <section class="section" id="signals">
  <div class="panel">

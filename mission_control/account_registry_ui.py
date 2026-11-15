@@ -6,8 +6,11 @@ from __future__ import annotations
 def build_dashboard(html: str) -> str:
     """Add a registry workspace without rewriting the existing dashboard template."""
     nav_marker = '<button data-tab="risk">Risk & Approvals</button>'
-    nav_item = nav_marker + '<button data-tab="accounts">Accounts</button>'
-    section_marker = '<section class="section" id="integrations">'
+    nav_item = '<button data-tab="accounts">Accounts</button>'
+    section_markers = (
+        '<section class="section" id="help">',
+        '<section class="section" id="integrations">',
+    )
     section = r'''
 <section class="section" id="accounts">
  <div class="panel">
@@ -61,10 +64,16 @@ def build_dashboard(html: str) -> str:
  </div>
 </section>
 '''
-    if nav_marker in html and 'id="accounts"' not in html:
-        html = html.replace(nav_marker, nav_item, 1)
-    if section_marker in html and 'id="accounts"' not in html:
-        html = html.replace(section_marker, section + "\n" + section_marker, 1)
+    if nav_item not in html and nav_marker in html:
+        html = html.replace(nav_marker, nav_marker + nav_item, 1)
+
+    if '<section class="section" id="accounts">' not in html:
+        for section_marker in section_markers:
+            if section_marker in html:
+                html = html.replace(
+                    section_marker, section + "\n" + section_marker, 1
+                )
+                break
 
     script = r'''
 <script>

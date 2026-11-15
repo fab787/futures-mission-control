@@ -15,7 +15,7 @@ import time
 import urllib.request
 from collections import defaultdict
 from collections.abc import Callable
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -166,6 +166,55 @@ def _gamma_flip(rows: list[dict[str, Any]], spot: float) -> float | None:
     return min(flips, key=lambda value: abs(value - spot)) if flips else None
 
 
+def _trading_days_to_expiry(expiration: str, now: datetime) -> int:
+    """Weekday count to expiry; exchange holidays are not removed."""
+    expiry_date = date.fromisoformat(expiration)
+    cursor = now.date()
+    days = 0
+    while cursor < expiry_date:
+        cursor += timedelta(days=1)
+        if cursor.weekday() < 5:
+            days += 1
+    return max(1, days)
+
+
+def _expected_move(rows: list[dict[str, Any]], spot: float, now: datetime) -> dict[str, Any]:
+    expirations = sorted({row["expiration"] for row in rows})
+    if not expirations:
+        return {"status": "unavailable", "reason": "No eligible expiration with usable option IV."}
+
+    expiration = expirations[0]
+    expiry_rows = [row for row in rows if row["expiration"] == expiration]
+    if not expiry_rows:
+        return {"status": "unavailable", "reason": "Nearest expiration has no usable IV observations."}
+
+    atm = min(expiry_rows, key=lambda row: abs(row["strike"] - spot))["strike"]
+    atm_rows = [row for row in expiry_rows if row["strike"] == atm and row["iv"] > 0]
+    if not atm_rows:
+        return {"status": "unavailable", "reason": "Nearest-expiration ATM implied volatility is unavailable."}
+
+    # Average call/put IV at the closest listed strike; this is chain IV, not a forecast.
+    iv = sum(row["iv"] for row in atm_rows) / len(atm_rows)
+    if not math.isfinite(iv) or iv <= 0:
+        return {"status": "unavailable", "reason": "Nearest-expiration ATM implied volatility is invalid."}
+
+    trading_days = _trading_days_to_expiry(expiration, now)
+    move_points = spot * iv * math.sqrt(trading_days / 252.0)
+    return {
+        "status": "ready",
+        "points_ndx": round(move_points, 2),
+        "percent": round(move_points / spot * 100.0, 3),
+        "lower_ndx": round(spot - move_points, 2),
+        "upper_ndx": round(spot + move_points, 2),
+        "expiration": expiration,
+        "trading_days": trading_days,
+        "atm_iv": round(iv, 6),
+        "atm_iv_pct": round(iv * 100.0, 2),
+        "iv_source": "Cboe delayed option-chain IV at the nearest listed ATM strike",
+        "holiday_handling": "Weekdays counted; exchange holidays are not removed",
+    }
+
+
 def calculate_gex(
     payload: dict[str, Any],
     futures_price: float,
@@ -175,9 +224,17 @@ def calculate_gex(
     cache_age_seconds: float,
     retrieved_at: str,
 ) -> dict[str, Any]:
-    if futures_price <= 0:
-        raise GexUnavailable("A valid MNQ/NQ futures price is required")
+    if not math.isfinite(futures_price) or futures_price <= 0:
+        raise GexUnavailable("A finite, positive MNQ/NQ futures price is required")
+
     spot = _find_spot(payload)
+    scale = futures_price / spot
+    if not math.isfinite(scale) or not 0.50 <= scale <= 1.50:
+        raise GexUnavailable(
+            f"The futures-to-NDX proxy ratio ({scale:.4f}) is outside the validation band "
+            "0.50–1.50. Verify that the selected quote is MNQ/NQ and not another instrument."
+        )
+
     now = datetime.now(ET)
     rows = [
         row
@@ -195,12 +252,8 @@ def calculate_gex(
         for strike, values in aggregate.items()
     }
     total_net = sum(net_by_strike.values())
-    call_wall = max(aggregate, key=lambda strike: aggregate[strike]["call_gex"])
-    put_wall = min(aggregate, key=lambda strike: aggregate[strike]["put_gex"])
-    flip = _gamma_flip(rows, spot)
-    scale = futures_price / spot
 
-    strikes = []
+    strikes: list[dict[str, Any]] = []
     for strike, values in aggregate.items():
         strikes.append(
             {
@@ -213,7 +266,35 @@ def calculate_gex(
                 "put_oi": int(values["put_oi"]),
             }
         )
+
+    # Rankings are based on modeled gamma exposure, never OI alone.
+    call_ranked = sorted(
+        (row for row in strikes if row["call_gex"] > 0),
+        key=lambda row: row["call_gex"],
+        reverse=True,
+    )[:3]
+    put_ranked = sorted(
+        (row for row in strikes if row["put_gex"] < 0),
+        key=lambda row: row["put_gex"],
+    )[:3]
+    call_levels = [
+        {"label": f"C{i}", "ndx_strike": row["ndx_strike"], "futures_level": row["futures_level"], "gex": row["call_gex"], "oi": row["call_oi"]}
+        for i, row in enumerate(call_ranked, start=1)
+    ]
+    put_levels = [
+        {"label": f"P{i}", "ndx_strike": row["ndx_strike"], "futures_level": row["futures_level"], "gex": row["put_gex"], "oi": row["put_oi"]}
+        for i, row in enumerate(put_ranked, start=1)
+    ]
+    call_wall = call_ranked[0]["ndx_strike"] if call_ranked else None
+    put_wall = put_ranked[0]["ndx_strike"] if put_ranked else None
+    flip = _gamma_flip(rows, spot)
+    expected = _expected_move(rows, spot, now)
     top_strikes = sorted(strikes, key=lambda row: abs(row["net_gex"]), reverse=True)[:20]
+
+    expected_ready = expected.get("status") == "ready"
+    expected_points = expected.get("points_ndx") if expected_ready else None
+    expected_lower = expected.get("lower_ndx") if expected_ready else None
+    expected_upper = expected.get("upper_ndx") if expected_ready else None
 
     return {
         "status": cache_status,
@@ -227,24 +308,47 @@ def calculate_gex(
         "futures_price_source": price_source,
         "futures_spot_scale": round(scale, 6),
         "net_gex_per_1pct_move": round(total_net),
-        "call_wall_ndx": round(call_wall, 2),
-        "call_wall_futures": round(call_wall * scale, 2),
-        "put_wall_ndx": round(put_wall, 2),
-        "put_wall_futures": round(put_wall * scale, 2),
+        "call_wall_ndx": round(call_wall, 2) if call_wall is not None else None,
+        "call_wall_futures": round(call_wall * scale, 2) if call_wall is not None else None,
+        "put_wall_ndx": round(put_wall, 2) if put_wall is not None else None,
+        "put_wall_futures": round(put_wall * scale, 2) if put_wall is not None else None,
         "gamma_flip_ndx": round(flip, 2) if flip is not None else None,
         "gamma_flip_futures": round(flip * scale, 2) if flip is not None else None,
+        "call_levels": call_levels,
+        "put_levels": put_levels,
+        "expected_move": expected,
+        "expected_move_points_ndx": round(expected_points, 2) if expected_points is not None else None,
+        "expected_move_points_futures": round(expected_points * scale, 2) if expected_points is not None else None,
+        "expected_move_pct": expected.get("percent") if expected_ready else None,
+        "expected_move_lower_ndx": round(expected_lower, 2) if expected_lower is not None else None,
+        "expected_move_upper_ndx": round(expected_upper, 2) if expected_upper is not None else None,
+        "expected_move_lower_futures": round(expected_lower * scale, 2) if expected_lower is not None else None,
+        "expected_move_upper_futures": round(expected_upper * scale, 2) if expected_upper is not None else None,
+        "expected_move_expiration": expected.get("expiration"),
+        "expected_move_trading_days": expected.get("trading_days"),
+        "expected_move_atm_iv_pct": expected.get("atm_iv_pct"),
+        "expected_move_iv_source": expected.get("iv_source"),
+        "realized_volatility": {
+            "status": "unavailable",
+            "annualized_pct": None,
+            "source": None,
+            "observations": 0,
+            "reason": "No verified daily-return history was supplied to this chain calculation; cache-only daily data is checked by the API layer.",
+        },
         "contracts_used": len(rows),
         "expirations_used": sorted({row["expiration"] for row in rows}),
         "top_strikes": top_strikes,
         "all_strikes": strikes,
         "assumptions": [
+            "C1–C3 rank the three largest positive modeled call GEX strikes; P1–P3 rank the three most negative modeled put GEX strikes. Rankings use GEX, not open interest alone; the signed call/put convention is a dealer-positioning assumption.",
             "Calls are assigned positive gamma and puts negative gamma; this is a dealer-positioning assumption, not observed dealer inventory.",
             "Open interest is generally prior-session data; the options quote feed is delayed (approximately 15 minutes).",
+            "Expected move uses nearest-expiration ATM implied volatility and spot × IV × sqrt(weekday trading days / 252); weekdays are counted without removing exchange holidays.",
+            "Realized volatility is shown only when sufficient verified daily futures bars are already cached; this calculation does not request additional market data.",
             "Levels are estimates for context, not trade signals or guaranteed support/resistance.",
-            "NDX options levels are mapped to MNQ/NQ using the futures-to-NDX spot ratio.",
+            "NDX options levels are mapped to MNQ/NQ using the futures-to-NDX spot ratio. This is an index-options proxy, not futures-native options data.",
         ],
     }
-
 
 class GexService:
     """15-minute Cboe chain cache with stale fallback and retry cooldown."""
@@ -265,6 +369,23 @@ class GexService:
         self._lock = asyncio.Lock()
         self._cooldown_until = 0.0
         self.fetch_count = 0
+
+    def peek_levels(self, futures_price: float, *, price_source: str) -> dict[str, Any] | None:
+        """Recalculate from the last known chain without initiating provider I/O."""
+        cached = self._cache
+        if cached is None:
+            return None
+        stored_at, payload, retrieved_at = cached
+        age = max(0.0, self._clock() - stored_at)
+        status = "cached" if age < self.ttl_seconds else "stale"
+        return calculate_gex(
+            payload,
+            futures_price,
+            price_source=price_source,
+            cache_status=status,
+            cache_age_seconds=age,
+            retrieved_at=retrieved_at,
+        )
 
     async def get_levels(
         self, futures_price: float, *, price_source: str
