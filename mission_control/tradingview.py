@@ -105,8 +105,14 @@ async def _capture_response(response: httpx2.Response) -> None:
         _LAST_DIAGNOSTIC["last_error_at"] = None
         _LAST_DIAGNOSTIC["quota_detected"] = False
     if response.status_code >= 400:
+        body_text = ""
+        try:
+            body = await response.aread()
+            body_text = body.decode("utf-8", errors="replace")
+        except Exception:
+            pass
         _LAST_DIAGNOSTIC["last_error"] = _safe_diagnostic_text(
-            f"HTTP {response.status_code} {getattr(response, 'reason_phrase', '')}"
+            f"HTTP {response.status_code} {getattr(response, 'reason_phrase', '')} {body_text}"
         )
         _LAST_DIAGNOSTIC["last_error_at"] = datetime.now(UTC).isoformat()
 
