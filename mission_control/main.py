@@ -364,6 +364,7 @@ async def webull_status() -> dict[str, Any]:
 async def market_data(
     interval: str = Query(default="1m", pattern="^(1m|5m|15m|1h|4h|1D)$"),
     provider: str = Query(default="tradingview", pattern="^(tradingview|webull)$"),
+    refresh: bool = Query(default=False),
 ) -> dict[str, Any]:
     """Return cached market data from the selected, independently managed provider."""
     if provider == "webull":
@@ -378,7 +379,7 @@ async def market_data(
             )
         try:
             return await webull_market_data_manager.get_snapshot(
-                interval, webull_market_snapshot
+                interval, webull_market_snapshot, force_refresh=refresh
             )
         except WebullAuthorizationRequired as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -396,7 +397,7 @@ async def market_data(
         )
     try:
         return await market_data_manager.get_snapshot(
-            interval, tradingview_market_snapshot
+            interval, tradingview_market_snapshot, force_refresh=refresh
         )
     except TradingViewAuthorizationRequired as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
