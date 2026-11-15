@@ -543,7 +543,7 @@ function selectInstrument(s){document.querySelectorAll(".instrument").forEach(x=
 document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".section").forEach(x=>x.classList.toggle("active",x.id===b.dataset.tab));if(b.dataset.tab==="charts"){loadChart();const tf=intervalName(document.getElementById("chart-timeframe").value);if(marketCache[activeProvider][tf])renderChart(marketCache[activeProvider][tf],activeProvider);else fetchMarketData(tf,true,activeProvider);}}));
 document.querySelectorAll(".instrument").forEach(x=>x.addEventListener("click",()=>selectInstrument(x.dataset.symbol)));
 document.querySelectorAll("[data-go]").forEach(x=>x.addEventListener("click",()=>document.querySelector('[data-tab="'+x.dataset.go+'"]').click()));
-document.getElementById("chart-symbol").addEventListener("change",()=>{loadChart();const cached=marketCache[activeProvider][intervalName(document.getElementById("chart-timeframe").value)];if(cached)renderChart(cached,activeProvider);});document.getElementById("chart-timeframe").addEventListener("change",()=>fetchMarketData(document.getElementById("chart-timeframe").value,true));document.getElementById("reload-chart").addEventListener("click",()=>fetchMarketData(document.getElementById("chart-timeframe").value,true));document.getElementById("refresh-market").addEventListener("click",()=>fetchMarketData("1m",false,activeProvider));
+document.getElementById("chart-symbol").addEventListener("change",()=>{loadChart();const cached=marketCache[activeProvider][intervalName(document.getElementById("chart-timeframe").value)];if(cached)renderChart(cached,activeProvider);});document.getElementById("chart-timeframe").addEventListener("change",()=>fetchMarketData(document.getElementById("chart-timeframe").value,true,activeProvider,true));document.getElementById("reload-chart").addEventListener("click",()=>fetchMarketData(document.getElementById("chart-timeframe").value,true,activeProvider,true));document.getElementById("refresh-market").addEventListener("click",()=>fetchMarketData("1m",false,activeProvider,true));
 document.getElementById("market-data-provider").addEventListener("change",()=>{
  activeProvider=document.getElementById("market-data-provider").value;
  const selected=document.getElementById("overview-selected").textContent.split(" ")[0];
@@ -557,8 +557,8 @@ document.getElementById("market-data-provider").addEventListener("change",()=>{
  if(overview)renderOverview(selected,overview,activeProvider);
  const chart=marketCache[activeProvider][tf];
  if(chart&&document.getElementById("charts").classList.contains("active"))renderChart(chart,activeProvider);
- fetchMarketData("1m",false,activeProvider);
- if(tf!=="1m"&&document.getElementById("charts").classList.contains("active"))fetchMarketData(tf,true,activeProvider);
+ fetchMarketData("1m",false,activeProvider,true);
+ if(tf!=="1m"&&document.getElementById("charts").classList.contains("active"))fetchMarketData(tf,true,activeProvider,true);
 });
 function tick(){document.getElementById("clock").textContent=new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"medium"}).format(new Date());}tick();setInterval(tick,1000);
 fetch("/api/health").then(r=>r.json()).then(d=>{document.getElementById("api-health").textContent=d.status==="ok"?"API ONLINE":"API ERROR";document.getElementById("api-label").textContent=d.status==="ok"?"Online":"Error";}).catch(()=>{document.getElementById("api-health").textContent="API OFFLINE";document.getElementById("api-label").textContent="Offline";});
@@ -738,10 +738,11 @@ function renderChart(data,provider=activeProvider){
  document.getElementById("local-chart-status").textContent=`${symbol} ? ${bars.length} historical bars ? ${intervalName(document.getElementById("chart-timeframe").value)}`;
  document.getElementById("local-chart-source").textContent=(data.source||providerLabel(provider))+" ? retrieved "+new Date().toLocaleTimeString();
 }
-async function fetchMarketData(interval="1m",showChart=false,provider=activeProvider){
+async function fetchMarketData(interval="1m",showChart=false,provider=activeProvider,forceRefresh=false){
  const timeframe=intervalName(interval);
  try{
-  const response=await fetch("/api/market-data?interval="+encodeURIComponent(timeframe)+"&provider="+encodeURIComponent(provider));
+  const refreshParam=forceRefresh?"&refresh=true":"";
+  const response=await fetch("/api/market-data?interval="+encodeURIComponent(timeframe)+"&provider="+encodeURIComponent(provider)+refreshParam);
   if(!response.ok){
    const err=await response.json(),detail=err.detail?.message||"Provider authorization or data request failed.";
    document.getElementById("market-data-status").textContent=response.status===503?"AUTHORIZATION REQUIRED":response.status===429?"PROVIDER COOLDOWN":"DATA ERROR";
@@ -815,7 +816,7 @@ document.getElementById("logout-button").addEventListener("click",async()=>{
 });
 checkIntegrations();
 runHelpDiagnostics();
-setInterval(()=>{if(providerStatus[activeProvider])fetchMarketData("1m",false,activeProvider);},300000);
+setInterval(()=>{if(providerStatus[activeProvider])fetchMarketData("1m",false,activeProvider,true);},300000);
 function formatNewsTime(value){
   if(!value)return "Time unavailable";
   const date=new Date(value);
