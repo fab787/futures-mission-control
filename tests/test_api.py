@@ -707,3 +707,27 @@ def test_accounts_workspace_renders_broker_capability_registry_controls() -> Non
     assert "/api/broker-capabilities" in html
     assert "/broker-capability" in html
     assert "This registry does not connect or execute trades." in html
+
+
+def test_market_data_refresh_flag_forces_selected_provider_request(monkeypatch):
+    from mission_control import main
+
+    calls = []
+
+    async def authorized() -> bool:
+        return True
+
+    async def fake_get_snapshot(interval, loader, *, force_refresh=False):
+        calls.append((interval, force_refresh))
+        return {
+            "source": "test provider",
+            "instruments": [],
+            "fetched_at": "2026-11-15T17:00:00+00:00",
+            "cache": {"status": "miss", "age_seconds": 0},
+        }
+
+    monkeypatch.setattr(main, "tradingview_authorized", authorized)
+    monkeypatch.setattr(main.market_data_manager, "get_snapshot", fake_get_snapshot)
+    response = client.get("/api/market-data?provider=tradingview&interval=1m&refresh=true")
+    assert response.status_code == 200
+    assert calls == [("1m", True)]
