@@ -56,9 +56,9 @@ _LAST_DIAGNOSTIC: dict[str, Any] = {
 def _safe_diagnostic_text(value: Any) -> str:
     message = str(value)
     message = re.sub(
-        r"(?i)\\b(authorization|bearer|access[_-]?token|refresh[_-]?token|api[_-]?key|password)\\b"
-        r"(\\s*[:=]\\s*|\\s+)[^\\s,;]+",
-        r"\\1=[REDACTED]",
+        r"(?i)\b(authorization|bearer|access[_-]?token|refresh[_-]?token|api[_-]?key|password)\b"
+        r"(\s*[:=]\s*|\s+)[^\s,;]+",
+        r"\1=[REDACTED]",
         message,
     )
     return message[:600]
