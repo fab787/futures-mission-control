@@ -747,7 +747,7 @@ async function fetchMarketData(interval="1m",showChart=false,provider=activeProv
   const refreshParam=forceRefresh?"&refresh=true":"";
   const response=await fetch("/api/market-data?interval="+encodeURIComponent(timeframe)+"&provider="+encodeURIComponent(provider)+refreshParam);
   if(!response.ok){
-   const err=await response.json(),detail=err.detail?.message||"Provider authorization or data request failed.";
+   const err=await response.json(),detail=(typeof err.detail==="string"?err.detail:err.detail?.message)||"Provider authorization or data request failed.";
    document.getElementById("market-data-status").textContent=response.status===503?"AUTHORIZATION REQUIRED":response.status===429?"PROVIDER COOLDOWN":"DATA ERROR";
    document.getElementById("market-data-status").className="pill warn";
    document.getElementById("local-chart-status").textContent=providerLabel(provider)+" ? "+(response.status===429?"provider cooldown":"data unavailable");
