@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import copy
 import time
+from datetime import UTC, datetime
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -69,6 +70,7 @@ class MarketDataRequestManager:
         now = self._clock()
         result["cache"] = {
             "status": status,
+            "last_updated_at": result.get("fetched_at"),
             "age_seconds": round(max(0.0, age_seconds), 1),
             "ttl_seconds": ttl_seconds,
             "next_refresh_seconds": round(max(0.0, ttl_seconds - age_seconds), 1),
@@ -188,13 +190,15 @@ class MarketDataRequestManager:
                         return self._serve_stale(previous)
                     raise
 
+                fresh = copy.deepcopy(fresh)
+                fresh.setdefault("fetched_at", datetime.now(UTC).isoformat())
                 has_data = self._has_data(fresh)
                 if not has_data and previous is not None and self._has_data(previous[1]):
                     return self._serve_stale(previous)
 
                 ttl = self.ttl_seconds if has_data else self.error_ttl_seconds
                 stored_at = self._clock()
-                self._cache[interval] = (stored_at, copy.deepcopy(fresh), ttl)
+                self._cache[interval] = (stored_at, fresh, ttl)
                 return self._decorate(
                     fresh, status="miss", age_seconds=0.0, ttl_seconds=ttl
                 )
