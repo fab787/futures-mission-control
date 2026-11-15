@@ -53,7 +53,10 @@
 
 ## Sentiment Analyst boundary
 
-- Claude and ChatGPT are separate analysis resources; no API calls or paid service assumptions are enabled in this phase.
+- Claude and ChatGPT share `mission_control.fab787_ai_providers.AIProviderManager`; the singleton is fail-closed and makes no network calls by default.
+- A real request requires both an explicitly opted-in manager instance and `FAB787_AI_API_CALLS_ENABLED=true`; credentials are read only from `ANTHROPIC_API_KEY` / `OPENAI_API_KEY`, with optional model overrides in `ANTHROPIC_MODEL` / `OPENAI_MODEL`.
+- Provider calls are not enabled by the application or dashboard in this phase. Tests use an injected mock transport; no real provider requests or paid API usage are part of automated tests.
+- The manager exposes text generation only, no tools/function calling, broker access, market-data refresh, risk-setting mutation, trade approval, or order execution.
 - Only structured external reviews with provider identity, timezone-aware analysis timestamp, instrument scope and cited HTTPS sources may be compared.
 - Reviews older than 15 minutes, malformed reviews, unknown instruments/stances and duplicate provider submissions must be rejected.
 - Preserve provider disagreement; never average conflicting views into artificial consensus.
