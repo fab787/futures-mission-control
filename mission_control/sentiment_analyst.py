@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlparse
 
+from mission_control.fab787_ai_providers import ai_provider_manager
+
 PROVIDERS = {"claude": "Claude", "chatgpt": "ChatGPT"}
 ALLOWED_SYMBOLS = {"MNQ", "MES", "MGC"}
 ALLOWED_STANCES = {"bullish", "bearish", "neutral", "mixed", "unavailable"}
@@ -248,6 +250,7 @@ def sentiment_interface_status() -> dict[str, Any]:
             {"id": "claude", "name": "Claude", "connected": False, "api_calls_enabled": False},
             {"id": "chatgpt", "name": "ChatGPT", "connected": False, "api_calls_enabled": False},
         ],
+        "provider_manager": ai_provider_manager.status(),
         "accepted_review_schema": {
             "provider": "claude | chatgpt",
             "model": "optional model/version label",
