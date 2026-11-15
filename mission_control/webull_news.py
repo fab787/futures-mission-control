@@ -48,8 +48,13 @@ def _safe_error_message(error: BaseException | Any) -> str:
     """Expose useful provider diagnostics while redacting credential-like values."""
     message = str(error)
     message = re.sub(
-        r"(?i)\b(authorization|bearer|access[_-]?token|refresh[_-]?token|api[_-]?key|password)\b"
-        r"(\s*[:=]\s*|\s+)[^\s,;]+",
+        r"(?i)\bbearer\s+[^\s,;]+",
+        "Bearer [REDACTED]",
+        message,
+    )
+    message = re.sub(
+        r"(?i)\b(authorization|access[_-]?token|refresh[_-]?token|api[_-]?key|password)\b"
+        r"(\s*[:=]\s*)[^\s,;]+",
         r"\1=[REDACTED]",
         message,
     )
