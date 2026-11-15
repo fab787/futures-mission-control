@@ -8,9 +8,11 @@ from mission_control.webull_news import (
     WebullCalendarService,
     WebullNewsService,
     _decode_tool_result,
+    _unwrap_payload,
     normalize_calendar_events,
     normalize_webull_news,
 )
+from mission_control.webull import AuthorizationRequired as WebullAuthorizationRequired
 from mission_control.news_intelligence import build_instrument_news_intelligence
 
 
@@ -174,3 +176,73 @@ def test_webull_mcp_tool_error_retains_provider_message():
         assert "Too Many Requests" in str(exc)
     else:
         raise AssertionError("Expected Webull MCP tool error to be surfaced")
+
+
+
+def test_news_normalizer_preserves_all_rows_from_top_level_array_response():
+    now = datetime.now(UTC)
+    payload = [
+        {"news_id": "one", "title": "Nasdaq update one", "url": "https://example.com/1",
+         "publish_time": now.isoformat()},
+        {"news_id": "two", "title": "Nasdaq update two", "url": "https://example.com/2",
+         "publish_time": now.isoformat()},
+    ]
+    unwrapped = _unwrap_payload(payload)
+    assert len(unwrapped["data"]) == 2
+    items = normalize_webull_news(payload, requested_symbol="QQQ", received_at=now)
+    assert [item["news_id"] for item in items] == ["one", "two"]
+
+
+def test_news_normalizer_supports_common_mcp_result_wrappers():
+    now = datetime.now(UTC)
+    row = {"news_id": "wrapped", "title": "Wrapped news", "url": "https://example.com/w",
+           "publish_time": now.isoformat()}
+    for payload in (
+        {"result": {"data": [row]}},
+        {"data": {"items": [row]}},
+        {"articles": [row]},
+    ):
+        assert len(normalize_webull_news(payload, requested_symbol="SPY", received_at=now)) == 1
+
+
+def test_webull_news_manual_retry_clears_only_authorization_cooldown():
+    calls = []
+
+    async def fetcher():
+        calls.append(1)
+        if len(calls) == 1:
+            raise WebullAuthorizationRequired("Saved Webull token was rejected.")
+        return {"source": "Webull Cloud MCP", "items": [], "item_count": 0,
+                "status": "fresh", "provider_tool_requests": 1}
+
+    service = WebullNewsService(fetcher=fetcher, clock=lambda: 100.0)
+
+    async def run():
+        failed = await service.get_news()
+        assert failed["status"] == "unavailable"
+        cooling = await service.get_news()
+        assert cooling["status"] == "cooldown"
+        recovered = await service.get_news(force_refresh=True)
+        assert recovered["status"] == "fresh"
+
+    asyncio.run(run())
+    assert len(calls) == 2
+
+
+def test_webull_news_manual_retry_does_not_bypass_quota_cooldown():
+    calls = []
+
+    async def fetcher():
+        calls.append(1)
+        raise RuntimeError("HTTP 429 Too Many Requests")
+
+    service = WebullNewsService(fetcher=fetcher, clock=lambda: 100.0)
+
+    async def run():
+        failed = await service.get_news()
+        assert failed["status"] == "unavailable"
+        retry = await service.get_news(force_refresh=True)
+        assert retry["status"] == "cooldown"
+
+    asyncio.run(run())
+    assert len(calls) == 1
