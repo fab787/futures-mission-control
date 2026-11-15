@@ -7,7 +7,6 @@ from zoneinfo import ZoneInfo
 from auth_client import authenticated_client
 
 from mission_control.gex import GexService, calculate_gex
-from mission_control.main import app
 
 ET = ZoneInfo("America/New_York")
 
@@ -144,7 +143,7 @@ def test_gex_endpoint_reuses_fresh_cached_mnq_price(monkeypatch) -> None:
             "instruments": [{"symbol": "MNQ", "latest": {"c": 20987.5}}],
         },
     )
-    response = TestClient(app).get("/api/gex")
+    response = authenticated_client().get("/api/gex")
     assert response.status_code == 200
     assert response.json()["futures_price"] == 20987.5
     assert calls[0][0] == 20987.5
@@ -162,6 +161,6 @@ def test_gex_endpoint_requires_manual_price_when_mnq_cache_is_stale(monkeypatch)
             "instruments": [{"symbol": "MNQ", "latest": {"c": 20987.5}}],
         },
     )
-    response = TestClient(app).get("/api/gex")
+    response = authenticated_client().get("/api/gex")
     assert response.status_code == 400
     assert "will not trigger a TradingView request" in response.json()["detail"]
