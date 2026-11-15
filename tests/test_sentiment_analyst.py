@@ -34,6 +34,9 @@ def test_sentiment_interface_does_not_claim_provider_connections():
     assert all(not item["connected"] for item in result["providers"])
     assert result["provider_requests_triggered"] == 0
     assert result["market_data_requests_triggered"] == 0
+    assert result["provider_manager"]["api_calls_enabled"] is False
+    assert result["provider_manager"]["network_requests_triggered"] == 0
+    assert all(not item["api_calls_enabled"] for item in result["provider_manager"]["providers"])
 
 
 def test_sentiment_analyst_reports_agreement_between_fresh_reviews():
