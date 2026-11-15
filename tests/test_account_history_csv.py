@@ -76,11 +76,11 @@ def test_csv_preview_rejects_missing_mapping_and_oversized_file():
 
 
 def test_csv_preview_api_requires_profile_and_returns_unsaved_preview(monkeypatch):
-    from fastapi.testclient import TestClient
+    from auth_client import authenticated_client
     from mission_control import main
 
     monkeypatch.setattr(main, "get_profile", lambda profile_id: {"profile_id": profile_id} if profile_id == "profile-fixture" else None)
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.post("/api/account-history/csv-preview", json={
         "risk_profile_id": "profile-fixture",
         "csv_text": sample_csv(),
