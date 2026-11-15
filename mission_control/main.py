@@ -90,7 +90,7 @@ ROOT = Path(__file__).resolve().parent.parent
 INSTRUMENTS_FILE = ROOT / "config" / "instruments.yaml"
 # Separate provider caches prevent one provider's limits or failures from
 # affecting the other provider's market-data path.
-webull_market_data_manager = MarketDataRequestManager()
+webull_market_data_manager = MarketDataRequestManager(provider_name="Webull")
 
 app = FastAPI(
     title="FAB787 QUANTUM",
