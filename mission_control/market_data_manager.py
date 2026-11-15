@@ -13,7 +13,7 @@ from typing import Any
 
 from mission_control.provider_errors import (
     ProviderCooldownActive,
-    TradingViewQuotaExceeded,
+    ProviderQuotaExceeded,
 )
 
 SnapshotLoader = Callable[[str], Awaitable[dict[str, Any]]]
@@ -29,6 +29,7 @@ class MarketDataRequestManager:
         error_ttl_seconds: float = 30.0,
         cooldown_seconds: float = 900.0,
         clock: Callable[[], float] = time.monotonic,
+        provider_name: str = "TradingView",
     ) -> None:
         if min(ttl_seconds, error_ttl_seconds, cooldown_seconds) <= 0:
             raise ValueError("Cache TTL and cooldown values must be positive")
@@ -36,6 +37,7 @@ class MarketDataRequestManager:
         self.error_ttl_seconds = error_ttl_seconds
         self.cooldown_seconds = cooldown_seconds
         self._clock = clock
+        self.provider_name = provider_name
         self._cache: dict[str, tuple[float, dict[str, Any], float]] = {}
         self._locks: dict[str, asyncio.Lock] = {}
         # A single upstream gate prevents different timeframe cache misses from
@@ -119,7 +121,7 @@ class MarketDataRequestManager:
             if cached is not None and self._has_data(cached[1]):
                 return self._serve_stale(cached)
             raise ProviderCooldownActive(
-                f"TradingView is in cooldown for {self._cooldown_until - now:.0f}s"
+                f"{self.provider_name} is in cooldown for {self._cooldown_until - now:.0f}s"
             )
 
         lock = self._locks.setdefault(interval, asyncio.Lock())
@@ -143,7 +145,7 @@ class MarketDataRequestManager:
                 if cached is not None and self._has_data(cached[1]):
                     return self._serve_stale(cached)
                 raise ProviderCooldownActive(
-                    f"TradingView is in cooldown for {self._cooldown_until - now:.0f}s"
+                    f"{self.provider_name} is in cooldown for {self._cooldown_until - now:.0f}s"
                 )
 
             async with self._upstream_lock:
@@ -166,20 +168,20 @@ class MarketDataRequestManager:
                     if cached is not None and self._has_data(cached[1]):
                         return self._serve_stale(cached)
                     raise ProviderCooldownActive(
-                        f"TradingView is in cooldown for {self._cooldown_until - now:.0f}s"
+                        f"{self.provider_name} is in cooldown for {self._cooldown_until - now:.0f}s"
                     )
 
                 previous = cached
                 self.upstream_refreshes += 1
                 try:
                     fresh = await loader(interval)
-                except TradingViewQuotaExceeded as exc:
+                except ProviderQuotaExceeded as exc:
                     self.quota_events += 1
                     self._cooldown_until = self._clock() + self.cooldown_seconds
                     if previous is not None and self._has_data(previous[1]):
                         return self._serve_stale(previous)
                     raise ProviderCooldownActive(
-                        f"TradingView quota reached; retry blocked for {self.cooldown_seconds:.0f}s"
+                        f"{self.provider_name} quota/rate limit reached; retry blocked for {self.cooldown_seconds:.0f}s"
                     ) from exc
                 except Exception:
                     if previous is not None and self._has_data(previous[1]):
