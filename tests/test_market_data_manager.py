@@ -262,3 +262,17 @@ def test_force_refresh_bypasses_fresh_cache_without_bypassing_cooldown():
         assert calls == 2
 
     asyncio.run(run())
+
+
+def test_market_data_snapshot_exposes_last_successful_fetch_timestamp():
+    manager = MarketDataRequestManager()
+
+    async def loader(_interval: str) -> dict:
+        return snapshot(321)
+
+    async def run() -> None:
+        result = await manager.get_snapshot("1m", loader)
+        assert result["fetched_at"]
+        assert result["cache"]["last_updated_at"] == result["fetched_at"]
+
+    asyncio.run(run())
