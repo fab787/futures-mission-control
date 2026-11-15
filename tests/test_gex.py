@@ -4,7 +4,7 @@ import asyncio
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from fastapi.testclient import TestClient
+from auth_client import authenticated_client
 
 from mission_control.gex import GexService, calculate_gex
 from mission_control.main import app
@@ -120,7 +120,7 @@ def test_gex_endpoint_uses_manual_price_without_tradingview_request(monkeypatch)
         return {"futures_price": price, "futures_price_source": price_source}
 
     monkeypatch.setattr(main.gex_service, "get_levels", fake_get_levels)
-    response = TestClient(app).get("/api/gex?futures_price=21000")
+    response = authenticated_client().get("/api/gex?futures_price=21000")
     assert response.status_code == 200
     assert response.json()["futures_price"] == 21000
     assert calls == [(21000.0, "manual input")]
