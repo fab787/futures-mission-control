@@ -1,7 +1,11 @@
 """Provider-specific failures used across data adapters and request scheduling."""
 
 
-class TradingViewQuotaExceeded(RuntimeError):
+class ProviderQuotaExceeded(RuntimeError):
+    """A market-data provider rejected a request because of a quota or rate limit."""
+
+
+class TradingViewQuotaExceeded(ProviderQuotaExceeded):
     """TradingView rejected a request because a usage quota was exceeded."""
 
 
