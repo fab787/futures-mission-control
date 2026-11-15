@@ -735,8 +735,11 @@ function renderChart(data,provider=activeProvider){
  const vals=bars.map(b=>Number(b.c)),lo=Math.min(...vals),hi=Math.max(...vals),span=hi-lo||1;
  const points=vals.map((v,i)=>`${30+i*940/Math.max(1,vals.length-1)},${320-(v-lo)/span*270}`).join(" ");
  svg.innerHTML=`<line x1="30" y1="50" x2="970" y2="50" stroke="#263951"/><line x1="30" y1="185" x2="970" y2="185" stroke="#263951"/><line x1="30" y1="320" x2="970" y2="320" stroke="#263951"/><polyline points="${points}" fill="none" stroke="#58c9e9" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><text x="30" y="24" fill="#8da1ba" font-size="13">${fmt(hi)}</text><text x="30" y="348" fill="#8da1ba" font-size="13">${fmt(lo)}</text><text x="970" y="24" text-anchor="end" fill="#e8f0fa" font-size="15">${fmt(vals[vals.length-1])}</text>`;
- document.getElementById("local-chart-status").textContent=`${symbol} ? ${bars.length} historical bars ? ${intervalName(document.getElementById("chart-timeframe").value)}`;
- document.getElementById("local-chart-source").textContent=(data.source||providerLabel(provider))+" ? retrieved "+new Date().toLocaleTimeString();
+ const cacheStatus=data.cache?.status||"unknown";
+ const fetched=data.cache?.last_updated_at||data.fetched_at;
+ const updated=fetched?formatNewsTime(fetched):"update time unavailable";
+ document.getElementById("local-chart-status").textContent=(cacheStatus==="stale"?"STALE · ":"")+symbol+" · "+bars.length+" historical bars · "+intervalName(document.getElementById("chart-timeframe").value);
+ document.getElementById("local-chart-source").textContent=(data.source||providerLabel(provider))+" · last successful fetch "+updated+" · cache "+cacheStatus;
 }
 async function fetchMarketData(interval="1m",showChart=false,provider=activeProvider,forceRefresh=false){
  const timeframe=intervalName(interval);
