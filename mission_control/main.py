@@ -160,12 +160,25 @@ def _same_origin(request: Request) -> bool:
 
 @app.middleware("http")
 async def local_authentication_gate(request: Request, call_next):
-    """Keep Mission Control accessible only from this computer."""
+    """Require both loopback access and a valid local administrator session."""
     if not _request_is_local(request):
         return JSONResponse(
             {"detail": "FAB787 QUANTUM is restricted to this computer."},
             status_code=403,
         )
+
+    if request.url.path not in AUTH_EXEMPT_PATHS:
+        username = local_auth.get_session_username(
+            request.cookies.get(AUTH_COOKIE)
+        )
+        if username is None:
+            if request.url.path.startswith("/api/"):
+                return JSONResponse(
+                    {"detail": "Authentication required. Sign in to continue."},
+                    status_code=401,
+                )
+            return RedirectResponse(url="/login", status_code=303)
+
     return await call_next(request)
 
 
