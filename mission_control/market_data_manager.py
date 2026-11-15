@@ -1,6 +1,6 @@
 """Centralized cache, single-flight gate, and provider cooldown for market polling.
 
-All dashboard consumers call this manager rather than invoking the TradingView
+All dashboard consumers call this manager rather than invoking a provider
 adapter directly. A provider cooldown cannot be bypassed by manual refreshes.
 """
 from __future__ import annotations
@@ -8,8 +8,8 @@ from __future__ import annotations
 import asyncio
 import copy
 import time
-from datetime import UTC, datetime
 from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime
 from typing import Any
 
 from mission_control.provider_errors import (
@@ -42,7 +42,7 @@ class MarketDataRequestManager:
         self._cache: dict[str, tuple[float, dict[str, Any], float]] = {}
         self._locks: dict[str, asyncio.Lock] = {}
         # A single upstream gate prevents different timeframe cache misses from
-        # opening overlapping TradingView MCP sessions.
+        # opening overlapping upstream MCP sessions.
         self._upstream_lock = asyncio.Lock()
         self._cooldown_until = 0.0
         self.upstream_refreshes = 0
