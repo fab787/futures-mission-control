@@ -219,3 +219,26 @@ def test_peek_snapshot_only_reads_existing_cache() -> None:
     assert cached["cache"]["status"] == "hit"
     assert calls == 1
 
+
+
+def test_webull_quota_uses_provider_specific_cooldown_message():
+    from mission_control.provider_errors import (
+        ProviderCooldownActive,
+        ProviderQuotaExceeded,
+    )
+
+    manager = MarketDataRequestManager(provider_name="Webull", cooldown_seconds=120)
+
+    async def limited_loader(_interval: str) -> dict:
+        raise ProviderQuotaExceeded("HTTP 429 Too Many Requests")
+
+    async def run() -> None:
+        try:
+            await manager.get_snapshot("1m", limited_loader)
+        except ProviderCooldownActive as exc:
+            assert "Webull" in str(exc)
+            assert "quota/rate limit" in str(exc)
+        else:
+            raise AssertionError("Expected provider cooldown after quota response")
+
+    asyncio.run(run())
