@@ -21,12 +21,16 @@ def test_tradingview_response_hook_captures_rate_limit_headers_only():
             "authorization": "Bearer must-not-be-captured",
         }
 
+        async def aread(self):
+            return b'{"error":"HTTP 429 rate limit"}'
+
     _reset_diagnostics()
     asyncio.run(_capture_response(Response()))
     result = diagnostics_snapshot()
 
     assert result["last_http_status"] == 429
     assert result["quota_detected"] is True
+    assert "rate limit" in result["last_error"]
     assert result["rate_limit_headers"] == {
         "retry-after": "60",
         "x-ratelimit-limit": "100",
