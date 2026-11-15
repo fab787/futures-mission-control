@@ -276,3 +276,31 @@ def test_market_data_snapshot_exposes_last_successful_fetch_timestamp():
         assert result["cache"]["last_updated_at"] == result["fetched_at"]
 
     asyncio.run(run())
+
+
+def test_webull_market_data_adapter_classifies_mcp_429_as_provider_quota():
+    from mission_control.provider_errors import ProviderQuotaExceeded
+    from mission_control.webull import _call_with_client
+
+    class TextPart:
+        text = "HTTP 429 Too Many Requests"
+
+    class ToolResult:
+        is_error = True
+        structured_content = None
+        content = [TextPart()]
+
+    class FakeClient:
+        async def call_tool(self, _name, _arguments):
+            return ToolResult()
+
+    async def run() -> None:
+        try:
+            await _call_with_client(FakeClient(), "get_futures_bars", {})
+        except ProviderQuotaExceeded as exc:
+            assert "429" in str(exc)
+            assert "Webull" in str(exc)
+        else:
+            raise AssertionError("Expected Webull quota response to activate cooldown")
+
+    asyncio.run(run())
