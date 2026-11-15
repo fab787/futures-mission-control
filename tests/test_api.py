@@ -1,10 +1,9 @@
 from datetime import datetime, timezone
 
-from fastapi.testclient import TestClient
-
 from mission_control.main import app
+from auth_client import authenticated_client
 
-client = TestClient(app)
+client = authenticated_client()
 
 
 def test_multi_account_registry_api_is_local_and_read_only() -> None:
