@@ -140,3 +140,10 @@ def test_does_not_mutate_inputs():
 
     assert snapshot == snapshot_before
     assert profile == profile_before
+
+def test_contract_profile_matches_verified_mnq_specification():
+    contract = MNQ_BOT_PROFILE["contract"]
+
+    assert contract["multiplier"] == 2
+    assert contract["tick_size"] == 0.25
+    assert contract["tick_value"] == 0.50
