@@ -11,7 +11,7 @@ import httpx2
 from mcp import Client
 from mcp.client.auth import OAuthClientProvider
 from mcp.client.streamable_http import streamable_http_client
-from mcp.shared.auth import OAuthClientMetadata
+from mcp.shared.auth import OAuthClientMetadata, OAuthMetadata, ProtectedResourceMetadata
 
 from mission_control.provider_errors import TradingViewQuotaExceeded, is_quota_error
 from mission_control.tradingview_auth import KeyringTokenStorage
@@ -136,7 +136,8 @@ async def _no_callback() -> Any:
 
 
 def _oauth_provider() -> OAuthClientProvider:
-    return OAuthClientProvider(
+    storage = KeyringTokenStorage()
+    oauth = OAuthClientProvider(
         server_url=AUTH_SERVER_URL,
         client_metadata=OAuthClientMetadata(
             client_name="FAB787 QUANTUM",
@@ -144,10 +145,56 @@ def _oauth_provider() -> OAuthClientProvider:
             grant_types=["authorization_code", "refresh_token"],
             response_types=["code"],
         ),
-        storage=KeyringTokenStorage(),
+        storage=storage,
         redirect_handler=_no_browser_auth,
         callback_handler=_no_callback,
     )
+
+    # Restore the actual expiry time for tokens loaded from the OS keyring.
+    original_initialize = oauth._initialize
+
+    async def _initialize_with_expiry() -> None:
+        await original_initialize()
+
+        # Preload TradingView's published OAuth metadata before token refresh.
+        # The MCP resource URL and authorization-server issuer are different.
+        oauth.context.auth_server_url = "https://www.tradingview.com"
+        oauth.context.protected_resource_metadata = ProtectedResourceMetadata(
+            resource=MCP_URL,
+            authorization_servers=["https://www.tradingview.com"],
+        )
+        oauth.context.oauth_metadata = OAuthMetadata(
+            issuer="https://www.tradingview.com",
+            authorization_endpoint=(
+                "https://www.tradingview.com/mcp/oauth/authorize"
+            ),
+            token_endpoint="https://www.tradingview.com/mcp/oauth/token",
+            registration_endpoint=(
+                "https://www.tradingview.com/mcp/oauth/register"
+            ),
+            token_endpoint_auth_methods_supported=[
+                "none",
+                "client_secret_basic",
+                "client_secret_post",
+            ],
+        )
+
+        tokens = oauth.context.current_tokens
+        if tokens is None or tokens.expires_in is None:
+            return
+
+        saved_at = storage.get_token_saved_at()
+        if saved_at is None:
+            # Legacy token: its issue time is unknown, so refresh it once.
+            oauth.context.token_expiry_time = 0.0
+        else:
+            # Refresh slightly before the provider's stated expiry.
+            oauth.context.token_expiry_time = (
+                saved_at + int(tokens.expires_in) - 30
+            )
+
+    oauth._initialize = _initialize_with_expiry
+    return oauth
 
 
 def _decode_content(items: list[Any]) -> Any:
@@ -198,7 +245,7 @@ async def call_readonly_tool(name: str, arguments: dict[str, Any]) -> Any:
         event_hooks={"request": [_stamp_user_agent], "response": [_capture_response]},
     ) as http:
         transport = streamable_http_client(MCP_URL, http_client=http)
-        async with Client(transport) as client:
+        async with Client(transport, mode="legacy") as client:
             try:
                 result = await client.call_tool(TRADINGVIEW_TOOL_NAMES[name], arguments)
             except Exception as exc:

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import threading
+import time
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
@@ -19,6 +20,7 @@ from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata, OAu
 
 SERVICE = "futures-mission-control-tradingview"
 TOKEN_KEY = "oauth_tokens"
+TOKEN_SAVED_AT_KEY = "oauth_tokens_saved_at"
 CLIENT_KEY = "oauth_client_info"
 CALLBACK_HOST = "127.0.0.1"
 CALLBACK_PORT = 8765
@@ -33,6 +35,16 @@ class KeyringTokenStorage(TokenStorage):
 
     async def set_tokens(self, tokens: OAuthToken) -> None:
         keyring.set_password(SERVICE, TOKEN_KEY, tokens.model_dump_json())
+        keyring.set_password(SERVICE, TOKEN_SAVED_AT_KEY, str(time.time()))
+
+    def get_token_saved_at(self) -> float | None:
+        value = keyring.get_password(SERVICE, TOKEN_SAVED_AT_KEY)
+        if not value:
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
 
     async def get_client_info(self) -> OAuthClientInformationFull | None:
         value = keyring.get_password(SERVICE, CLIENT_KEY)

@@ -731,3 +731,36 @@ def test_market_data_refresh_flag_forces_selected_provider_request(monkeypatch):
     response = client.get("/api/market-data?provider=tradingview&interval=1m&refresh=true")
     assert response.status_code == 200
     assert calls == [("1m", True)]
+
+
+
+def test_opportunity_scout_can_refresh_the_selected_webull_provider(monkeypatch) -> None:
+    from mission_control import main
+
+    calls = {"count": 0}
+
+    async def authorized() -> bool:
+        return True
+
+    async def fake_snapshot(interval, loader, *, force_refresh=False):
+        calls["count"] += 1
+        assert interval == "1m"
+        assert loader is main.webull_market_snapshot
+        assert force_refresh is False
+        return {
+            "source": "Webull Cloud MCP",
+            "instruments": [],
+            "cache": {"status": "miss"},
+        }
+
+    monkeypatch.setattr(main, "webull_authorized", authorized)
+    monkeypatch.setattr(main.webull_market_data_manager, "get_snapshot", fake_snapshot)
+
+    response = client.get("/api/agents/opportunity-scout?provider=webull&refresh=true")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["market_data_provider"] == "webull"
+    assert payload["market_data_status"] == "miss"
+    assert calls["count"] == 1
+    assert payload["trade_proposals_created"] == 0
+    assert payload["execution"] == "disabled"

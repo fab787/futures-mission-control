@@ -538,7 +538,7 @@ const names={MNQ:"Micro E-mini Nasdaq-100",MES:"Micro E-mini S&P 500",MGC:"Micro
 const symbols={MNQ:"CME_MINI:MNQ1!",MES:"CME_MINI:MES1!",MGC:"COMEX:MGC1!"};
 const marketCache={tradingview:{},webull:{}};let activeProvider="tradingview";const providerStatus={tradingview:false,webull:false};
 function tradingViewPageUrl(){const s=document.getElementById("chart-symbol").value;const tf=document.getElementById("chart-timeframe").value;return "https://www.tradingview.com/chart/?symbol="+encodeURIComponent(symbols[s])+"&interval="+encodeURIComponent(tf);}
-function loadChart(){const s=document.getElementById("chart-symbol").value;const url=tradingViewPageUrl();document.getElementById("chart-heading").textContent=s+" · "+names[s];document.getElementById("chart-panel-symbol").textContent=s;document.getElementById("open-tv-chart").href=url;document.getElementById("open-tv-chart").textContent="Open "+s+" in TradingView ↗";document.getElementById("chart-panel-link").href=url;document.getElementById("chart-panel-link").textContent="Launch "+s+" in TradingView ↗";}
+function loadChart(){const s=document.getElementById("chart-symbol").value;const url=tradingViewPageUrl();document.getElementById("chart-heading").textContent=s+" · "+names[s];{const cps=document.getElementById("chart-panel-symbol");if(cps)cps.textContent=s;}document.getElementById("open-tv-chart").href=url;document.getElementById("open-tv-chart").textContent="Open "+s+" in TradingView ↗";document.getElementById("chart-panel-link").href=url;document.getElementById("chart-panel-link").textContent="Launch "+s+" in TradingView ↗";}
 function selectInstrument(s){document.querySelectorAll(".instrument").forEach(x=>x.classList.toggle("active",x.dataset.symbol===s));document.getElementById("overview-selected").textContent=s+" · Market snapshot";document.getElementById("chart-symbol").value=s;loadChart();renderOverview(s,marketCache[activeProvider]["1m"],activeProvider);}
 document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".section").forEach(x=>x.classList.toggle("active",x.id===b.dataset.tab));if(b.dataset.tab==="charts"){loadChart();const tf=intervalName(document.getElementById("chart-timeframe").value);if(marketCache[activeProvider][tf])renderChart(marketCache[activeProvider][tf],activeProvider);else fetchMarketData(tf,true,activeProvider);}}));
 document.querySelectorAll(".instrument").forEach(x=>x.addEventListener("click",()=>selectInstrument(x.dataset.symbol)));
@@ -560,7 +560,7 @@ document.getElementById("market-data-provider").addEventListener("change",()=>{
  fetchMarketData("1m",false,activeProvider,true);
  if(tf!=="1m"&&document.getElementById("charts").classList.contains("active"))fetchMarketData(tf,true,activeProvider,true);
 });
-function tick(){document.getElementById("clock").textContent=new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"medium"}).format(new Date());}tick();setInterval(tick,1000);
+function tick(){document.getElementById("clock").textContent=new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"medium",hour12:true}).format(new Date());}tick();setInterval(tick,1000);
 fetch("/api/health").then(r=>r.json()).then(d=>{document.getElementById("api-health").textContent=d.status==="ok"?"API ONLINE":"API ERROR";document.getElementById("api-label").textContent=d.status==="ok"?"Online":"Error";}).catch(()=>{document.getElementById("api-health").textContent="API OFFLINE";document.getElementById("api-label").textContent="Offline";});
 function gexMoney(value){return (Number(value)/1000000).toFixed(2)+"M";}
 function gexLevelText(level){return level?fmt(level.futures_level)+" · "+gexMoney(level.gex):"Unavailable";}
@@ -706,7 +706,7 @@ function renderOverview(symbol,data=marketCache[activeProvider]["1m"],provider=a
  document.getElementById("overview-price").textContent=b.c==null?"?":fmt(b.c);
  document.getElementById("overview-volume").textContent=b.v==null?"?":fmt(b.v);
  document.getElementById("overview-range").textContent=(b.h==null?"?":fmt(b.h))+" / "+(b.l==null?"?":fmt(b.l));
- document.getElementById("overview-time").textContent=b.t?new Date(Number(b.t)*1000).toLocaleString("en-US",{timeZone:"UTC",hour12:false})+" UTC":"?";
+ document.getElementById("overview-time").textContent=b.t?new Date(Number(b.t)*1000).toLocaleString("en-US",{timeZone:"UTC",hour12:true})+" UTC":"?";
  const delay=row.delay_minutes!=null?" · reported delay "+row.delay_minutes+"m":"";
  const cacheStatus=data.cache?.status||"unknown";
  const age=data.cache?.age_seconds;
@@ -720,6 +720,78 @@ function renderOverview(symbol,data=marketCache[activeProvider]["1m"],provider=a
   status.className=stale?"pill warn":"pill ok";
  }
 }
+function timeAxisSvg(bars,L,R,B){
+ try{
+  const ts=bars.map(b=>Number(b.t)),n=ts.length;
+  if(n<2||!ts.every(t=>Number.isFinite(t)&&t>0))return "";
+  const unit=ts[0]>1e11?1:1000,pxBar=(R-L)/n,tz="America/New_York";
+  const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const fp=new Intl.DateTimeFormat("en-US",{timeZone:tz,year:"numeric",month:"numeric",day:"numeric",hour:"numeric",minute:"numeric",hourCycle:"h23"});
+  const loc=ts.map(t=>{const o={};fp.formatToParts(new Date(t*unit)).forEach(p=>{if(p.type!=="literal")o[p.type]=Number(p.value);});const h=(o.hour||0)%24,mi=o.minute||0;return {y:o.year,mo:o.month,d:o.day,h:h,mi:mi,m:Date.UTC(o.year,o.month-1,o.day,h,mi)/60000};});
+  const diffs=[];for(let i=1;i<n;i++){const d=(ts[i]-ts[i-1])*unit/60000;if(d>0)diffs.push(d);}
+  diffs.sort((a,b)=>a-b);
+  const barMin=diffs.length?diffs[Math.floor(diffs.length/2)]:5;
+  const lab=(h,mi)=>(h%12===0?12:h%12)+":"+String(mi).padStart(2,"0")+" "+(h<12?"AM":"PM");
+  const minPx=88,ticks=[];let lastX=-1e9;
+  const push=(x,text,bold)=>{
+   if(x-lastX<minPx){
+    if(!bold||(ticks.length&&ticks[ticks.length-1].bold))return;
+    ticks.pop();lastX=ticks.length?ticks[ticks.length-1].x:-1e9;
+    if(x-lastX<minPx)return;
+   }
+   ticks.push({x:x,text:text,bold:bold});lastX=x;
+  };
+  if(barMin<1440){
+   const want=Math.max(1,Math.ceil(minPx/pxBar))*barMin;
+   const steps=[1,2,5,10,15,30,60,120,180,240,360,720];
+   let step=steps.find(s=>s>=want);if(!step)step=720;
+   for(let i=1;i<n;i++){
+    const x=L+pxBar*(i+0.5),c=loc[i],p=loc[i-1];
+    if(Math.floor(c.m/1440)!==Math.floor(p.m/1440)){push(x,MON[c.mo-1]+" "+c.d,true);continue;}
+    if(Math.floor(c.m/step)!==Math.floor(p.m/step))push(x,lab(c.h,c.mi),false);
+   }
+  }else{
+   const every=Math.max(1,Math.ceil(minPx/pxBar));
+   for(let i=0;i<n;i+=every){
+    const c=loc[i],prevY=i>=every?loc[i-every].y:null;
+    push(L+pxBar*(i+0.5),MON[c.mo-1]+" "+c.d+((i===0||c.y!==prevY)?" "+c.y:""),false);
+   }
+  }
+  let out=`<line x1="${L}" y1="${B}" x2="${R}" y2="${B}" stroke="#34506b"/>`;
+  ticks.forEach(t=>{
+   if(t.x<L+26||t.x>R-26)return;
+   out+=`<line x1="${t.x}" y1="22" x2="${t.x}" y2="${B}" stroke="${t.bold?"#2b405a":"#18283b"}"/><line x1="${t.x}" y1="${B}" x2="${t.x}" y2="${B+5}" stroke="#34506b"/><text x="${t.x}" y="${B+20}" text-anchor="middle" fill="${t.bold?"#e8f0fa":"#8da1ba"}" font-size="12"${t.bold?' font-weight="700"':""}>${t.text}</text>`;
+  });
+  const tzName=(new Intl.DateTimeFormat("en-US",{timeZone:tz,timeZoneName:"short"}).formatToParts(new Date(ts[n-1]*unit)).find(p=>p.type==="timeZoneName")||{}).value||"ET";
+  out+=`<text x="${R+8}" y="${B+20}" fill="#6f849d" font-size="11">${tzName}</text>`;
+  return out;
+ }catch(e){return "";}
+}
+function candleSvg(bars,lo,span){const n=bars.length,step=940/Math.max(1,n),w=Math.max(1,Math.min(14,step*0.6));const y=v=>320-(Number(v)-lo)/span*270;return bars.map((b,i)=>{const x=30+step*(i+0.5),up=Number(b.c)>=Number(b.o),col=up?"#3ecf8e":"#ef5b5b",top=y(Math.max(Number(b.o),Number(b.c))),bot=y(Math.min(Number(b.o),Number(b.c)));return `<line x1="${x}" y1="${y(b.h)}" x2="${x}" y2="${y(b.l)}" stroke="${col}" stroke-width="1"/><rect x="${x-w/2}" y="${top}" width="${w}" height="${Math.max(1,bot-top)}" fill="${col}"/>`;}).join("");}
+function drawChartSvg(svg,bars,vals,useCandles,lo,hi){
+ const host=svg.parentElement,wrap=svg.closest(".chart-wrap");
+ const W=Math.max(640,Math.round((host&&host.clientWidth)||1000));
+ const H=Math.max(280,Math.round(((wrap&&wrap.clientHeight)||510)-100));
+ svg.setAttribute("viewBox","0 0 "+W+" "+H);
+ svg.style.height=H+"px";
+ const L=8,R=W-86,T=22,B=H-24,span=(hi-lo)||1;
+ const y=v=>B-(Number(v)-lo)/span*(B-T);
+ let out="";
+ for(let k=0;k<=4;k++){const gv=lo+span*k/4,gy=y(gv);out+=`<line x1="${L}" y1="${gy}" x2="${R}" y2="${gy}" stroke="#263951"/><text x="${R+8}" y="${gy+4}" fill="#8da1ba" font-size="12">${fmt(gv)}</text>`;}
+ const n=bars.length,step=(R-L)/Math.max(1,n);
+ if(useCandles){
+  const w=Math.max(1,Math.min(14,step*0.62));
+  bars.forEach((b,i)=>{const x=L+step*(i+0.5),up=Number(b.c)>=Number(b.o),col=up?"#3ecf8e":"#ef5b5b",yo=y(b.o),yc=y(b.c),top=Math.min(yo,yc),h=Math.max(1,Math.abs(yo-yc));out+=`<line x1="${x}" y1="${y(b.h)}" x2="${x}" y2="${y(b.l)}" stroke="${col}" stroke-width="1"/><rect x="${x-w/2}" y="${top}" width="${w}" height="${h}" fill="${col}"/>`;});
+ }else{
+  const pts=vals.map((v,i)=>(L+step*(i+0.5))+","+y(v)).join(" ");
+  out+=`<polyline points="${pts}" fill="none" stroke="#58c9e9" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+ }
+ const last=Number(vals[vals.length-1]),ly=y(last);
+ out+=`<line x1="${L}" y1="${ly}" x2="${R}" y2="${ly}" stroke="#e8b45c" stroke-width="1" stroke-dasharray="5 4"/><rect x="${R+2}" y="${ly-10}" width="80" height="20" rx="3" fill="#e8b45c"/><text x="${R+42}" y="${ly+4}" text-anchor="middle" fill="#07121d" font-size="12" font-weight="700">${fmt(last)}</text>`;
+ out+=timeAxisSvg(bars,L,R,B);
+ svg.innerHTML=out;
+}
+window.addEventListener("resize",()=>{clearTimeout(window.__fmcResize);window.__fmcResize=setTimeout(()=>{const c=document.getElementById("charts");if(!c||!c.classList.contains("active"))return;const d=marketCache?.[activeProvider]?.[intervalName(document.getElementById("chart-timeframe").value)];if(d)renderChart(d,activeProvider);},200);});
 function renderChart(data,provider=activeProvider){
  const symbol=document.getElementById("chart-symbol").value;
  const row=data.instruments?.find(x=>x.symbol===symbol);
@@ -732,9 +804,9 @@ function renderChart(data,provider=activeProvider){
  }
  const bars=row.bars.filter(b=>Number.isFinite(Number(b.c)));
  if(!bars.length){document.getElementById("local-chart-status").textContent="DATA FORMAT NOT RECOGNIZED";return;}
- const vals=bars.map(b=>Number(b.c)),lo=Math.min(...vals),hi=Math.max(...vals),span=hi-lo||1;
+ const vals=bars.map(b=>Number(b.c));const useCandles=bars.every(b=>[b.o,b.h,b.l,b.c].every(x=>x!=null&&Number.isFinite(Number(x))));const lo=useCandles?Math.min(...bars.map(b=>Number(b.l))):Math.min(...vals),hi=useCandles?Math.max(...bars.map(b=>Number(b.h))):Math.max(...vals),span=hi-lo||1;
  const points=vals.map((v,i)=>`${30+i*940/Math.max(1,vals.length-1)},${320-(v-lo)/span*270}`).join(" ");
- svg.innerHTML=`<line x1="30" y1="50" x2="970" y2="50" stroke="#263951"/><line x1="30" y1="185" x2="970" y2="185" stroke="#263951"/><line x1="30" y1="320" x2="970" y2="320" stroke="#263951"/><polyline points="${points}" fill="none" stroke="#58c9e9" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><text x="30" y="24" fill="#8da1ba" font-size="13">${fmt(hi)}</text><text x="30" y="348" fill="#8da1ba" font-size="13">${fmt(lo)}</text><text x="970" y="24" text-anchor="end" fill="#e8f0fa" font-size="15">${fmt(vals[vals.length-1])}</text>`;
+ drawChartSvg(svg,bars,vals,useCandles,lo,hi);
  const cacheStatus=data.cache?.status||"unknown";
  const fetched=data.cache?.last_updated_at||data.fetched_at;
  const updated=fetched?formatNewsTime(fetched):"update time unavailable";
@@ -824,7 +896,7 @@ function formatNewsTime(value){
   if(!value)return "Time unavailable";
   const date=new Date(value);
   if(Number.isNaN(date.getTime()))return "Time unavailable";
-  return new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",dateStyle:"medium",timeStyle:"short",timeZoneName:"short"}).format(date);
+  return new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",year:"numeric",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",hour12:true,timeZoneName:"short"}).format(date);
 }
 function biasClass(value){return ({bullish:"bias-bullish",bearish:"bias-bearish",neutral:"bias-neutral",mixed:"bias-mixed"})[value]||"bias-unavailable";}
 function biasLabel(value){return ({bullish:"BULLISH",bearish:"BEARISH",neutral:"NEUTRAL",mixed:"MIXED",unavailable:"UNAVAILABLE",not_provided:"NOT PROVIDED"})[value]||String(value||"UNAVAILABLE").replaceAll("_"," ").toUpperCase();}
@@ -939,7 +1011,7 @@ async function loadHomeIntelligence(){
   const tasks=await Promise.allSettled([
     fetch("/api/news/intelligence").then(r=>{if(!r.ok)throw new Error("News intelligence unavailable");return r.json()}),
     fetch("/api/gex/snapshot?provider="+encodeURIComponent(document.getElementById("market-data-provider")?.value||activeProvider||"tradingview")).then(r=>{if(!r.ok)throw new Error("GEX snapshot unavailable");return r.json()}),
-    fetch("/api/agents/opportunity-scout").then(r=>{if(!r.ok)throw new Error("Opportunity Scout unavailable");return r.json()})
+    fetch("/api/agents/opportunity-scout?provider="+encodeURIComponent(document.getElementById("market-data-provider")?.value||activeProvider||"tradingview")+"&refresh=true").then(r=>{if(!r.ok)throw new Error("Opportunity Scout unavailable");return r.json()})
   ]);
   if(tasks[0].status==="fulfilled"){renderNewsBias(tasks[0].value);renderWatchlistBias(tasks[0].value);}
   if(tasks[1].status==="fulfilled"){
@@ -977,11 +1049,11 @@ async function fetchNewsJson(url){
  return data;
 }
 
-async function loadNews(){
+async function loadNews(forceWebullRefresh=false){
   setPill("news-status","checking","CHECKING YAHOO");setPill("webull-news-status","checking","CHECKING WEBULL");setPill("calendar-status","checking","CHECKING CALENDAR");
   const results=await Promise.allSettled([
     fetchNewsJson("/api/news"),
-    fetchNewsJson("/api/news/webull"),
+    fetchNewsJson("/api/news/webull"+(forceWebullRefresh?"?refresh=true":"")),
     fetchNewsJson("/api/calendar/events")
   ]);
   const yahoo=normalizeNewsPayload(results[0].status==="fulfilled"?results[0].value:{status:"unavailable",items:[],error:String(results[0].reason?.message||"Yahoo Finance RSS is temporarily unavailable.")});
@@ -990,8 +1062,9 @@ async function loadNews(){
   renderYahooNews(yahoo);renderWebullNews(webull);renderCalendar(calendar);renderHomeHeadlines(yahoo,webull);
   await loadHomeIntelligence();
 }
-document.getElementById("refresh-news").addEventListener("click",loadNews);
+document.getElementById("refresh-news").addEventListener("click",()=>loadNews(true));
 document.getElementById("market-data-provider").addEventListener("change",()=>loadHomeIntelligence());
+loadHomeIntelligence();
 loadNews();
 setInterval(loadNews,600000);
 
