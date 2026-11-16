@@ -6,11 +6,11 @@
 # its indicator says "FOMC Decision Fed Funds Tgt Rate".
 #
 # Aliases below come from real TradingView data seen on 2026-11-15, except
-# the two marked "standard spelling", which have not yet appeared in data.
+# the ones marked "standard spelling", which have not yet appeared in data.
 #
 # Events not matched here are not deleted. The calendar view reports how many
-# were hidden (other_macro_event_count). Retail Sales, Housing Starts, JOLTS
-# and Michigan Sentiment are hidden by this default list.
+# were hidden (other_macro_event_count). Housing Starts, JOLTS and Michigan
+# Sentiment are hidden by this default list.
 macro_event_filters:
   NFP:
     - "non farm payrolls"   # title seen: "Non Farm Payrolls"
@@ -32,3 +32,5 @@ macro_event_filters:
     - "unemployment"        # title seen: "Unemployment Rate"
   ISM:
     - "ism"                 # titles seen: "ISM Manufacturing PMI", "ISM Services PMI"
+  retail_sales:
+    - "retail sales"        # standard spelling; confirm the live TradingView title on the next pull
