@@ -207,7 +207,7 @@ def test_opportunity_scout_endpoint_reads_existing_caches_only(monkeypatch) -> N
     monkeypatch.setattr(main.yahoo_news_service, "peek_news", fake_news_peek)
     monkeypatch.setattr(main.yahoo_news_service, "get_news", forbidden_news_refresh)
 
-    response = client.get("/api/agents/opportunity-scout")
+    response = client.get("/api/agents/opportunity-scout?provider=tradingview")
     assert response.status_code == 200
     payload = response.json()
     assert payload["status"] == "blocked"
