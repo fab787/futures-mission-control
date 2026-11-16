@@ -25,9 +25,8 @@ MNQ_BOT_PROFILE: dict[str, Any] = {
         "Descriptive market-structure context only. No trade signals until a "
         "strategy is defined and verified in a later phase."
     ),
-    # Intentionally empty: fill from the verified contract specification
-    # before any sizing logic uses these values.
-    "contract": {"multiplier": None, "tick_size": None},
+    # Verified against CME MNQ specifications: $2 per index point, 0.25-point tick.
+    "contract": {"multiplier": 2, "tick_size": 0.25, "tick_value": 0.50},
 }
 
 
@@ -100,3 +99,4 @@ def run_mnq_bot(
         reason=analysis.get("reason"),
         analysis=analysis,
     )
+
