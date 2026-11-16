@@ -367,7 +367,7 @@ async def webull_status() -> dict[str, Any]:
 @app.get("/api/market-data")
 async def market_data(
     interval: str = Query(default="1m", pattern="^(1m|5m|15m|1h|4h|1D)$"),
-    provider: str = Query(default="tradingview", pattern="^(tradingview|webull)$"),
+    provider: str = Query(default="webull", pattern="^(tradingview|webull)$"),
     refresh: bool = Query(default=False),
 ) -> dict[str, Any]:
     """Return cached market data from the selected, independently managed provider."""
@@ -500,7 +500,7 @@ def _attach_cached_realized_volatility(result: dict[str, Any], provider: str) ->
 @app.get("/api/gex")
 async def gex(
     futures_price: float | None = Query(default=None, gt=0),
-    provider: str = Query(default="tradingview", pattern="^(tradingview|webull)$"),
+    provider: str = Query(default="webull", pattern="^(tradingview|webull)$"),
 ) -> dict[str, Any]:
     """Return Cboe NDX GEX mapped using manual price or selected provider cache."""
     price_source = "manual input"
@@ -530,7 +530,7 @@ async def gex(
 
 @app.get("/api/gex/snapshot")
 def gex_snapshot(
-    provider: str = Query(default="tradingview", pattern="^(tradingview|webull)$"),
+    provider: str = Query(default="webull", pattern="^(tradingview|webull)$"),
 ) -> dict[str, Any]:
     """Cache-only Home GEX snapshot; never fetch Cboe or market data."""
     price, price_source = _cached_gex_mnq_price(provider)
@@ -678,7 +678,7 @@ async def macro_calendar_events() -> dict[str, Any]:
 
 @app.get("/api/agents/opportunity-scout")
 async def opportunity_scout_agent(
-    provider: str = Query(default="tradingview", pattern="^(tradingview|webull)$"),
+    provider: str = Query(default="webull", pattern="^(tradingview|webull)$"),
     refresh: bool = Query(default=False),
 ) -> dict[str, Any]:
     """Rank the selected provider's data; refresh only through its shared cache gate."""

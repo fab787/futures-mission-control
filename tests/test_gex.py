@@ -143,7 +143,7 @@ def test_gex_endpoint_reuses_fresh_cached_mnq_price(monkeypatch) -> None:
             "instruments": [{"symbol": "MNQ", "latest": {"c": 20987.5}}],
         },
     )
-    response = authenticated_client().get("/api/gex")
+    response = authenticated_client().get("/api/gex?provider=tradingview")
     assert response.status_code == 200
     assert response.json()["futures_price"] == 20987.5
     assert calls[0][0] == 20987.5
@@ -161,6 +161,6 @@ def test_gex_endpoint_requires_manual_price_when_mnq_cache_is_stale(monkeypatch)
             "instruments": [{"symbol": "MNQ", "latest": {"c": 20987.5}}],
         },
     )
-    response = authenticated_client().get("/api/gex")
+    response = authenticated_client().get("/api/gex?provider=tradingview")
     assert response.status_code == 400
     assert "will not trigger a TradingView request" in response.json()["detail"]
