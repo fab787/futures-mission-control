@@ -25,8 +25,8 @@ MES_BOT_PROFILE: dict[str, Any] = {
         "Descriptive market-structure context only. No trade signals until a "
         "strategy is defined and verified in a later phase."
     ),
-    # UNVERIFIED: from public broker references (multiplier $5, 0.25 tick, $1.25 tick value).
-    # Confirm against CME or broker before any sizing logic uses these values.
+    # Owner-approved: multiplier $5, 0.25 tick, $1.25 tick value (public broker references).
+    # Re-check against the CME MES contract page before any sizing logic uses these values.
     "contract": {"multiplier": 5, "tick_size": 0.25, "tick_value": 1.25},
 }
 
