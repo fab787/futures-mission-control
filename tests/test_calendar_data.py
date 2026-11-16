@@ -358,9 +358,10 @@ def test_shipped_watchlist_has_the_ten_approved_symbols():
     assert {item["symbol"] for item in shipped_watchlist()} == TEN_SYMBOLS
 
 
-def test_shipped_filters_have_the_eight_approved_names():
+def test_shipped_filters_have_the_nine_approved_names():
     assert set(shipped_filters()) == {
         "NFP", "CPI", "PPI", "FOMC", "PCE", "GDP", "unemployment", "ISM",
+        "retail_sales",
     }
 
 
@@ -433,8 +434,9 @@ def test_shipped_filters_classify_real_events_as_the_owner_expects():
     assert matched["Non Farm Payrolls"] == ["NFP"]
     assert matched["Interest Rate"] == ["FOMC"]
     assert matched["Inflation Rate MoM"] == ["CPI"]
+    assert matched["Retail Sales MoM"] == ["retail_sales"]
     # Not on the approved list, so hidden by default:
-    for hidden in ("Retail Sales MoM", "Housing Starts", "JOLTs Job Openings",
+    for hidden in ("Housing Starts", "JOLTs Job Openings",
                    "Michigan Consumer Sentiment Prel", "Existing Home Sales"):
         assert matched[hidden] == []
 
@@ -468,6 +470,7 @@ def test_filter_macro_events_tags_matches_and_leaves_input_alone():
     assert {event["title"] for event in kept} == {
         "Core PCE Price Index MoM", "GDP Growth Rate QoQ 2nd Est", "ISM Services PMI",
         "Non Farm Payrolls", "Interest Rate", "Inflation Rate MoM",
+        "Retail Sales MoM",
     }
 
 
