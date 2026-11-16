@@ -1,0 +1,28 @@
+# Earnings watchlist for the weekly TradingView calendar pull.
+# Edit this file to add or remove names; no code change is needed.
+#
+# Every symbol must be exchange-qualified as EXCHANGE:TICKER.
+# All ten symbols below were confirmed accepted by TradingView's earnings
+# calendar on 2026-11-15. If you add a name, check it returns data before
+# relying on it. The list is capped at 25 symbols (a project guard).
+earnings_watchlist:
+  - symbol: "NASDAQ:NVDA"
+    name: NVIDIA
+  - symbol: "NASDAQ:AAPL"
+    name: Apple
+  - symbol: "NASDAQ:MSFT"
+    name: Microsoft
+  - symbol: "NASDAQ:AMZN"
+    name: Amazon
+  - symbol: "NASDAQ:GOOGL"
+    name: Alphabet
+  - symbol: "NASDAQ:META"
+    name: Meta Platforms
+  - symbol: "NASDAQ:AVGO"
+    name: Broadcom
+  - symbol: "NASDAQ:TSLA"
+    name: Tesla
+  - symbol: "NASDAQ:MU"
+    name: Micron Technology
+  - symbol: "NYSE:JPM"
+    name: JPMorgan Chase
