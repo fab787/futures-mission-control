@@ -634,7 +634,7 @@ async function loadGex(){
   const status=document.getElementById("gex-status");
   const rawPrice=document.getElementById("gex-futures-price").value.trim();
   const provider=document.getElementById("market-data-provider")?.value||activeProvider||"tradingview";
-  const params=new URLSearchParams({provider});if(rawPrice)params.set("futures_price",rawPrice);
+  const params=new URLSearchParams({provider,source:"cboe"});if(rawPrice)params.set("futures_price",rawPrice);
   const query="?"+params.toString();
   status.textContent="REQUESTING CBOE DATA";
   status.className="pill warn";
