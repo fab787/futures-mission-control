@@ -328,7 +328,17 @@ select:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,te
 
 <section class="section" id="news">
  <div class="news-refresh-row"><div><div class="eyebrow">Multi-source market intelligence</div><div class="panel-title">News, sentiment & macro catalysts</div><div class="muted small">Yahoo and Webull remain separate source feeds. All displayed publication times are converted from source timestamps to New York time.</div></div><button class="btn" id="refresh-news">Refresh news & calendar</button></div>
- <div class="news-columns">
+      <div class="news-links-row" style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px"><a class="tv-link" id="tradingview-calendar-link" href="https://www.tradingview.com/economic-calendar/" target="_blank" rel="noopener noreferrer">TradingView economic calendar &#8599;</a><a class="tv-link" id="yahoo-calendar-link" href="https://finance.yahoo.com/calendar/economic/" target="_blank" rel="noopener noreferrer">Yahoo Finance calendar &#8599;</a></div>
+ <div class="panel" style="margin-top:12px">
+  <div class="panel-head"><div><div class="eyebrow">Per-provider comparison</div><div class="panel-title">Yahoo bias · Webull bias · Combined instrument bias</div></div><span class="muted small">MNQ · MES · MGC</span></div>
+  <div class="grid3" id="news-bias-grid">
+   <div class="news-bias-card"><h4>MNQ · QQQ</h4><div class="bias-row"><span>Yahoo</span><span>Not supplied</span></div><div class="bias-row"><span>Webull</span><span>Awaiting feed</span></div><div class="bias-row"><strong>Combined</strong><span>Unavailable</span></div></div>
+   <div class="news-bias-card"><h4>MES · SPY</h4><div class="bias-row"><span>Yahoo</span><span>Not supplied</span></div><div class="bias-row"><span>Webull</span><span>Awaiting feed</span></div><div class="bias-row"><strong>Combined</strong><span>Unavailable</span></div></div>
+   <div class="news-bias-card"><h4>MGC · GLD</h4><div class="bias-row"><span>Yahoo</span><span>Not supplied</span></div><div class="bias-row"><span>Webull</span><span>Awaiting feed</span></div><div class="bias-row"><strong>Combined</strong><span>Unavailable</span></div></div>
+  </div>
+  <p class="snapshot-note">Yahoo RSS currently provides no native sentiment or reliable per-contract mapping. Webull sentiment is its own article label. A one-provider result is marked single-source; stale items older than 24 hours do not contribute to directional bias.</p>
+ </div>
+ <div class="news-columns" style="grid-template-columns:repeat(2,minmax(0,1fr))">
   <div class="panel news-column">
    <div class="panel-head"><div><div class="eyebrow">Source 1 · RSS</div><div class="panel-title">Yahoo Finance</div></div><span class="pill off" id="news-status">CHECKING</span></div>
    <div class="muted small" id="news-meta">Existing combined Yahoo RSS feed · 10-minute cache.</div>
@@ -339,26 +349,16 @@ select:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,te
    <div class="muted small" id="webull-news-meta">QQQ → MNQ · SPY → MES · GLD → MGC · independent 10-minute cache.</div>
    <div class="news-feed" id="webull-news-feed"><div class="placeholder">Loading Webull headlines…</div></div>
   </div>
-  <div class="panel news-column">
+  <div class="panel news-column" style="display:none">
    <div class="panel-head"><div><div class="eyebrow">Source 3 · Structured macro data</div><div class="panel-title">Economic Calendar</div></div><span class="pill off" id="calendar-status">CHECKING</span></div>
    <div class="muted small" id="calendar-meta">Webull US macro calendar · UTC source times displayed in America/New_York.</div>
    <div class="news-feed" id="calendar-feed"><div class="placeholder">Loading macro events…</div></div>
-   <a class="tv-link" id="yahoo-calendar-link" href="https://finance.yahoo.com/calendar/economic/" target="_blank" rel="noopener noreferrer">Yahoo Finance calendar fallback ↗</a>
   </div>
  </div>
  <div class="panel" style="margin-top:12px">
   <div class="panel-head"><div><div class="eyebrow">Catalyst intelligence · both sources</div><div class="panel-title">Catalyst watch</div></div><span class="pill off" id="catalyst-status">AWAITING HEADLINES</span></div>
   <div id="catalyst-feed" class="news-feed" style="max-height:280px"><div class="placeholder">Catalyst tags will appear when headlines are cached.</div></div>
   <p class="snapshot-note">Catalyst tags identify themes and priority for review. They do not infer bullish/bearish market impact.</p>
- </div>
- <div class="panel" style="margin-top:12px">
-  <div class="panel-head"><div><div class="eyebrow">Per-provider comparison</div><div class="panel-title">Yahoo bias · Webull bias · Combined instrument bias</div></div><span class="muted small">MNQ · MES · MGC</span></div>
-  <div class="grid3" id="news-bias-grid">
-   <div class="news-bias-card"><h4>MNQ · QQQ</h4><div class="bias-row"><span>Yahoo</span><span>Not supplied</span></div><div class="bias-row"><span>Webull</span><span>Awaiting feed</span></div><div class="bias-row"><strong>Combined</strong><span>Unavailable</span></div></div>
-   <div class="news-bias-card"><h4>MES · SPY</h4><div class="bias-row"><span>Yahoo</span><span>Not supplied</span></div><div class="bias-row"><span>Webull</span><span>Awaiting feed</span></div><div class="bias-row"><strong>Combined</strong><span>Unavailable</span></div></div>
-   <div class="news-bias-card"><h4>MGC · GLD</h4><div class="bias-row"><span>Yahoo</span><span>Not supplied</span></div><div class="bias-row"><span>Webull</span><span>Awaiting feed</span></div><div class="bias-row"><strong>Combined</strong><span>Unavailable</span></div></div>
-  </div>
-  <p class="snapshot-note">Yahoo RSS currently provides no native sentiment or reliable per-contract mapping. Webull sentiment is its own article label. A one-provider result is marked single-source; stale items older than 24 hours do not contribute to directional bias.</p>
  </div>
 </section>
 
