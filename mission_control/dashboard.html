@@ -641,10 +641,10 @@ async function loadGex(){
   try{
     const response=await fetch("/api/gex"+query);
     const data=await response.json();
-    if(!response.ok){status.textContent="GEX UNAVAILABLE";document.getElementById("gex-help").textContent=data.detail||"GEX request failed.";return;}
+    if(!response.ok){clearGexDisplay();status.textContent="GEX UNAVAILABLE";document.getElementById("gex-help").textContent=data.detail||"GEX request failed.";return;}
     status.textContent=data.status.toUpperCase()+" · CBOE DELAYED";
     status.className=data.status==="stale"?"pill warn":"pill ok";
-    document.getElementById("gex-help").textContent="Retrieved "+data.retrieved_at+" · chain age "+data.cache_age_seconds+"s · approx. "+data.source_delay_minutes_estimate+"-minute delayed options · futures price source: "+data.futures_price_source+".";
+    document.getElementById("gex-help").textContent="Ticker "+document.getElementById("gex-ticker").value+" · source "+document.getElementById("gex-source").value+" · Retrieved "+data.retrieved_at+" · chain age "+data.cache_age_seconds+"s · approx. "+data.source_delay_minutes_estimate+"-minute delayed options · futures price source: "+data.futures_price_source+".";
     document.getElementById("gex-spot").textContent=fmt(data.underlying_spot);
     document.getElementById("gex-futures").textContent=fmt(data.futures_price);
     document.getElementById("gex-net").textContent=gexMoney(data.net_gex_per_1pct_move);
@@ -680,6 +680,8 @@ async function loadGex(){
     await loadHomeIntelligence();
   }catch(error){status.textContent="GEX TEMPORARILY UNAVAILABLE";status.className="pill warn";document.getElementById("gex-help").textContent="Could not load the Cboe delayed options chain. Existing cached results, if any, remain separate from this request.";}
 }
+function clearGexDisplay(){["gex-spot","gex-futures","gex-net","gex-call-wall","gex-put-wall","gex-flip","gex-c1","gex-c2","gex-c3","gex-p1","gex-p2","gex-p3"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="\u2014";});const body=document.querySelector("#gex-table tbody");if(body)body.replaceChildren();const svg=document.getElementById("gex-chart");if(svg)svg.innerHTML="";const cap=document.getElementById("gex-chart-caption");if(cap)cap.textContent="No data for this ticker and source";}
+document.getElementById("gex-ticker").addEventListener("change",()=>{if(document.getElementById("gex-ticker").value!=="NDX")document.getElementById("gex-source").value="webull";});
 document.getElementById("load-gex").addEventListener("click",loadGex);
 document.getElementById("gex-view-exposure").addEventListener("click",()=>renderGexTable("exposure"));
 document.getElementById("gex-view-oi").addEventListener("click",()=>renderGexTable("oi"));
