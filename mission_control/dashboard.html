@@ -1104,7 +1104,7 @@ document.getElementById("live-picker")?.addEventListener("click",e=>{
 });
 lvPaint();
 lvSlow();
-setInterval(lvSlow,15000);// ---- Display: highlight the live tile, shrink snapshot tiles, label refresh rates ----
+setInterval(lvSlowMinute,60000);// ---- Display: highlight the live tile, shrink snapshot tiles, label refresh rates ----
 function lvCurrentFastMs(){const sel=document.getElementById("auto-refresh");const opt=sel?sel.options[sel.selectedIndex]:null;const ms=opt?Number(opt.value):0;return ms>0&&ms<15000?ms:0;}
 function lvBanner(t){let b=t.querySelector(".lv-banner");if(!b){b=document.createElement("div");b.className="lv-banner";t.insertBefore(b,t.firstChild);}return b;}
 function lvPaint(){
@@ -1228,7 +1228,72 @@ function lvSelect(sym){
   if(marketCache?.[activeProvider]?.[tf])lvDrawChart();else fetchMarketData(tf,true,activeProvider);
 }
 document.getElementById("chart-symbol").addEventListener("change",function(){lvSelect(this.value);});
-document.querySelectorAll(".instrument").forEach(function(x){x.addEventListener("click",function(){lvSelect(x.dataset.symbol);});});function formatNewsTime(value){
+document.querySelectorAll(".instrument").forEach(function(x){x.addEventListener("click",function(){lvSelect(x.dataset.symbol);});});// ---- Overview sparklines: selected ticker = live trade line; other tickers = 1-minute close line, once a minute ----
+function lvEnsureSpark(sym){
+  const t=document.querySelector('.instrument[data-symbol="'+sym+'"]');
+  if(!t)return null;
+  let s=t.querySelector(".lv-spark");
+  if(!s){s=document.createElement("div");s.className="lv-spark";s.style.marginTop="6px";t.appendChild(s);}
+  return s;
+}
+function lvLineSvg(points,label,color){
+  if(!points||points.length<2)return '<div class="muted small">'+label+': collecting data…</div>';
+  const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
+  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const W=200,H=44,pad=3;
+  const sx=v=>x1===x0?W/2:pad+(v-x0)/(x1-x0)*(W-2*pad);
+  const sy=v=>y1===y0?H/2:H-pad-(v-y0)/(y1-y0)*(H-2*pad);
+  const pts=points.map(p=>sx(p.x).toFixed(1)+","+sy(p.y).toFixed(1)).join(" ");
+  const last=points[points.length-1];
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'" role="img" aria-label="'+label+'">'
+    +'<polyline fill="none" stroke="'+color+'" stroke-width="1.6" vector-effect="non-scaling-stroke" points="'+pts+'"/>'
+    +'<circle cx="'+sx(last.x).toFixed(1)+'" cy="'+sy(last.y).toFixed(1)+'" r="2.4" fill="'+color+'"/></svg>'
+    +'<div class="muted small">'+label+' · low '+lvFmt(y0)+' · high '+lvFmt(y1)+'</div>';
+}
+function lvFastSpark(sym){
+  const s=lvEnsureSpark(sym);if(!s)return;
+  const cutoff=Date.now()-5*60000;
+  const buf=lvTradeBuf[sym];
+  const pts=(buf?[...buf.values()]:[]).filter(t=>t.time_ms>=cutoff).sort((a,b)=>a.time_ms-b.time_ms).map(t=>({x:t.time_ms,y:t.price}));
+  s.innerHTML=lvLineSvg(pts,"LIVE · last 5 min of trades","#62d9f5");
+}
+// Replaces the earlier lvRecord: same storage, plus a live-line refresh for the selected ticker.
+function lvRecord(sym,ticks){
+  const m=lvTradeBuf[sym];if(!m)return;
+  (ticks||[]).forEach(function(t){m.set(t.time_ms+"|"+t.price+"|"+t.size+"|"+t.side,t);});
+  const cutoff=Date.now()-LV_KEEP_MS;
+  for(const [k,t] of m){if(t.time_ms<cutoff)m.delete(k);}
+  if(sym===lvSymbol)lvFastSpark(sym);
+}
+async function lvSlowMinute(){
+  try{
+    const r=await fetch("/api/market-data?interval=1m&provider=webull");
+    if(!r.ok)return;
+    const d=await r.json();
+    const now=Date.now();
+    (d.instruments||[]).forEach(function(item){
+      if(!LV_SYMBOLS.includes(item.symbol)||item.symbol===lvSymbol||!item.latest)return;
+      lvSetTile(item.symbol,item.latest.c,"1m close "+lvClock(item.latest.t*1000)+" · refreshed "+lvClock(now));
+      const pts=(item.bars||[]).slice(-60).map(function(b){return {x:b.t*1000,y:b.c};});
+      const s=lvEnsureSpark(item.symbol);
+      if(s)s.innerHTML=lvLineSvg(pts,"1-minute closes · last 60 min","#8da1ba");
+    });
+  }catch(e){}
+}
+// Replaces the earlier lvSelect: same behaviour, plus sparkline refresh.
+function lvSelect(sym){
+  if(!LV_SYMBOLS.includes(sym))return;
+  lvSymbol=sym;lvFails=0;lvPaint();
+  try{selectInstrument(sym);}catch(e){}
+  const gex=document.getElementById("gex-ticker");
+  if(gex&&LV_GEX[sym]&&gex.value!==LV_GEX[sym]){gex.value=LV_GEX[sym];gex.dispatchEvent(new Event("change"));}
+  lvSlowMinute();
+  lvTick();
+  lvFastSpark(sym);
+  const tf=intervalName(document.getElementById("chart-timeframe").value);
+  if(marketCache?.[activeProvider]?.[tf])lvDrawChart();else fetchMarketData(tf,true,activeProvider);
+}
+lvSlowMinute();function formatNewsTime(value){
   if(!value)return "Time unavailable";
   const date=new Date(value);
   if(Number.isNaN(date.getTime()))return "Time unavailable";
