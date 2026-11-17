@@ -173,10 +173,24 @@ class WebullGexService:
         futures_price: float,
         price_source: str,
         force_refresh: bool = False,
+        expiries: list[date] | None = None,
     ) -> dict[str, Any]:
         if ticker not in TICKER_ROOTS or ticker not in RATIO_BANDS:
             raise GexUnavailable(f"Unsupported GEX ticker: {ticker}")
-        rows, stored_at, retrieved_at, status = await self._chain((ticker, expiry), force_refresh)
+        days = expiries or [expiry]
+        rows: list[dict[str, Any]] = []
+        stored_times: list[float] = []
+        retrieved_times: list[str] = []
+        states: list[str] = []
+        for day in days:
+            part, stored, retrieved, state = await self._chain((ticker, day), force_refresh)
+            rows.extend(part)
+            stored_times.append(stored)
+            retrieved_times.append(retrieved)
+            states.append(state)
+        stored_at = min(stored_times)
+        retrieved_at = min(retrieved_times)
+        status = "stale" if "stale" in states else ("fresh" if "fresh" in states else "cached")
         payload = build_payload(rows, spot, ticker)
         return calculate_gex(
             payload,

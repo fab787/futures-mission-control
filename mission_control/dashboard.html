@@ -272,7 +272,7 @@ select:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,te
   <div class="toolbar">
     <label for="gex-futures-price">MNQ / NQ futures price (optional)</label>
     <input id="gex-futures-price" type="number" min="0.01" step="0.25" placeholder="Use fresh cached MNQ price" style="width:210px;background:#0a1421;color:var(--text);border:1px solid #30445c;border-radius:7px;padding:8px 10px">
-    <select id="gex-ticker" class="control" aria-label="GEX instrument"><option value="NDX">MNQ · NDX options</option><option value="SPX">MES · SPX options</option><option value="QQQ">MNQ · QQQ ETF</option><option value="SPY">MES · SPY ETF</option><option value="GLD">MGC · GLD ETF</option></select><select id="gex-source" class="control" aria-label="GEX data source"><option value="cboe" selected>Cboe delayed</option><option value="webull">Webull</option></select><button class="btn" id="load-gex">Load / Update GEX</button>
+    <select id="gex-ticker" class="control" aria-label="GEX instrument"><option value="NDX">MNQ · NDX options</option><option value="SPX">MES · SPX options</option><option value="QQQ">MNQ · QQQ ETF</option><option value="SPY">MES · SPY ETF</option><option value="GLD">MGC · GLD ETF</option></select><select id="gex-source" class="control" aria-label="GEX data source"><option value="cboe" selected>Cboe delayed</option><option value="webull">Webull</option></select><input id="gex-spot-input" type="number" min="0.01" step="0.01" placeholder="NDX or SPX index spot (Webull)" style="width:210px;background:#0a1421;color:var(--text);border:1px solid #30445c;border-radius:7px;padding:8px 10px"> <button class="btn" id="load-gex">Load / Update GEX</button><div id="gex-expiries" class="toolbar" style="margin-top:8px;flex-wrap:wrap"></div>
   </div>
   <p class="muted small" id="gex-help" style="margin-top:10px">GEX makes no TradingView request. It uses a fresh MNQ price already in the central cache, or the manual price above. Cboe options data is delayed; repeat requests reuse the 15-minute cached chain.</p>
 </div>
@@ -632,9 +632,16 @@ function renderGexTable(view){
 }
 async function loadGex(){
   const status=document.getElementById("gex-status");
+  fillFuturesFromCache();
   const rawPrice=document.getElementById("gex-futures-price").value.trim();
   const provider=document.getElementById("market-data-provider")?.value||activeProvider||"tradingview";
   const params=new URLSearchParams({provider,source:document.getElementById("gex-source").value,ticker:document.getElementById("gex-ticker").value});if(rawPrice)params.set("futures_price",rawPrice);
+  const reqTicker=document.getElementById("gex-ticker").value;
+  const reqSource=document.getElementById("gex-source").value;
+  const spotRaw=document.getElementById("gex-spot-input")?.value.trim();
+  if(spotRaw)params.set("spot",spotRaw);
+  const checkedDays=[...document.querySelectorAll("#gex-expiries input:checked")].map(x=>x.value);
+  if(checkedDays.length)params.set("expiries",checkedDays.join(","));
   const query="?"+params.toString();
   status.textContent="REQUESTING CBOE DATA";
   status.className="pill warn";
@@ -644,7 +651,7 @@ async function loadGex(){
     if(!response.ok){clearGexDisplay();status.textContent="GEX UNAVAILABLE";document.getElementById("gex-help").textContent=data.detail||"GEX request failed.";return;}
     status.textContent=data.status.toUpperCase()+" · CBOE DELAYED";
     status.className=data.status==="stale"?"pill warn":"pill ok";
-    document.getElementById("gex-help").textContent="Ticker "+document.getElementById("gex-ticker").value+" · source "+document.getElementById("gex-source").value+" · Retrieved "+data.retrieved_at+" · chain age "+data.cache_age_seconds+"s · approx. "+data.source_delay_minutes_estimate+"-minute delayed options · futures price source: "+data.futures_price_source+".";
+    document.getElementById("gex-help").textContent="Ticker "+reqTicker+" · source "+reqSource+" · Retrieved "+data.retrieved_at+" · chain age "+data.cache_age_seconds+"s · approx. "+data.source_delay_minutes_estimate+"-minute delayed options · futures price source: "+data.futures_price_source+".";
     document.getElementById("gex-spot").textContent=fmt(data.underlying_spot);
     document.getElementById("gex-futures").textContent=fmt(data.futures_price);
     document.getElementById("gex-net").textContent=gexMoney(data.net_gex_per_1pct_move);
@@ -683,6 +690,52 @@ async function loadGex(){
 function clearGexDisplay(){["gex-spot","gex-futures","gex-net","gex-call-wall","gex-put-wall","gex-flip","gex-c1","gex-c2","gex-c3","gex-p1","gex-p2","gex-p3"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="\u2014";});const body=document.querySelector("#gex-table tbody");if(body)body.replaceChildren();const svg=document.getElementById("gex-chart");if(svg)svg.innerHTML="";const cap=document.getElementById("gex-chart-caption");if(cap)cap.textContent="No data for this ticker and source";}
 document.getElementById("gex-ticker").addEventListener("change",()=>{if(document.getElementById("gex-ticker").value!=="NDX")document.getElementById("gex-source").value="webull";});
 document.getElementById("load-gex").addEventListener("click",loadGex);
+loadGexExpiries();
+fillFuturesFromCache();
+setInterval(fillFuturesFromCache,15000);
+document.getElementById("gex-futures-price").addEventListener("input",function(){this.dataset.manual=this.value.trim()?"1":"0";});
+function fillFuturesFromCache(){
+  const box=document.getElementById("gex-futures-price");
+  if(!box||box.dataset.manual==="1")return;
+  const ticker=document.getElementById("gex-ticker")?.value||"NDX";
+  const futuresSymbol={NDX:"MNQ",QQQ:"MNQ",SPX:"MES",SPY:"MES",GLD:"MGC"}[ticker]||"MNQ";
+  const provider=document.getElementById("market-data-provider")?.value||activeProvider;
+  const snap=marketCache[provider]&&marketCache[provider]["1m"];
+  const row=snap&&(snap.instruments||[]).find(x=>x.symbol===futuresSymbol);
+  const price=row&&row.latest?Number(row.latest.c):NaN;
+  if(!Number.isFinite(price)||price<=0||(snap.cache&&snap.cache.status==="stale")){
+    box.placeholder="No fresh "+futuresSymbol+" price in cache. Refresh Overview or type it.";
+    return;
+  }
+  box.value=String(price);
+  box.dataset.manual="0";
+  box.placeholder="Auto from "+provider+" "+futuresSymbol+" cache";
+}
+async function loadGexExpiries(){
+  const box=document.getElementById("gex-expiries");
+  if(!box)return;
+  try{
+    const data=await fetch("/api/gex/expiries").then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.json();});
+    box.replaceChildren();
+    const label=document.createElement("span");
+    label.className="muted small";
+    label.textContent="Expirations (nearest first, check one or more):";
+    box.append(label);
+    data.expiries.forEach(day=>{
+      const wrap=document.createElement("label");
+      wrap.className="muted small";
+      wrap.style.display="inline-flex";
+      wrap.style.alignItems="center";
+      wrap.style.gap="4px";
+      const check=document.createElement("input");
+      check.type="checkbox";
+      check.value=day;
+      check.checked=(day===data.default);
+      wrap.append(check,day);
+      box.append(wrap);
+    });
+  }catch(error){box.textContent="Expirations unavailable: "+error.message;}
+}
 document.getElementById("gex-view-exposure").addEventListener("click",()=>renderGexTable("exposure"));
 document.getElementById("gex-view-oi").addEventListener("click",()=>renderGexTable("oi"));
 function providerLabel(provider){return provider==="webull"?"Webull Cloud MCP":"TradingView MCP";}

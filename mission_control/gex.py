@@ -28,7 +28,10 @@ MAX_DAYS = 45.0
 STRIKE_BAND = 0.15
 CONTRACT_MULTIPLIER = 100.0
 ET = ZoneInfo("America/New_York")
+from contextvars import ContextVar
 OCC = re.compile(r"^(.+?)(\d{6})([CP])(\d{8})$")
+# Expiration filter for one request, set by the API layer. None means every listed expiration.
+EXPIRY_FILTER: ContextVar[frozenset[str] | None] = ContextVar("gex_expiry_filter", default=None)
 
 
 class GexUnavailable(RuntimeError):
@@ -242,6 +245,7 @@ def calculate_gex(
         row
         for row in _parse_options(payload, now)
         if abs(row["strike"] / spot - 1) <= STRIKE_BAND
+        and (EXPIRY_FILTER.get() is None or row["expiration"] in EXPIRY_FILTER.get())
     ]
     if not rows:
         raise GexUnavailable(

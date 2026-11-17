@@ -3,7 +3,8 @@ from __future__ import annotations
 import ipaddress
 import math
 import time
-from datetime import UTC
+from datetime import UTC, date, datetime, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -37,7 +38,7 @@ from mission_control.audit_ledger import (
 from mission_control.broker_capabilities import list_broker_capabilities, upsert_broker_capability
 from mission_control.broker_capabilities_ui import build_broker_capabilities_dashboard
 from mission_control.chief_decision_agent import compose_chief_decision
-from mission_control.gex import GexUnavailable, gex_service
+from mission_control.gex import EXPIRY_FILTER, GexUnavailable, gex_service
 from mission_control.gex_spot import ETF_SPOT_TICKERS, webull_spot_service
 from mission_control.gex_webull import resolve_expiry, webull_gex_service
 from mission_control.market_data_manager import MarketDataRequestManager, market_data_manager
@@ -417,6 +418,28 @@ async def market_data(
         raise HTTPException(status_code=429, detail=str(exc)) from exc
 
 
+def _parse_gex_expiries(raw: str | None) -> list[date]:
+    """Selected trading days: up to five, within seven calendar days. Empty means the 0DTE session."""
+    if not raw:
+        return [resolve_expiry(None)]
+    chosen: set[date] = set()
+    for part in raw.split(","):
+        part = part.strip()
+        if part:
+            try:
+                chosen.add(resolve_expiry(part))
+            except GexUnavailable as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not chosen:
+        raise HTTPException(status_code=400, detail="Select at least one expiration.")
+    if len(chosen) > 5:
+        raise HTTPException(status_code=400, detail="Select up to 5 trading days.")
+    today = datetime.now(ZoneInfo("America/New_York")).date()
+    if max(chosen) > today + timedelta(days=7):
+        raise HTTPException(status_code=400, detail="Expirations must fall within the next 7 calendar days.")
+    return sorted(chosen)
+
+
 def _gex_provider_manager(provider: str) -> MarketDataRequestManager:
     if provider == "tradingview":
         return market_data_manager
@@ -507,6 +530,17 @@ def _attach_cached_realized_volatility(result: dict[str, Any], provider: str) ->
     return result
 
 
+@app.get("/api/gex/expiries")
+def gex_expiries() -> dict[str, Any]:
+    """Next five trading sessions for the GEX expiration picker. The first one is the 0DTE default."""
+    from mission_control.gex_sources import ET as GEX_ET, active_session, next_trading_day
+
+    days = [active_session(datetime.now(GEX_ET))]
+    while len(days) < 5:
+        days.append(next_trading_day(days[-1]))
+    return {"expiries": [day.isoformat() for day in days], "default": days[0].isoformat()}
+
+
 @app.get("/api/gex")
 async def gex(
     futures_price: float | None = Query(default=None, gt=0),
@@ -516,8 +550,11 @@ async def gex(
     source: str = Query(default="cboe", pattern="^(cboe|webull)$"),
     spot: float | None = Query(default=None, gt=0),
     refresh: bool = Query(default=False),
+    expiries: str | None = Query(default=None, max_length=80),
 ) -> dict[str, Any]:
     """GEX for the selected ticker. The Cboe NDX path stays the default until Stage C."""
+    selected_days = _parse_gex_expiries(expiries)
+    EXPIRY_FILTER.set(frozenset(day.isoformat() for day in selected_days))
     price_source = "manual input"
     resolved_price = futures_price
 
@@ -573,7 +610,8 @@ async def gex(
     try:
         result = await webull_gex_service.get_levels(
             ticker=ticker,
-            expiry=target,
+            expiry=selected_days[0],
+            expiries=selected_days,
             spot=spot,
             futures_price=resolved_price,
             price_source=price_source,
