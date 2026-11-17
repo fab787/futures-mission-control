@@ -424,18 +424,21 @@ def _gex_provider_manager(provider: str) -> MarketDataRequestManager:
     raise HTTPException(status_code=400, detail="Provider must be tradingview or webull")
 
 
-def _cached_gex_mnq_price(provider: str) -> tuple[float | None, str]:
-    """Read only the selected provider's fresh MNQ 1-minute cache."""
+FUTURES_FOR_TICKER = {"NDX": "MNQ", "QQQ": "MNQ", "SPX": "MES", "SPY": "MES", "GLD": "MGC"}
+
+
+def _cached_gex_futures_price(provider: str, symbol: str) -> tuple[float | None, str]:
+    """Read only the selected provider's fresh 1-minute cache for one futures symbol."""
     manager = _gex_provider_manager(provider)
     cached = manager.peek_snapshot("1m")
     cache_meta = (cached.get("cache") or {}) if cached else {}
     if cached is None or cache_meta.get("status") != "hit":
         return None, ""
-    mnq = next(
-        (item for item in cached.get("instruments", []) if item.get("symbol") == "MNQ"),
+    item = next(
+        (i for i in cached.get("instruments", []) if i.get("symbol") == symbol),
         None,
     )
-    latest = mnq.get("latest") if isinstance(mnq, dict) else None
+    latest = item.get("latest") if isinstance(item, dict) else None
     raw = latest.get("c") if isinstance(latest, dict) else None
     try:
         price = float(raw)
@@ -443,8 +446,13 @@ def _cached_gex_mnq_price(provider: str) -> tuple[float | None, str]:
         price = 0.0
     if not math.isfinite(price) or price <= 0:
         return None, ""
-    source = f"cached MNQ {'TradingView' if provider == 'tradingview' else 'Webull'} snapshot ({cache_meta.get('age_seconds', 'unknown')}s old)"
-    return price, source
+    name = "TradingView" if provider == "tradingview" else "Webull"
+    return price, f"cached {symbol} {name} snapshot ({cache_meta.get('age_seconds', 'unknown')}s old)"
+
+
+def _cached_gex_mnq_price(provider: str) -> tuple[float | None, str]:
+    """Read only the selected provider's fresh MNQ 1-minute cache."""
+    return _cached_gex_futures_price(provider, "MNQ")
 
 
 def _attach_cached_realized_volatility(result: dict[str, Any], provider: str) -> dict[str, Any]:
@@ -512,16 +520,20 @@ async def gex(
     price_source = "manual input"
     resolved_price = futures_price
 
+    futures_symbol = FUTURES_FOR_TICKER[ticker]
     if resolved_price is None:
-        resolved_price, price_source = _cached_gex_mnq_price(provider)
+        if futures_symbol == "MNQ":
+            resolved_price, price_source = _cached_gex_mnq_price(provider)
+        else:
+            resolved_price, price_source = _cached_gex_futures_price(provider, futures_symbol)
 
     if resolved_price is None or not math.isfinite(resolved_price) or resolved_price <= 0:
         raise HTTPException(
             status_code=400,
             detail=(
-                f"No fresh cached MNQ price is available from {'TradingView' if provider == 'tradingview' else 'Webull'}. "
-                "Select an authorized provider with a fresh MNQ 1-minute cache or enter "
-                "the current MNQ/NQ price manually. GEX will not trigger a TradingView request."
+                f"No fresh cached {futures_symbol} price is available from {'TradingView' if provider == 'tradingview' else 'Webull'}. "
+                f"Select an authorized provider with a fresh {futures_symbol} 1-minute cache or enter "
+                f"the current {'MNQ/NQ' if futures_symbol == 'MNQ' else futures_symbol} price manually. GEX will not trigger a TradingView request."
             ),
         )
 
@@ -536,12 +548,10 @@ async def gex(
             status_code = 400 if "proxy ratio" in message.lower() else 503
             raise HTTPException(status_code=status_code, detail=message) from exc
 
-    if ticker not in ("NDX", "QQQ"):
-        raise HTTPException(status_code=400, detail=f"{ticker} is not mapped yet. Stage C adds SPX, SPY and GLD.")
     if spot is None:
         raise HTTPException(
             status_code=400,
-            detail="Webull GEX needs the calculation spot (spot=...). Stage C reads it automatically.",
+            detail=f"Webull GEX needs the {ticker} underlying spot (spot=...).",
         )
     try:
         target = resolve_expiry(expiry)
