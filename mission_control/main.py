@@ -38,6 +38,7 @@ from mission_control.broker_capabilities import list_broker_capabilities, upsert
 from mission_control.broker_capabilities_ui import build_broker_capabilities_dashboard
 from mission_control.chief_decision_agent import compose_chief_decision
 from mission_control.gex import GexUnavailable, gex_service
+from mission_control.gex_spot import ETF_SPOT_TICKERS, webull_spot_service
 from mission_control.gex_webull import resolve_expiry, webull_gex_service
 from mission_control.market_data_manager import MarketDataRequestManager, market_data_manager
 from mission_control.market_structure import analyze_market_structure
@@ -548,17 +549,29 @@ async def gex(
             status_code = 400 if "proxy ratio" in message.lower() else 503
             raise HTTPException(status_code=status_code, detail=message) from exc
 
+    spot_source = "manual"
+    spot_status = None
+    trade_status = None
     if spot is None:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Webull GEX needs the {ticker} underlying spot (spot=...).",
-        )
+        if ticker not in ETF_SPOT_TICKERS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Webull GEX needs the {ticker} underlying spot (spot=...). No Webull quote exists for indexes.",
+            )
+        try:
+            quote = await webull_spot_service.get_spot(ticker)
+        except GexUnavailable as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        spot = quote["spot"]
+        spot_source = "webull_etf_quote"
+        spot_status = quote["cache_status"]
+        trade_status = quote.get("trade_status")
     try:
         target = resolve_expiry(expiry)
     except GexUnavailable as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     try:
-        return await webull_gex_service.get_levels(
+        result = await webull_gex_service.get_levels(
             ticker=ticker,
             expiry=target,
             spot=spot,
@@ -566,6 +579,10 @@ async def gex(
             price_source=price_source,
             force_refresh=refresh,
         )
+        result["spot_source"] = spot_source
+        result["spot_status"] = spot_status
+        result["spot_trade_status"] = trade_status
+        return result
     except GexUnavailable as exc:
         message = str(exc)
         status_code = 400 if "proxy ratio" in message.lower() else 503
