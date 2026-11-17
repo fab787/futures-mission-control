@@ -50,6 +50,7 @@ READ_ONLY_TOOLS = frozenset({
     "get_option_contracts",
     "get_option_snapshot",
     "get_option_tick",
+    "get_stock_snapshot",
 })
 
 INSTRUMENT_CODES = {
