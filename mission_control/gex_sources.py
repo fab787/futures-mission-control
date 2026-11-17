@@ -52,7 +52,7 @@ OCC_RE = re.compile(r"^([A-Z]{1,6})(\d{6})([CP])(\d{8})$")
 FIELD_ALIASES: dict[str, tuple[str, ...]] = {
     "symbol": ("symbol", "option_symbol", "contract_symbol", "occ_symbol"),
     "open_interest": ("open_interest", "openInterest", "oi"),
-    "iv": ("implied_volatility", "impliedVolatility", "iv", "implied_vol"),
+    "iv": ("imp_vol", "implied_volatility", "impliedVolatility", "iv", "implied_vol"),
 }
 
 # NYSE full-day holidays. Verify against the exchange calendar each year.
