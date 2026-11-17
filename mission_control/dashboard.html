@@ -213,7 +213,7 @@ select:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,te
 <article class="tile instrument" data-symbol="MES"><div class="symbol">MES</div><div class="contract">Micro E-mini S&amp;P 500</div><div class="price">— — —</div><div class="change">Price awaiting verified feed</div><div class="bias-line" id="instrument-bias-MES"><span class="bias-chip bias-unavailable">Sentiment awaiting sources</span></div><div class="tile-foot"><span>Market data</span><span>NOT CONNECTED</span></div></article>
 <article class="tile instrument" data-symbol="MGC"><div class="symbol">MGC</div><div class="contract">Micro Gold</div><div class="price">— — —</div><div class="change">Price awaiting verified feed</div><div class="bias-line" id="instrument-bias-MGC"><span class="bias-chip bias-unavailable">Sentiment awaiting sources</span></div><div class="tile-foot"><span>Market data</span><span>NOT CONNECTED</span></div></article>
 </div>
-<div class="toolbar" id="live-picker" style="margin:0 0 10px;align-items:center"><span class="muted small">Live ticker</span><button class="btn" data-sym="MNQ">MNQ</button><button class="btn" data-sym="MES">MES</button><button class="btn" data-sym="MGC">MGC</button><span class="muted small" id="live-status">Live feed idle · choose the 1-second option for continuous updates</span></div><div class="grid2"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Selected instrument</div><div class="panel-title" id="overview-selected">MNQ · Market snapshot</div></div><div class="toolbar"><select id="market-data-provider" aria-label="Market data provider"><option value="tradingview">TradingView</option><option value="webull" selected>Webull</option></select><select id="auto-refresh" aria-label="Auto refresh"><option value="0" selected>Manual only (default)</option><option value="1000" data-provider="webull">Webull every 1 second (test)</option><option value="15000" data-provider="webull">Webull every 15 seconds</option><option value="45000" data-provider="webull">Webull every 45 seconds</option><option value="60000" data-provider="webull">Webull every 1 minute</option><option value="300000" data-provider="webull">Webull every 5 minutes</option><option value="300000" data-provider="tradingview">TradingView every 5 minutes</option></select><span class="pill off" id="market-data-status">WAITING FOR AUTHORIZATION</span><button class="btn" id="refresh-market">Refresh data</button><button class="btn" data-go="charts">Open chart workspace ↗</button></div></div><div class="cards2"><div class="metric"><small>Latest available close</small><b id="overview-price">—</b></div><div class="metric"><small>Latest bar volume</small><b id="overview-volume">—</b></div><div class="metric"><small>Latest bar high / low</small><b id="overview-range">—</b></div><div class="metric"><small>Bar timestamp (UTC)</small><b id="overview-time">—</b></div></div><p class="muted small" id="overview-source" style="margin:12px 0 0">Select an authorized provider to load historical OHLCV bars.</p></div>
+<div class="toolbar" id="live-picker" style="margin:0 0 10px;align-items:center"><span class="muted small">Live ticker</span><button class="btn" data-sym="MNQ">MNQ</button><button class="btn" data-sym="MES">MES</button><button class="btn" data-sym="MGC">MGC</button><span class="muted small" id="live-status">Live feed idle · choose the 1-second option for continuous updates</span></div><div class="grid2"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Selected instrument</div><div class="panel-title" id="overview-selected">MNQ · Market snapshot</div></div><div class="toolbar"><select id="market-data-provider" aria-label="Market data provider"><option value="tradingview">TradingView</option><option value="webull" selected>Webull</option></select><select id="auto-refresh" aria-label="Auto refresh"><option value="0" selected>Manual only (default)</option><option value="500" data-provider="webull">Webull every 0.5 seconds (test)</option><option value="1000" data-provider="webull">Webull every 1 second (test)</option><option value="15000" data-provider="webull">Webull every 15 seconds</option><option value="45000" data-provider="webull">Webull every 45 seconds</option><option value="60000" data-provider="webull">Webull every 1 minute</option><option value="300000" data-provider="webull">Webull every 5 minutes</option><option value="300000" data-provider="tradingview">TradingView every 5 minutes</option></select><span class="pill off" id="market-data-status">WAITING FOR AUTHORIZATION</span><button class="btn" id="refresh-market">Refresh data</button><button class="btn" data-go="charts">Open chart workspace ↗</button></div></div><div class="cards2"><div class="metric"><small>Latest available close</small><b id="overview-price">—</b></div><div class="metric"><small>Latest bar volume</small><b id="overview-volume">—</b></div><div class="metric"><small>Latest bar high / low</small><b id="overview-range">—</b></div><div class="metric"><small>Bar timestamp (UTC)</small><b id="overview-time">—</b></div></div><p class="muted small" id="overview-source" style="margin:12px 0 0">Select an authorized provider to load historical OHLCV bars.</p></div>
 <aside class="panel"><div class="panel-head"><div class="panel-title">Platform health</div><span class="pill ok" id="api-health">CHECKING</span></div><div class="status-row"><span class="muted">API service</span><b id="api-label">Checking…</b></div><div class="status-row"><span class="muted">TradingView MCP adapter</span><b id="tv-health-label">Checking…</b></div><div class="status-row"><span class="muted">Webull Cloud MCP adapter</span><b id="webull-health-label">Checking?</b></div><div class="status-row"><span class="muted">Yahoo news adapter</span><b>Configured · awaiting first fetch</b></div><div class="status-row"><span class="muted">AI agents</span><b>Not started</b></div><div class="status-row"><span class="muted">Paper account</span><b>Not verified</b></div><div class="status-row"><span class="muted">Order execution</span><b style="color:var(--green)">Disabled</b></div></aside></div>
 
 <div class="grid2 home-intelligence">
@@ -1104,7 +1104,38 @@ document.getElementById("live-picker")?.addEventListener("click",e=>{
 });
 lvPaint();
 lvSlow();
-setInterval(lvSlow,15000);function formatNewsTime(value){
+setInterval(lvSlow,15000);// ---- Display: highlight the live tile, shrink snapshot tiles, label refresh rates ----
+function lvCurrentFastMs(){const sel=document.getElementById("auto-refresh");const opt=sel?sel.options[sel.selectedIndex]:null;const ms=opt?Number(opt.value):0;return ms>0&&ms<15000?ms:0;}
+function lvBanner(t){let b=t.querySelector(".lv-banner");if(!b){b=document.createElement("div");b.className="lv-banner";t.insertBefore(b,t.firstChild);}return b;}
+function lvPaint(){
+  document.querySelectorAll("#live-picker button[data-sym]").forEach(function(b){
+    const on=b.dataset.sym===lvSymbol;
+    b.style.borderColor=on?"var(--cyan)":"";
+    b.style.boxShadow=on?"0 0 0 1px var(--cyan)":"";
+    b.setAttribute("aria-pressed",on?"true":"false");
+  });
+  const fast=lvCurrentFastMs();
+  LV_SYMBOLS.forEach(function(sym){
+    const t=document.querySelector('.instrument[data-symbol="'+sym+'"]');
+    if(!t)return;
+    const on=sym===lvSymbol;
+    t.classList.toggle("lv-live",on);
+    t.classList.toggle("lv-slow",!on);
+    const b=lvBanner(t);
+    if(on){
+      b.textContent=fast?"LIVE · SELECTED · refresh every "+(fast/1000)+" s":"SELECTED · choose a 0.5 s or 1 s option for live refresh";
+    }else{
+      b.textContent="⚠ SNAPSHOT · refresh every 15 s · not live · do not time entries from this price";
+    }
+  });
+}
+document.getElementById("auto-refresh")?.addEventListener("change",lvPaint);
+(function(){
+  const s=document.createElement("style");
+  s.textContent=".instrument.lv-live{border:2px solid var(--cyan)!important;box-shadow:0 0 0 1px var(--cyan),0 0 18px rgba(98,217,245,.28)!important}.instrument.lv-slow{opacity:.8;padding:8px!important;border-style:dashed!important}.instrument.lv-slow .price{font-size:1.05rem!important}.instrument.lv-live .price{font-size:1.9rem!important}.lv-banner{font-size:11px;letter-spacing:.05em;padding:3px 6px;margin:0 0 6px;border-radius:5px;background:rgba(240,120,131,.12);color:var(--red,#f07883)}.instrument.lv-live .lv-banner{background:rgba(98,217,245,.14);color:var(--cyan)}";
+  document.head.appendChild(s);
+})();
+lvPaint();function formatNewsTime(value){
   if(!value)return "Time unavailable";
   const date=new Date(value);
   if(Number.isNaN(date.getTime()))return "Time unavailable";
