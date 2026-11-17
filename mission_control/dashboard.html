@@ -213,7 +213,7 @@ select:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,te
 <article class="tile instrument" data-symbol="MES"><div class="symbol">MES</div><div class="contract">Micro E-mini S&amp;P 500</div><div class="price">— — —</div><div class="change">Price awaiting verified feed</div><div class="bias-line" id="instrument-bias-MES"><span class="bias-chip bias-unavailable">Sentiment awaiting sources</span></div><div class="tile-foot"><span>Market data</span><span>NOT CONNECTED</span></div></article>
 <article class="tile instrument" data-symbol="MGC"><div class="symbol">MGC</div><div class="contract">Micro Gold</div><div class="price">— — —</div><div class="change">Price awaiting verified feed</div><div class="bias-line" id="instrument-bias-MGC"><span class="bias-chip bias-unavailable">Sentiment awaiting sources</span></div><div class="tile-foot"><span>Market data</span><span>NOT CONNECTED</span></div></article>
 </div>
-<div class="grid2"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Selected instrument</div><div class="panel-title" id="overview-selected">MNQ · Market snapshot</div></div><div class="toolbar"><select id="market-data-provider" aria-label="Market data provider"><option value="tradingview">TradingView</option><option value="webull">Webull</option></select><span class="pill off" id="market-data-status">WAITING FOR AUTHORIZATION</span><button class="btn" id="refresh-market">Refresh data</button><button class="btn" data-go="charts">Open chart workspace ↗</button></div></div><div class="cards2"><div class="metric"><small>Latest available close</small><b id="overview-price">—</b></div><div class="metric"><small>Latest bar volume</small><b id="overview-volume">—</b></div><div class="metric"><small>Latest bar high / low</small><b id="overview-range">—</b></div><div class="metric"><small>Bar timestamp (UTC)</small><b id="overview-time">—</b></div></div><p class="muted small" id="overview-source" style="margin:12px 0 0">Select an authorized provider to load historical OHLCV bars.</p></div>
+<div class="grid2"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Selected instrument</div><div class="panel-title" id="overview-selected">MNQ · Market snapshot</div></div><div class="toolbar"><select id="market-data-provider" aria-label="Market data provider"><option value="tradingview">TradingView</option><option value="webull" selected>Webull</option></select><select id="auto-refresh" aria-label="Auto refresh"><option value="0" selected>Manual only (default)</option><option value="15000" data-provider="webull">Webull every 15 seconds</option><option value="45000" data-provider="webull">Webull every 45 seconds</option><option value="60000" data-provider="webull">Webull every 1 minute</option><option value="300000" data-provider="webull">Webull every 5 minutes</option><option value="300000" data-provider="tradingview">TradingView every 5 minutes</option></select><span class="pill off" id="market-data-status">WAITING FOR AUTHORIZATION</span><button class="btn" id="refresh-market">Refresh data</button><button class="btn" data-go="charts">Open chart workspace ↗</button></div></div><div class="cards2"><div class="metric"><small>Latest available close</small><b id="overview-price">—</b></div><div class="metric"><small>Latest bar volume</small><b id="overview-volume">—</b></div><div class="metric"><small>Latest bar high / low</small><b id="overview-range">—</b></div><div class="metric"><small>Bar timestamp (UTC)</small><b id="overview-time">—</b></div></div><p class="muted small" id="overview-source" style="margin:12px 0 0">Select an authorized provider to load historical OHLCV bars.</p></div>
 <aside class="panel"><div class="panel-head"><div class="panel-title">Platform health</div><span class="pill ok" id="api-health">CHECKING</span></div><div class="status-row"><span class="muted">API service</span><b id="api-label">Checking…</b></div><div class="status-row"><span class="muted">TradingView MCP adapter</span><b id="tv-health-label">Checking…</b></div><div class="status-row"><span class="muted">Webull Cloud MCP adapter</span><b id="webull-health-label">Checking?</b></div><div class="status-row"><span class="muted">Yahoo news adapter</span><b>Configured · awaiting first fetch</b></div><div class="status-row"><span class="muted">AI agents</span><b>Not started</b></div><div class="status-row"><span class="muted">Paper account</span><b>Not verified</b></div><div class="status-row"><span class="muted">Order execution</span><b style="color:var(--green)">Disabled</b></div></aside></div>
 
 <div class="grid2 home-intelligence">
@@ -536,7 +536,7 @@ select:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,te
 <script>
 const names={MNQ:"Micro E-mini Nasdaq-100",MES:"Micro E-mini S&P 500",MGC:"Micro Gold"};
 const symbols={MNQ:"CME_MINI:MNQ1!",MES:"CME_MINI:MES1!",MGC:"COMEX:MGC1!"};
-const marketCache={tradingview:{},webull:{}};let activeProvider="tradingview";const providerStatus={tradingview:false,webull:false};
+const marketCache={tradingview:{},webull:{}};let activeProvider="webull";const providerStatus={tradingview:false,webull:false};
 function tradingViewPageUrl(){const s=document.getElementById("chart-symbol").value;const tf=document.getElementById("chart-timeframe").value;return "https://www.tradingview.com/chart/?symbol="+encodeURIComponent(symbols[s])+"&interval="+encodeURIComponent(tf);}
 function loadChart(){const s=document.getElementById("chart-symbol").value;const url=tradingViewPageUrl();document.getElementById("chart-heading").textContent=s+" · "+names[s];{const cps=document.getElementById("chart-panel-symbol");if(cps)cps.textContent=s;}document.getElementById("open-tv-chart").href=url;document.getElementById("open-tv-chart").textContent="Open "+s+" in TradingView ↗";document.getElementById("chart-panel-link").href=url;document.getElementById("chart-panel-link").textContent="Launch "+s+" in TradingView ↗";}
 function selectInstrument(s){document.querySelectorAll(".instrument").forEach(x=>x.classList.toggle("active",x.dataset.symbol===s));document.getElementById("overview-selected").textContent=s+" · Market snapshot";document.getElementById("chart-symbol").value=s;loadChart();renderOverview(s,marketCache[activeProvider]["1m"],activeProvider);}
@@ -545,7 +545,7 @@ document.querySelectorAll(".instrument").forEach(x=>x.addEventListener("click",(
 document.querySelectorAll("[data-go]").forEach(x=>x.addEventListener("click",()=>document.querySelector('[data-tab="'+x.dataset.go+'"]').click()));
 document.getElementById("chart-symbol").addEventListener("change",()=>{loadChart();const cached=marketCache[activeProvider][intervalName(document.getElementById("chart-timeframe").value)];if(cached)renderChart(cached,activeProvider);});document.getElementById("chart-timeframe").addEventListener("change",()=>fetchMarketData(document.getElementById("chart-timeframe").value,true,activeProvider,true));document.getElementById("reload-chart").addEventListener("click",()=>fetchMarketData(document.getElementById("chart-timeframe").value,true,activeProvider,true));document.getElementById("refresh-market").addEventListener("click",()=>fetchMarketData("1m",false,activeProvider,true));
 document.getElementById("market-data-provider").addEventListener("change",()=>{
- activeProvider=document.getElementById("market-data-provider").value;
+ activeProvider=document.getElementById("market-data-provider").value;scheduleMarketRefresh();
  const selected=document.getElementById("overview-selected").textContent.split(" ")[0];
  const tf=intervalName(document.getElementById("chart-timeframe").value);
  const overview=marketCache[activeProvider]["1m"];
@@ -557,7 +557,7 @@ document.getElementById("market-data-provider").addEventListener("change",()=>{
  if(overview)renderOverview(selected,overview,activeProvider);
  const chart=marketCache[activeProvider][tf];
  if(chart&&document.getElementById("charts").classList.contains("active"))renderChart(chart,activeProvider);
- fetchMarketData("1m",false,activeProvider,true);
+ fetchMarketData("1m",false,activeProvider,false);
  if(tf!=="1m"&&document.getElementById("charts").classList.contains("active"))fetchMarketData(tf,true,activeProvider,true);
 });
 function tick(){document.getElementById("clock").textContent=new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"medium",hour12:true}).format(new Date());}tick();setInterval(tick,1000);
@@ -772,24 +772,39 @@ function drawChartSvg(svg,bars,vals,useCandles,lo,hi){
  const host=svg.parentElement,wrap=svg.closest(".chart-wrap");
  const W=Math.max(640,Math.round((host&&host.clientWidth)||1000));
  const H=Math.max(280,Math.round(((wrap&&wrap.clientHeight)||510)-100));
- svg.setAttribute("viewBox","0 0 "+W+" "+H);
- svg.style.height=H+"px";
  const L=8,R=W-86,T=22,B=H-24,span=(hi-lo)||1;
  const y=v=>B-(Number(v)-lo)/span*(B-T);
+ const n=bars.length,step=(R-L)/Math.max(1,n),lastIdx=n-1;
+ const cw=useCandles?Math.max(1,Math.min(14,step*0.62)):0;
+ const xAt=i=>L+step*(i+0.5);
+ const sig=[n,bars[0].t,bars[lastIdx].t,W,H,useCandles?"c":"l",lo.toFixed(2),hi.toFixed(2)].join("|");
+ const liveHtml=()=>{
+  const last=Number(vals[lastIdx]),ly=y(last),x=xAt(lastIdx);
+  let g="";
+  if(useCandles){
+   const b=bars[lastIdx],up=Number(b.c)>=Number(b.o),col=up?"#3ecf8e":"#ef5b5b",yo=y(b.o),yc=y(b.c),top=Math.min(yo,yc),h=Math.max(1,Math.abs(yo-yc));
+   g+=`<line x1="${x}" y1="${y(b.h)}" x2="${x}" y2="${y(b.l)}" stroke="${col}" stroke-width="1"/><rect x="${x-cw/2}" y="${top}" width="${cw}" height="${h}" fill="${col}"/>`;
+  }else{
+   g+=`<polyline points="${vals.map((v,i)=>xAt(i)+","+y(v)).join(" ")}" fill="none" stroke="#58c9e9" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }
+  g+=`<line x1="${L}" y1="${ly}" x2="${R}" y2="${ly}" stroke="#e8b45c" stroke-width="1" stroke-dasharray="5 4"/><rect x="${R+2}" y="${ly-10}" width="80" height="20" rx="3" fill="#e8b45c"/><text x="${R+42}" y="${ly+4}" text-anchor="middle" fill="#07121d" font-size="12" font-weight="700">${fmt(last)}</text>`;
+  return g;
+ };
+ if(svg.dataset.sig===sig&&svg.querySelector("#live-layer")){
+  svg.querySelector("#live-layer").innerHTML=liveHtml();
+  return;
+ }
+ svg.setAttribute("viewBox","0 0 "+W+" "+H);
+ svg.style.height=H+"px";
  let out="";
  for(let k=0;k<=4;k++){const gv=lo+span*k/4,gy=y(gv);out+=`<line x1="${L}" y1="${gy}" x2="${R}" y2="${gy}" stroke="#263951"/><text x="${R+8}" y="${gy+4}" fill="#8da1ba" font-size="12">${fmt(gv)}</text>`;}
- const n=bars.length,step=(R-L)/Math.max(1,n);
  if(useCandles){
-  const w=Math.max(1,Math.min(14,step*0.62));
-  bars.forEach((b,i)=>{const x=L+step*(i+0.5),up=Number(b.c)>=Number(b.o),col=up?"#3ecf8e":"#ef5b5b",yo=y(b.o),yc=y(b.c),top=Math.min(yo,yc),h=Math.max(1,Math.abs(yo-yc));out+=`<line x1="${x}" y1="${y(b.h)}" x2="${x}" y2="${y(b.l)}" stroke="${col}" stroke-width="1"/><rect x="${x-w/2}" y="${top}" width="${w}" height="${h}" fill="${col}"/>`;});
- }else{
-  const pts=vals.map((v,i)=>(L+step*(i+0.5))+","+y(v)).join(" ");
-  out+=`<polyline points="${pts}" fill="none" stroke="#58c9e9" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  bars.slice(0,lastIdx).forEach((b,i)=>{const x=xAt(i),up=Number(b.c)>=Number(b.o),col=up?"#3ecf8e":"#ef5b5b",yo=y(b.o),yc=y(b.c),top=Math.min(yo,yc),h=Math.max(1,Math.abs(yo-yc));out+=`<line x1="${x}" y1="${y(b.h)}" x2="${x}" y2="${y(b.l)}" stroke="${col}" stroke-width="1"/><rect x="${x-cw/2}" y="${top}" width="${cw}" height="${h}" fill="${col}"/>`;});
  }
- const last=Number(vals[vals.length-1]),ly=y(last);
- out+=`<line x1="${L}" y1="${ly}" x2="${R}" y2="${ly}" stroke="#e8b45c" stroke-width="1" stroke-dasharray="5 4"/><rect x="${R+2}" y="${ly-10}" width="80" height="20" rx="3" fill="#e8b45c"/><text x="${R+42}" y="${ly+4}" text-anchor="middle" fill="#07121d" font-size="12" font-weight="700">${fmt(last)}</text>`;
  out+=timeAxisSvg(bars,L,R,B);
+ out+='<g id="live-layer">'+liveHtml()+'</g>';
  svg.innerHTML=out;
+ svg.dataset.sig=sig;
 }
 window.addEventListener("resize",()=>{clearTimeout(window.__fmcResize);window.__fmcResize=setTimeout(()=>{const c=document.getElementById("charts");if(!c||!c.classList.contains("active"))return;const d=marketCache?.[activeProvider]?.[intervalName(document.getElementById("chart-timeframe").value)];if(d)renderChart(d,activeProvider);},200);});
 function renderChart(data,provider=activeProvider){
@@ -811,7 +826,7 @@ function renderChart(data,provider=activeProvider){
  const fetched=data.cache?.last_updated_at||data.fetched_at;
  const updated=fetched?formatNewsTime(fetched):"update time unavailable";
  document.getElementById("local-chart-status").textContent=(cacheStatus==="stale"?"STALE · ":"")+symbol+" · "+bars.length+" historical bars · "+intervalName(document.getElementById("chart-timeframe").value);
- document.getElementById("local-chart-source").textContent=(data.source||providerLabel(provider))+" · last successful fetch "+updated+" · cache "+cacheStatus;
+ document.getElementById("local-chart-source").textContent=(data.source||providerLabel(provider))+" · last successful fetch "+updated+" · cache "+cacheStatus+" (TTL "+(data.cache?.ttl_seconds??"?")+"s) · auto-refresh: "+(()=>{const s=document.getElementById("auto-refresh");return s?s.options[s.selectedIndex].textContent:"manual";})();
 }
 async function fetchMarketData(interval="1m",showChart=false,provider=activeProvider,forceRefresh=false){
  const timeframe=intervalName(interval);
@@ -846,7 +861,7 @@ async function fetchMarketData(interval="1m",showChart=false,provider=activeProv
     document.getElementById("market-data-status").className=stale?"pill warn":"pill ok";
    }
   }
-  if(showChart)renderChart(data,provider);
+  if(showChart||(provider===activeProvider&&document.getElementById("charts").classList.contains("active")&&timeframe===intervalName(document.getElementById("chart-timeframe").value)))renderChart(data,provider);
  }catch(error){
   document.getElementById("local-chart-status").textContent=providerLabel(provider)+" data temporarily unavailable";
   document.getElementById("chart-data-help").textContent="The selected provider could not complete this request: "+String(error?.message||error);
@@ -891,7 +906,7 @@ document.getElementById("logout-button").addEventListener("click",async()=>{
 });
 checkIntegrations();
 runHelpDiagnostics();
-setInterval(()=>{if(providerStatus[activeProvider])fetchMarketData("1m",false,activeProvider,true);},300000);
+function scheduleMarketRefresh(){clearTimeout(window.__fmcRefresh);const sel=document.getElementById("auto-refresh");const opt=sel?sel.options[sel.selectedIndex]:null;const ms=opt?Number(opt.value):0;const prov=opt?opt.dataset.provider:null;if(!ms)return;if(prov&&prov!==activeProvider){const p=document.getElementById("market-data-provider");if(p){p.value=prov;p.dispatchEvent(new Event("change"));}return;}window.__fmcRefresh=setTimeout(function tick(){if(providerStatus[activeProvider])fetchMarketData(document.getElementById("charts").classList.contains("active")?intervalName(document.getElementById("chart-timeframe").value):"1m",false,activeProvider,false);window.__fmcRefresh=setTimeout(tick,ms);},ms);}document.getElementById("auto-refresh").addEventListener("change",scheduleMarketRefresh);scheduleMarketRefresh();
 function formatNewsTime(value){
   if(!value)return "Time unavailable";
   const date=new Date(value);
