@@ -30,6 +30,13 @@ def snapshot_for(symbol, iv="28.76%", oi=1000):
     return {"symbol": symbol, "implied_volatility": iv, "open_interest": oi}
 
 
+# Required arguments copied from Webull's published tool schemas.
+REQUIRED_ARGS = {
+    "get_option_contracts": ("category",),
+    "get_option_snapshot": ("symbols", "category"),
+}
+
+
 class FakeWebull:
     def __init__(self, contracts, snapshots):
         self.contracts = contracts
@@ -38,6 +45,11 @@ class FakeWebull:
 
     async def __call__(self, name, args):
         self.calls.append((name, dict(args)))
+        missing = [k for k in REQUIRED_ARGS.get(name, ()) if k not in args]
+        if missing:
+            raise AssertionError(f"{name} missing required arguments: {missing}")
+        if "category" in args and args["category"] != "US_OPTION":
+            raise AssertionError(f"{name} got category {args['category']!r}, expected US_OPTION")
         if name == "get_option_contracts":
             rows = self.contracts.get(args["root_symbol"], [])
             start = 0

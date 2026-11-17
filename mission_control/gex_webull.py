@@ -24,6 +24,7 @@ from mission_control.gex_sources import (
 )
 from mission_control.webull import _records, call_readonly_tool
 
+OPTION_CATEGORY = "US_OPTION"
 PAGE_SIZE = 1000
 SNAPSHOT_BATCH = 20
 CHAIN_TTL_SECONDS = 60.0
@@ -78,7 +79,7 @@ async def list_contracts(root: str, call_tool: ToolCaller) -> list[dict[str, Any
     cursor: str | None = None
     seen: set[str] = set()
     for _ in range(MAX_PAGES):
-        args: dict[str, Any] = {"root_symbol": root, "page_size": PAGE_SIZE}
+        args: dict[str, Any] = {"category": OPTION_CATEGORY, "root_symbol": root, "page_size": PAGE_SIZE}
         if cursor is not None:
             args["last_instrument_id"] = cursor
         page = _records(await call_tool("get_option_contracts", args))
@@ -98,7 +99,7 @@ async def fetch_snapshots(symbols: list[str], call_tool: ToolCaller) -> dict[str
     out: dict[str, dict[str, Any]] = {}
     for start in range(0, len(symbols), SNAPSHOT_BATCH):
         batch = symbols[start:start + SNAPSHOT_BATCH]
-        page = _records(await call_tool("get_option_snapshot", {"symbols": ",".join(batch)}))
+        page = _records(await call_tool("get_option_snapshot", {"category": OPTION_CATEGORY, "symbols": ",".join(batch)}))
         for row in page:
             symbol = _first(row, "symbol")
             if symbol:
