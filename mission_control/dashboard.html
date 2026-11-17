@@ -272,7 +272,7 @@ select:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,te
   <div class="toolbar">
     <label for="gex-futures-price">MNQ / NQ futures price (optional)</label>
     <input id="gex-futures-price" type="number" min="0.01" step="0.25" placeholder="Use fresh cached MNQ price" style="width:210px;background:#0a1421;color:var(--text);border:1px solid #30445c;border-radius:7px;padding:8px 10px">
-    <button class="btn" id="load-gex">Load / Update GEX</button>
+    <select id="gex-ticker" class="control" aria-label="GEX instrument"><option value="NDX">MNQ · NDX options</option><option value="SPX">MES · SPX options</option><option value="QQQ">MNQ · QQQ ETF</option><option value="SPY">MES · SPY ETF</option><option value="GLD">MGC · GLD ETF</option></select><select id="gex-source" class="control" aria-label="GEX data source"><option value="cboe" selected>Cboe delayed</option><option value="webull">Webull</option></select><button class="btn" id="load-gex">Load / Update GEX</button>
   </div>
   <p class="muted small" id="gex-help" style="margin-top:10px">GEX makes no TradingView request. It uses a fresh MNQ price already in the central cache, or the manual price above. Cboe options data is delayed; repeat requests reuse the 15-minute cached chain.</p>
 </div>
@@ -634,7 +634,7 @@ async function loadGex(){
   const status=document.getElementById("gex-status");
   const rawPrice=document.getElementById("gex-futures-price").value.trim();
   const provider=document.getElementById("market-data-provider")?.value||activeProvider||"tradingview";
-  const params=new URLSearchParams({provider,source:"cboe"});if(rawPrice)params.set("futures_price",rawPrice);
+  const params=new URLSearchParams({provider,source:document.getElementById("gex-source").value,ticker:document.getElementById("gex-ticker").value});if(rawPrice)params.set("futures_price",rawPrice);
   const query="?"+params.toString();
   status.textContent="REQUESTING CBOE DATA";
   status.className="pill warn";
