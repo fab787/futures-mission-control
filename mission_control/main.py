@@ -38,6 +38,7 @@ from mission_control.broker_capabilities import list_broker_capabilities, upsert
 from mission_control.broker_capabilities_ui import build_broker_capabilities_dashboard
 from mission_control.chief_decision_agent import compose_chief_decision
 from mission_control.gex import GexUnavailable, gex_service
+from mission_control.gex_webull import resolve_expiry, webull_gex_service
 from mission_control.market_data_manager import MarketDataRequestManager, market_data_manager
 from mission_control.market_structure import analyze_market_structure
 from mission_control.master_risk_engine import evaluate_master_risk
@@ -501,8 +502,13 @@ def _attach_cached_realized_volatility(result: dict[str, Any], provider: str) ->
 async def gex(
     futures_price: float | None = Query(default=None, gt=0),
     provider: str = Query(default="webull", pattern="^(tradingview|webull)$"),
+    ticker: str = Query(default="NDX", pattern="^(NDX|QQQ|SPX|SPY|GLD)$"),
+    expiry: str | None = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    source: str = Query(default="cboe", pattern="^(cboe|webull)$"),
+    spot: float | None = Query(default=None, gt=0),
+    refresh: bool = Query(default=False),
 ) -> dict[str, Any]:
-    """Return Cboe NDX GEX mapped using manual price or selected provider cache."""
+    """GEX for the selected ticker. The Cboe NDX path stays the default until Stage C."""
     price_source = "manual input"
     resolved_price = futures_price
 
@@ -519,9 +525,37 @@ async def gex(
             ),
         )
 
+    if source == "cboe":
+        if ticker != "NDX":
+            raise HTTPException(status_code=400, detail="The Cboe source supports NDX only. Use source=webull for QQQ.")
+        try:
+            result = await gex_service.get_levels(resolved_price, price_source=price_source)
+            return _attach_cached_realized_volatility(result, provider)
+        except GexUnavailable as exc:
+            message = str(exc)
+            status_code = 400 if "proxy ratio" in message.lower() else 503
+            raise HTTPException(status_code=status_code, detail=message) from exc
+
+    if ticker not in ("NDX", "QQQ"):
+        raise HTTPException(status_code=400, detail=f"{ticker} is not mapped yet. Stage C adds SPX, SPY and GLD.")
+    if spot is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Webull GEX needs the calculation spot (spot=...). Stage C reads it automatically.",
+        )
     try:
-        result = await gex_service.get_levels(resolved_price, price_source=price_source)
-        return _attach_cached_realized_volatility(result, provider)
+        target = resolve_expiry(expiry)
+    except GexUnavailable as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    try:
+        return await webull_gex_service.get_levels(
+            ticker=ticker,
+            expiry=target,
+            spot=spot,
+            futures_price=resolved_price,
+            price_source=price_source,
+            force_refresh=refresh,
+        )
     except GexUnavailable as exc:
         message = str(exc)
         status_code = 400 if "proxy ratio" in message.lower() else 503
