@@ -158,6 +158,8 @@ class WebullGexService:
             except Exception as exc:
                 if entry:
                     return entry[1], entry[0], entry[2], "stale"
+                import traceback
+                traceback.print_exception(exc)
                 raise GexUnavailable(f"Webull option request failed: {type(exc).__name__}") from exc
             retrieved_at = datetime.now(ET).isoformat(timespec="seconds")
             stored_at = self._clock()
