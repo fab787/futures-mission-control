@@ -223,16 +223,18 @@ def calculate_gex(
     cache_status: str,
     cache_age_seconds: float,
     retrieved_at: str,
+    ratio_band: tuple[float, float] = (0.50, 1.50),
 ) -> dict[str, Any]:
     if not math.isfinite(futures_price) or futures_price <= 0:
         raise GexUnavailable("A finite, positive MNQ/NQ futures price is required")
 
     spot = _find_spot(payload)
     scale = futures_price / spot
-    if not math.isfinite(scale) or not 0.50 <= scale <= 1.50:
+    low, high = ratio_band
+    if not math.isfinite(scale) or not low <= scale <= high:
         raise GexUnavailable(
-            f"The futures-to-NDX proxy ratio ({scale:.4f}) is outside the validation band "
-            "0.50–1.50. Verify that the selected quote is MNQ/NQ and not another instrument."
+            f"The futures-to-spot ratio ({scale:.4f}) is outside the validation band "
+            f"{low}-{high}. Verify that the selected quote matches the chosen ticker."
         )
 
     now = datetime.now(ET)
