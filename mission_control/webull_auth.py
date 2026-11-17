@@ -25,6 +25,7 @@ from mission_control.webull import (
     MCP_URL,
     READ_ONLY_TOOLS,
     _oauth_provider,
+    WebullTokenStorage,
 )
 
 
@@ -128,6 +129,7 @@ async def main() -> None:
                     if tool.name in READ_ONLY_TOOLS
                 )
                 print("Webull MCP authorization successful.")
+                WebullTokenStorage().clear_reauthorization_required()
                 print(
                     "Allowlisted futures market-data tools:",
                     ", ".join(readonly) or "none",
