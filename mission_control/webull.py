@@ -46,6 +46,10 @@ READ_ONLY_TOOLS = frozenset({
     "get_futures_products",
     "get_futures_snapshot",
     "get_futures_tick",
+    "get_option_bars",
+    "get_option_contracts",
+    "get_option_snapshot",
+    "get_option_tick",
 })
 
 INSTRUMENT_CODES = {
