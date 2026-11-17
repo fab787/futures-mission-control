@@ -1135,7 +1135,100 @@ document.getElementById("auto-refresh")?.addEventListener("change",lvPaint);
   s.textContent=".instrument.lv-live{border:2px solid var(--cyan)!important;box-shadow:0 0 0 1px var(--cyan),0 0 18px rgba(98,217,245,.28)!important}.instrument.lv-slow{opacity:.8;padding:8px!important;border-style:dashed!important}.instrument.lv-slow .price{font-size:1.05rem!important}.instrument.lv-live .price{font-size:1.9rem!important}.lv-banner{font-size:11px;letter-spacing:.05em;padding:3px 6px;margin:0 0 6px;border-radius:5px;background:rgba(240,120,131,.12);color:var(--red,#f07883)}.instrument.lv-live .lv-banner{background:rgba(98,217,245,.14);color:var(--cyan)}";
   document.head.appendChild(s);
 })();
-lvPaint();function formatNewsTime(value){
+lvPaint();// ---- Live candles and auto-follow chart: built from the same Webull trades as the overview price ----
+const lvTradeBuf={MNQ:new Map(),MES:new Map(),MGC:new Map()};
+const LV_KEEP_MS=3600000,LV_STALE_MS=120000;
+function lvRecord(sym,ticks){
+  const m=lvTradeBuf[sym];if(!m)return;
+  (ticks||[]).forEach(function(t){m.set(t.time_ms+"|"+t.price+"|"+t.size+"|"+t.side,t);});
+  const cutoff=Date.now()-LV_KEEP_MS;
+  for(const [k,t] of m){if(t.time_ms<cutoff)m.delete(k);}
+}
+function lvTfMinutes(){const v=document.getElementById("chart-timeframe").value;return v==="D"?1440:(Number(v)||1);}
+function lvLiveBars(sym){
+  const m=lvTradeBuf[sym];if(!m||!m.size)return [];
+  const trades=[...m.values()].sort(function(a,b){return a.time_ms-b.time_ms;});
+  if(Date.now()-trades[trades.length-1].time_ms>LV_STALE_MS)return [];
+  const tfMs=lvTfMinutes()*60000;
+  const buckets=new Map();
+  trades.forEach(function(t){
+    const start=Math.floor(t.time_ms/tfMs)*tfMs;
+    let b=buckets.get(start);
+    if(!b){b={t:Math.floor(start/1000),o:t.price,h:t.price,l:t.price,c:t.price,v:0};buckets.set(start,b);}
+    b.h=Math.max(b.h,t.price);b.l=Math.min(b.l,t.price);b.c=t.price;b.v+=t.size;
+  });
+  return [...buckets.values()];
+}
+function lvMerge(hist,live){
+  const out=(hist||[]).map(function(b){return {...b};});
+  const last=out.length?out[out.length-1].t:-Infinity;
+  live.forEach(function(b){
+    if(b.t<last)return;
+    if(b.t===last){const h=out[out.length-1];h.h=Math.max(h.h,b.h);h.l=Math.min(h.l,b.l);h.c=b.c;return;}
+    out.push(b);
+  });
+  return out;
+}
+const lvRenderBase=renderChart;
+renderChart=function(data,provider=activeProvider){
+  const sym=document.getElementById("chart-symbol").value;
+  const live=lvLiveBars(sym);
+  if(!live.length||!data||!Array.isArray(data.instruments))return lvRenderBase(data,provider);
+  const merged={...data,instruments:data.instruments.map(function(row){return row.symbol===sym?{...row,bars:lvMerge(row.bars,live)}:row;})};
+  lvRenderBase(merged,provider);
+  const st=document.getElementById("local-chart-status");
+  if(st)st.textContent+=" · LIVE candle from "+sym+" trades ("+live.length+" bars)";
+};
+function lvDrawChart(){
+  const c=document.getElementById("charts");
+  if(!c||!c.classList.contains("active"))return;
+  const tf=intervalName(document.getElementById("chart-timeframe").value);
+  const data=marketCache?.[activeProvider]?.[tf];
+  if(data)renderChart(data,activeProvider);
+}
+async function lvTick(){
+  if(lvBusy||document.hidden)return;
+  lvBusy=true;
+  const sym=lvSymbol;
+  try{
+    const r=await fetch("/api/futures/last-trades?symbol="+sym+"&count=50");
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    const d=await r.json();
+    if(!d.last)throw new Error("no trades returned");
+    lvRecord(sym,d.ticks);
+    if(sym!==lvSymbol)return;
+    lvFails=0;
+    const now=Date.now();
+    const priceEl=document.getElementById("overview-price");
+    if(priceEl){
+      const label=priceEl.previousElementSibling;
+      if(label){label.textContent="Last trade (Webull ticks)";label.dataset.fast="1";}
+      priceEl.textContent=lvFmt(d.last.price);
+      document.getElementById("overview-time").textContent=new Date(d.last.time_ms).toISOString().replace("T"," ").slice(0,19)+" UTC";
+      document.getElementById("overview-source").textContent="Source: Webull Cloud MCP · live "+sym+" · "+d.tick_count+" trades · delay "+(d.delay_minutes??"unknown")+" min · refreshed "+lvClock(now);
+    }
+    lvSetTile(sym,d.last.price,"LIVE · trade "+lvClock(d.last.time_ms)+" · refreshed "+lvClock(now));
+    lvStatus("Live "+sym+" · refreshed "+lvClock(now));
+    lvDrawChart();
+  }catch(error){
+    lvFails++;
+    lvStatus("Live "+sym+" error ("+lvFails+"/5): "+error.message);
+    if(lvFails>=5){stopFastRefresh();lvStatus("Live feed stopped after 5 errors. Choose the 1-second option to retry.");}
+  }finally{lvBusy=false;}
+}
+function lvSelect(sym){
+  if(!LV_SYMBOLS.includes(sym))return;
+  lvSymbol=sym;lvFails=0;lvPaint();
+  try{selectInstrument(sym);}catch(e){}
+  const gex=document.getElementById("gex-ticker");
+  if(gex&&LV_GEX[sym]&&gex.value!==LV_GEX[sym]){gex.value=LV_GEX[sym];gex.dispatchEvent(new Event("change"));}
+  lvSlow();
+  lvTick();
+  const tf=intervalName(document.getElementById("chart-timeframe").value);
+  if(marketCache?.[activeProvider]?.[tf])lvDrawChart();else fetchMarketData(tf,true,activeProvider);
+}
+document.getElementById("chart-symbol").addEventListener("change",function(){lvSelect(this.value);});
+document.querySelectorAll(".instrument").forEach(function(x){x.addEventListener("click",function(){lvSelect(x.dataset.symbol);});});function formatNewsTime(value){
   if(!value)return "Time unavailable";
   const date=new Date(value);
   if(Number.isNaN(date.getTime()))return "Time unavailable";
