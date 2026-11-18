@@ -1293,7 +1293,27 @@ function lvSelect(sym){
   const tf=intervalName(document.getElementById("chart-timeframe").value);
   if(marketCache?.[activeProvider]?.[tf])lvDrawChart();else fetchMarketData(tf,true,activeProvider);
 }
-lvSlowMinute();function formatNewsTime(value){
+lvSlowMinute();// ---- Title above the overview lines (separate from the data code; safe to remove) ----
+// Live tile: "Last 15 min". Snapshot tiles: "Last 60 min". Updated once a second.
+function lvTitleTick(){
+  document.querySelectorAll(".instrument .lv-spark").forEach(function(s){
+    const tile=s.closest(".instrument");
+    if(!tile)return;
+    let t=tile.querySelector(".lv-title");
+    if(!t){
+      t=document.createElement("div");
+      t.className="lv-title";
+      t.style.cssText="font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--cyan);margin-top:6px";
+      tile.insertBefore(t,s);
+    }
+    const sym=tile.dataset.symbol;
+    const live=tile.classList.contains("lv-live");
+    t.textContent=(live?"Last 15 min Â· ":"Last 60 min Â· ")+sym;
+    t.style.color=live?"var(--cyan)":"var(--muted,#8da1ba)";
+  });
+}
+setInterval(lvTitleTick,1000);
+lvTitleTick();function formatNewsTime(value){
   if(!value)return "Time unavailable";
   const date=new Date(value);
   if(Number.isNaN(date.getTime()))return "Time unavailable";
