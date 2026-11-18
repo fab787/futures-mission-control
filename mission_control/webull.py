@@ -592,3 +592,83 @@ async def market_snapshot(interval: str = "1m", count: int = 120) -> dict[str, A
         "provider_requests": provider_requests,
         "instruments": instruments,
     }
+
+_LAST_TRADE_CONTRACTS: dict[str, Any] = {"at": 0.0, "by_root": {}}
+LAST_TRADE_CONTRACT_TTL_SECONDS = 600.0
+
+
+def _tick_side(value: Any) -> str:
+    text = str(value or "").upper()
+    if text in {"B", "BUY"}:
+        return "buy"
+    if text in {"S", "SELL"}:
+        return "sell"
+    return "unknown"
+
+
+def _normalize_ticks(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    ticks: list[dict[str, Any]] = []
+    for row in rows:
+        price = _number(row.get("price"))
+        try:
+            millis = int(float(row.get("time")))
+        except (TypeError, ValueError):
+            continue
+        if price <= 0 or millis <= 0:
+            continue
+        ticks.append({
+            "time_ms": millis,
+            "price": price,
+            "size": _number(row.get("volume")),
+            "side": _tick_side(row.get("side")),
+        })
+    # Webull returns ticks newest-first; sort defensively so the newest is first.
+    ticks.sort(key=lambda item: item["time_ms"], reverse=True)
+    return ticks
+
+
+async def last_trades(root: str, count: int = 50) -> dict[str, Any]:
+    """Newest futures trades for one root (MNQ, MES, MGC). Read-only; one tick call per request."""
+    if root not in INSTRUMENT_CODES:
+        raise ValueError(f"Unsupported futures root: {root}")
+    if not 1 <= count <= 200:
+        raise ValueError("Last-trade count must be between 1 and 200.")
+
+    oauth = _oauth_provider()
+    async with httpx2.AsyncClient(
+        auth=oauth,
+        timeout=httpx2.Timeout(15.0, read=30.0),
+        event_hooks={"request": [_stamp_user_agent]},
+    ) as http:
+        transport = streamable_http_client(MCP_URL, http_client=http)
+        async with Client(transport) as client:
+            now = time.monotonic()
+            if (
+                not _LAST_TRADE_CONTRACTS["by_root"]
+                or now - _LAST_TRADE_CONTRACTS["at"] > LAST_TRADE_CONTRACT_TTL_SECONDS
+            ):
+                selected, _ = await _resolve_active_contracts(client)
+                _LAST_TRADE_CONTRACTS["by_root"] = selected
+                _LAST_TRADE_CONTRACTS["at"] = now
+            contract = _LAST_TRADE_CONTRACTS["by_root"].get(root, {})
+            contract_symbol = contract.get("symbol")
+            if not contract_symbol:
+                raise ValueError(contract.get("selection_error") or f"No tradable contract for {root}.")
+            payload = await _call_with_client(
+                client,
+                "get_futures_tick",
+                {"category": "US_FUTURES", "symbol": str(contract_symbol), "count": count},
+            )
+
+    ticks = _normalize_ticks(_records(payload))
+    return {
+        "symbol": root,
+        "webull_symbol": contract_symbol,
+        "contract_month": contract.get("contract_month"),
+        "source": "Webull Cloud MCP",
+        "read_only": True,
+        "ticks": ticks,
+        "last": ticks[0] if ticks else None,
+        "delay_minutes": payload.get("delay_minutes") if isinstance(payload, dict) else None,
+        "tick_count": len(ticks),
+    }

@@ -46,11 +46,12 @@ from mission_control.market_structure import analyze_market_structure
 from mission_control.master_risk_engine import evaluate_master_risk
 from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
 from mission_control.webull_news import webull_calendar_service, webull_news_service
+from mission_control.webull import last_trades as webull_last_trades
 from mission_control.news_intelligence import build_instrument_news_intelligence
 from mission_control.news_catalyst import analyze_news_catalysts
 from mission_control.opportunity_scout import scout_opportunities
 from mission_control.prop_firm_rules import evaluate_prop_firm_rules
-from mission_control.provider_errors import ProviderCooldownActive
+from mission_control.provider_errors import ProviderCooldownActive, ProviderQuotaExceeded
 from mission_control.risk_config import (
     create_profile,
     get_profile,
@@ -529,6 +530,30 @@ def _attach_cached_realized_volatility(result: dict[str, Any], provider: str) ->
     }
     return result
 
+
+@app.get("/api/futures/last-trades")
+async def futures_last_trades(
+    symbol: str = Query(default="MNQ", pattern="^(MNQ|MES|MGC)$"),
+    count: int = Query(default=50, ge=1, le=200),
+) -> dict[str, Any]:
+    """Newest Webull futures trades for a live price; one read-only tick call per request."""
+    if not await webull_authorized():
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "authorization_required",
+                "provider": "webull",
+                "message": "Authorize Webull: python -m mission_control.webull_auth",
+            },
+        )
+    try:
+        return await webull_last_trades(symbol, count)
+    except WebullAuthorizationRequired as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ProviderQuotaExceeded as exc:
+        raise HTTPException(status_code=429, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 @app.get("/api/gex/expiries")
 def gex_expiries() -> dict[str, Any]:
