@@ -213,7 +213,7 @@ select:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,te
 <article class="tile instrument" data-symbol="MES"><div class="symbol">MES</div><div class="contract">Micro E-mini S&amp;P 500</div><div class="price">— — —</div><div class="change">Price awaiting verified feed</div><div class="bias-line" id="instrument-bias-MES"><span class="bias-chip bias-unavailable">Sentiment awaiting sources</span></div><div class="tile-foot"><span>Market data</span><span>NOT CONNECTED</span></div></article>
 <article class="tile instrument" data-symbol="MGC"><div class="symbol">MGC</div><div class="contract">Micro Gold</div><div class="price">— — —</div><div class="change">Price awaiting verified feed</div><div class="bias-line" id="instrument-bias-MGC"><span class="bias-chip bias-unavailable">Sentiment awaiting sources</span></div><div class="tile-foot"><span>Market data</span><span>NOT CONNECTED</span></div></article>
 </div>
-<div class="toolbar" id="live-picker" style="margin:0 0 10px;align-items:center"><span class="muted small">Live ticker</span><button class="btn" data-sym="MNQ">MNQ</button><button class="btn" data-sym="MES">MES</button><button class="btn" data-sym="MGC">MGC</button><span class="muted small" id="live-status">Live feed idle · choose the 1-second option for continuous updates</span></div><div class="grid2"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Selected instrument</div><div class="panel-title" id="overview-selected">MNQ · Market snapshot</div></div><div class="toolbar"><select id="market-data-provider" aria-label="Market data provider"><option value="tradingview">TradingView</option><option value="webull" selected>Webull</option></select><select id="auto-refresh" aria-label="Auto refresh"><option value="0" selected>Manual only (default)</option><option value="500" data-provider="webull">Webull every 0.5 seconds (test)</option><option value="1000" data-provider="webull">Webull every 1 second (test)</option><option value="15000" data-provider="webull">Webull every 15 seconds</option><option value="45000" data-provider="webull">Webull every 45 seconds</option><option value="60000" data-provider="webull">Webull every 1 minute</option><option value="300000" data-provider="webull">Webull every 5 minutes</option><option value="300000" data-provider="tradingview">TradingView every 5 minutes</option></select><span class="pill off" id="market-data-status">WAITING FOR AUTHORIZATION</span><button class="btn" id="refresh-market">Refresh data</button><button class="btn" data-go="charts">Open chart workspace ↗</button></div></div><div class="cards2"><div class="metric"><small>Latest available close</small><b id="overview-price">—</b></div><div class="metric"><small>Latest bar volume</small><b id="overview-volume">—</b></div><div class="metric"><small>Latest bar high / low</small><b id="overview-range">—</b></div><div class="metric"><small>Bar timestamp (UTC)</small><b id="overview-time">—</b></div></div><p class="muted small" id="overview-source" style="margin:12px 0 0">Select an authorized provider to load historical OHLCV bars.</p></div>
+<div class="toolbar" id="live-picker" style="margin:0 0 10px;align-items:center"><span class="muted small">Live ticker</span><button class="btn" data-sym="MNQ">MNQ</button><button class="btn" data-sym="MES">MES</button><button class="btn" data-sym="MGC">MGC</button><select id="live-window" class="control" aria-label="Overview line window" style="margin-left:6px"><option value="5">5 min</option><option value="15">15 min</option><option value="30" selected>30 min</option><option value="45">45 min</option><option value="60">1 hr</option><option value="240">4 hr</option></select> <span class="muted small" id="live-status">Live feed idle · choose the 1-second option for continuous updates</span></div><div class="grid2"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Selected instrument</div><div class="panel-title" id="overview-selected">MNQ · Market snapshot</div></div><div class="toolbar"><select id="market-data-provider" aria-label="Market data provider"><option value="tradingview">TradingView</option><option value="webull" selected>Webull</option></select><select id="auto-refresh" aria-label="Auto refresh"><option value="0" selected>Manual only (default)</option><option value="500" data-provider="webull">Webull every 0.5 seconds (test)</option><option value="1000" data-provider="webull">Webull every 1 second (test)</option><option value="15000" data-provider="webull">Webull every 15 seconds</option><option value="45000" data-provider="webull">Webull every 45 seconds</option><option value="60000" data-provider="webull">Webull every 1 minute</option><option value="300000" data-provider="webull">Webull every 5 minutes</option><option value="300000" data-provider="tradingview">TradingView every 5 minutes</option></select><span class="pill off" id="market-data-status">WAITING FOR AUTHORIZATION</span><button class="btn" id="refresh-market">Refresh data</button><button class="btn" data-go="charts">Open chart workspace ↗</button></div></div><div class="cards2"><div class="metric"><small>Latest available close</small><b id="overview-price">—</b></div><div class="metric"><small>Latest bar volume</small><b id="overview-volume">—</b></div><div class="metric"><small>Latest bar high / low</small><b id="overview-range">—</b></div><div class="metric"><small>Bar timestamp (UTC)</small><b id="overview-time">—</b></div></div><p class="muted small" id="overview-source" style="margin:12px 0 0">Select an authorized provider to load historical OHLCV bars.</p></div>
 <aside class="panel"><div class="panel-head"><div class="panel-title">Platform health</div><span class="pill ok" id="api-health">CHECKING</span></div><div class="status-row"><span class="muted">API service</span><b id="api-label">Checking…</b></div><div class="status-row"><span class="muted">TradingView MCP adapter</span><b id="tv-health-label">Checking…</b></div><div class="status-row"><span class="muted">Webull Cloud MCP adapter</span><b id="webull-health-label">Checking?</b></div><div class="status-row"><span class="muted">Yahoo news adapter</span><b>Configured · awaiting first fetch</b></div><div class="status-row"><span class="muted">AI agents</span><b>Not started</b></div><div class="status-row"><span class="muted">Paper account</span><b>Not verified</b></div><div class="status-row"><span class="muted">Order execution</span><b style="color:var(--green)">Disabled</b></div></aside></div>
 
 <div class="grid2 home-intelligence">
@@ -1240,7 +1240,7 @@ function lvLineSvg(points,label,color){
   if(!points||points.length<2)return '<div class="muted small">'+label+': collecting data…</div>';
   const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
   const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
-  const W=200,H=44,pad=3;
+  const W=200,H=124,pad=3;
   const sx=v=>x1===x0?W/2:pad+(v-x0)/(x1-x0)*(W-2*pad);
   const sy=v=>y1===y0?H/2:H-pad-(v-y0)/(y1-y0)*(H-2*pad);
   const pts=points.map(p=>sx(p.x).toFixed(1)+","+sy(p.y).toFixed(1)).join(" ");
@@ -1276,7 +1276,7 @@ async function lvSlowMinute(){
       lvSetTile(item.symbol,item.latest.c,"1m close "+lvClock(item.latest.t*1000)+" · refreshed "+lvClock(now));
       const pts=(item.bars||[]).slice(-60).map(function(b){return {x:b.t*1000,y:b.c};});
       const s=lvEnsureSpark(item.symbol);
-      if(s)s.innerHTML=lvLineSvg(pts,"1-minute closes · last 60 min","#8da1ba");
+      if(s)s.innerHTML=lvLineSvg(pts,"1-minute closes · last 30 min","#8da1ba");
     });
   }catch(e){}
 }
@@ -1294,7 +1294,7 @@ function lvSelect(sym){
   if(marketCache?.[activeProvider]?.[tf])lvDrawChart();else fetchMarketData(tf,true,activeProvider);
 }
 lvSlowMinute();// ---- Title above the overview lines (separate from the data code; safe to remove) ----
-// Live tile: "Last 15 min". Snapshot tiles: "Last 60 min". Updated once a second.
+// Live tile: "Last 30 min". Snapshot tiles: "Last 30 min". Updated once a second.
 function lvTitleTick(){
   document.querySelectorAll(".instrument .lv-spark").forEach(function(s){
     const tile=s.closest(".instrument");
@@ -1308,11 +1308,136 @@ function lvTitleTick(){
     }
     const sym=tile.dataset.symbol;
     const live=tile.classList.contains("lv-live");
-    t.textContent=(live?"Last 15 min Â· ":"Last 60 min Â· ")+sym;
+    t.textContent=(live?"Last 30 min · ":"Last 30 min · ")+sym;
     t.style.color=live?"var(--cyan)":"var(--muted,#8da1ba)";
   });
 }
 setInterval(lvTitleTick,1000);
+lvTitleTick();// ---- Full-width overview lines: fixed 60-minute window, edge to edge, same look on all three tiles ----
+// Later definitions replace the earlier lvLineSvg and lvFastSpark for the whole page.
+let LV_WIN_MS=30*60000;
+function lvLineSvg(points,label,color){
+  const now=Date.now(),x0=now-LV_WIN_MS,x1=now;
+  const pts=(points||[]).filter(function(p){return p.x>=x0;});
+  if(pts.length<2)return '<div class="muted small">'+label+' · collecting data…</div>';
+  const ys=pts.map(function(p){return p.y;});
+  const y0=Math.min.apply(null,ys),y1=Math.max.apply(null,ys);
+  const W=400,H=(color==="#62d9f5"?124:56),pad=6;
+  const sx=function(v){return pad+(v-x0)/(x1-x0)*(W-2*pad);};
+  const sy=function(v){return y1===y0?H/2:H-pad-(v-y0)/(y1-y0)*(H-2*pad);};
+  const path=pts.map(function(p){return sx(p.x).toFixed(1)+","+sy(p.y).toFixed(1);}).join(" ");
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'" preserveAspectRatio="none" role="img" aria-label="'+label+'" style="display:block">'
+    +'<polyline fill="none" stroke="'+color+'" stroke-width="2" vector-effect="non-scaling-stroke" points="'+path+'"/></svg>'
+    +'<div class="muted small" style="margin-top:4px">'+label+' · low '+lvFmt(y0)+' · high '+lvFmt(y1)+'</div>';
+}
+function lvFastSpark(sym){
+  const s=lvEnsureSpark(sym);if(!s)return;
+  const cutoff=Date.now()-LV_WIN_MS;
+  const buf=lvTradeBuf[sym];
+  const trades=(buf?[...buf.values()]:[]).filter(function(t){return t.time_ms>=cutoff;}).sort(function(a,b){return a.time_ms-b.time_ms;});
+  const firstTrade=trades.length?trades[0].time_ms:Infinity;
+  const base=(lvBarsBySym[sym]||[]).filter(function(b){return b.t*1000>=cutoff&&b.t*1000<firstTrade;}).map(function(b){return {x:b.t*1000,y:b.c};});
+  const pts=base.concat(trades.map(function(t){return {x:t.time_ms,y:t.price};}));
+  const caption=trades.length?"LIVE · trades since "+lvClock(trades[0].time_ms):"1-minute closes · live trades add here";
+  s.innerHTML=lvLineSvg(pts,caption,"#62d9f5");
+}
+// Hide the older overview chart (yellow) on the tiles. The Charts tab is not affected.
+(function(){
+  const s=document.createElement("style");
+  s.id="lv-full-width";
+  s.textContent=".instrument svg{display:none!important}.instrument .lv-spark svg{display:block!important}";
+  document.head.appendChild(s);
+})();// ---- Bar store for the overview lines: fills lvBarsBySym once a minute ----
+var lvBarsBySym = lvBarsBySym || {};
+async function lvSlowMinute(){
+  try{
+    const r=await fetch("/api/market-data?interval=1m&provider=webull");
+    if(!r.ok)return;
+    const d=await r.json();
+    const now=Date.now();
+    (d.instruments||[]).forEach(function(item){
+      if(!LV_SYMBOLS.includes(item.symbol))return;
+      lvBarsBySym[item.symbol]=item.bars||[];
+      if(item.symbol===lvSymbol){lvFastSpark(item.symbol);return;}
+      if(!item.latest)return;
+      lvSetTile(item.symbol,item.latest.c,"1m close "+lvClock(item.latest.t*1000)+" · refreshed "+lvClock(now));
+      const s=lvEnsureSpark(item.symbol);
+      if(s)s.innerHTML=lvLineSvg((item.bars||[]).map(function(b){return {x:b.t*1000,y:b.c};}),"1-minute closes · last 30 min","#8da1ba");
+    });
+  }catch(e){}
+}// ---- Selectable overview window (5 min to 4 hr) ----
+// Raw trades are kept for 60 min. Older trades roll up to one close per minute, kept up to 4 hr.
+let LV_RAW_MS=60*60000, LV_ROLL_MS=240*60000;
+const lvRollup={MNQ:new Map(),MES:new Map(),MGC:new Map()};
+function lvWinLabel(){const m=Math.round(LV_WIN_MS/60000);return m>=60?(m/60)+" hr":m+" min";}
+function lvRecord(sym,ticks){
+  const m=lvTradeBuf[sym];if(!m)return;
+  (ticks||[]).forEach(function(t){m.set(t.time_ms+"|"+t.price+"|"+t.size+"|"+t.side,t);});
+  const now=Date.now(), rawCut=now-LV_RAW_MS, rollCut=now-LV_ROLL_MS;
+  const roll=lvRollup[sym];
+  for(const [k,t] of m){
+    if(t.time_ms<rawCut){
+      const minute=Math.floor(t.time_ms/60000)*60000;
+      const prev=roll.get(minute);
+      if(!prev||t.time_ms>=prev.time_ms)roll.set(minute,{time_ms:t.time_ms,price:t.price});
+      m.delete(k);
+    }
+  }
+  for(const k of roll.keys()){if(k<rollCut)roll.delete(k);}
+  if(sym===lvSymbol)lvFastSpark(sym);
+}
+function lvFastSpark(sym){
+  const s=lvEnsureSpark(sym);if(!s)return;
+  const cutoff=Date.now()-LV_WIN_MS;
+  const roll=[...lvRollup[sym].entries()].filter(function(e){return e[0]>=cutoff;}).sort(function(a,b){return a[0]-b[0];}).map(function(e){return {x:e[0],y:e[1].price};});
+  const buf=lvTradeBuf[sym];
+  const trades=(buf?[...buf.values()]:[]).filter(function(t){return t.time_ms>=cutoff;}).sort(function(a,b){return a.time_ms-b.time_ms;});
+  const earliest=Math.min(roll.length?roll[0].x:Infinity, trades.length?trades[0].time_ms:Infinity);
+  const base=(lvBarsBySym[sym]||[]).filter(function(b){return b.t*1000>=cutoff&&b.t*1000<earliest;}).map(function(b){return {x:b.t*1000,y:b.c};});
+  const pts=base.concat(roll,trades.map(function(t){return {x:t.time_ms,y:t.price};}));
+  const caption=trades.length?"LIVE · trades since "+lvClock(trades[0].time_ms):"1-minute closes · live trades add here";
+  s.innerHTML=lvLineSvg(pts,caption,"#62d9f5");
+}
+function lvTitleTick(){
+  document.querySelectorAll(".instrument .lv-spark").forEach(function(s){
+    const tile=s.closest(".instrument");if(!tile)return;
+    let t=tile.querySelector(".lv-title");
+    if(!t){
+      t=document.createElement("div");
+      t.className="lv-title";
+      t.style.cssText="font-size:12px;font-weight:600;letter-spacing:.04em;margin-top:6px";
+      tile.insertBefore(t,s);
+    }
+    const sym=tile.dataset.symbol;
+    const live=tile.classList.contains("lv-live");
+    t.textContent="Last "+lvWinLabel()+" · "+sym;
+    t.style.color=live?"var(--cyan)":"var(--muted,#8da1ba)";
+  });
+}
+async function lvSlowMinute(){
+  try{
+    const r=await fetch("/api/market-data?interval=1m&provider=webull");
+    if(!r.ok)return;
+    const d=await r.json();
+    const now=Date.now();
+    (d.instruments||[]).forEach(function(item){
+      if(!LV_SYMBOLS.includes(item.symbol))return;
+      lvBarsBySym[item.symbol]=item.bars||[];
+      if(item.symbol===lvSymbol){lvFastSpark(item.symbol);return;}
+      if(!item.latest)return;
+      lvSetTile(item.symbol,item.latest.c,"1m close "+lvClock(item.latest.t*1000)+" · refreshed "+lvClock(now));
+      const s=lvEnsureSpark(item.symbol);
+      if(s)s.innerHTML=lvLineSvg((item.bars||[]).map(function(b){return {x:b.t*1000,y:b.c};}),"1-minute closes · last "+lvWinLabel(),"#8da1ba");
+    });
+  }catch(e){}
+}
+const lwSel=document.getElementById("live-window");
+if(lwSel)lwSel.addEventListener("change",function(){
+  LV_WIN_MS=Number(this.value)*60000;
+  lvSlowMinute();
+  lvTitleTick();
+  lvFastSpark(lvSymbol);
+});
 lvTitleTick();function formatNewsTime(value){
   if(!value)return "Time unavailable";
   const date=new Date(value);
@@ -1601,7 +1726,7 @@ function accountSnapshot(){const state={snapshot_at:new Date().toISOString(),dai
 document.getElementById("proposal-form").addEventListener("submit",async e=>{e.preventDefault();const msg=document.getElementById("proposal-message"),profileId=document.getElementById("proposal-profile").value;if(!profileId){msg.textContent="Select a verified risk profile first.";return;}const payload={risk_profile_id:profileId,account_state:accountSnapshot(),proposal:{symbol:document.getElementById("proposal-symbol").value,side:document.getElementById("proposal-side").value,quantity:fieldNumber("proposal-qty"),entry_price:fieldNumber("proposal-entry"),stop_price:fieldNumber("proposal-stop"),target_price:fieldNumber("proposal-target"),session:document.getElementById("proposal-session").value},submitted_by:document.getElementById("proposal-actor").value};msg.textContent="Running independent Master Risk Engine…";try{const r=await fetch("/api/approvals/proposals",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const d=await r.json();if(!r.ok)throw new Error(d.detail||"Proposal review failed");msg.textContent="Proposal "+d.status.toUpperCase()+" · "+d.proposal_id+". "+(d.risk_review.blockers||[]).join(" ");await loadApprovalQueue();await loadAuditEvents();}catch(err){msg.textContent="Proposal not submitted: "+err.message;}});
 async function loadApprovalQueue(){const box=document.getElementById("approval-queue");box.textContent="Loading…";try{const r=await fetch("/api/approvals/proposals");const d=await r.json();const rows=d.proposals||[];document.getElementById("approval-pending-count").textContent=rows.filter(x=>x.status==="pending").length;box.replaceChildren();if(!rows.length){box.innerHTML="<div class='placeholder'><div><strong>No proposals</strong>New proposals will appear here after independent risk review.</div></div>";return;}rows.forEach(item=>{const card=document.createElement("div");card.className="feed-item";const top=document.createElement("div");top.style.display="flex";top.style.justifyContent="space-between";top.style.gap="10px";const title=document.createElement("b");title.textContent=(item.proposal?.symbol||item.risk_review.proposal_summary?.symbol||"Proposal")+" · "+item.status.toUpperCase();const id=document.createElement("span");id.className="muted small";id.textContent=item.proposal_id;top.append(title,id);card.append(top);const time=document.createElement("div");time.className="muted small";time.textContent=new Date(item.created_at).toLocaleString();card.append(time);const trade=item.proposal||{};const details=document.createElement("p");details.textContent=[trade.side,trade.quantity==null?null:trade.quantity+" contract(s)","Entry "+trade.entry_price,"Stop "+trade.stop_price,"Target "+trade.target_price,"Session "+trade.session].filter(Boolean).join(" · ");card.append(details);const blockers=item.risk_review.blockers||[];const summary=document.createElement("p");summary.textContent=blockers.length?"Risk blockers: "+blockers.join(" · "):"Master Risk Engine: eligible for human review only. This is not trade approval.";card.append(summary);if(item.status==="pending"){const controls=document.createElement("div");controls.className="cards2";const actor=document.createElement("input");actor.className="control";actor.value="local_operator";actor.setAttribute("aria-label","Decision actor");const reason=document.createElement("input");reason.className="control";reason.placeholder="Required reason for decision";reason.setAttribute("aria-label","Decision reason");const approve=document.createElement("button");approve.className="btn";approve.textContent="Approve proposal (record only)";approve.addEventListener("click",()=>decideProposal(item.proposal_id,"approve",actor.value,reason.value));const reject=document.createElement("button");reject.className="btn";reject.textContent="Reject proposal";reject.addEventListener("click",()=>decideProposal(item.proposal_id,"reject",actor.value,reason.value));controls.append(actor,reason,approve,reject);card.append(controls);}box.append(card);});}catch(e){box.textContent="Approval queue unavailable: "+e.message;}}
 async function decideProposal(id,decision,actor,reason){if(!actor.trim()||!reason.trim()){alert("Enter an actor label and a reason before recording a decision.");return;}if(decision==="approve"&&!confirm("Record human approval? This does NOT submit an order. The Master Risk Engine will run again."))return;try{const r=await fetch("/api/approvals/proposals/"+encodeURIComponent(id)+"/decision",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({decision,actor,reason})});const d=await r.json();if(!r.ok)throw new Error(d.detail||"Decision failed");alert("Decision result: "+d.status+". No order was created or transmitted.");await loadApprovalQueue();await loadAuditEvents();}catch(e){alert("Decision not recorded: "+e.message);}}
-async function loadAuditEvents(){const box=document.getElementById("risk-audit-events");box.textContent="Loading…";try{const r=await fetch("/api/audit/events");const d=await r.json();box.replaceChildren();(d.events||[]).slice(-30).reverse().forEach(item=>{const row=document.createElement("div");row.className="status-row";const a=document.createElement("span");a.textContent=item.event_type+" · "+(item.proposal_id||"profile/config")+" · "+new Date(item.occurred_at).toLocaleString();const b=document.createElement("b");b.textContent=item.actor;row.append(a,b);box.append(row);});if(!d.events?.length)box.textContent="No local audit events yet.";}catch(e){box.textContent="Audit stream unavailable.";}}
+async function loadAuditEvents(){const box=document.getElementById("risk-audit-events");box.textContent="Loading…";try{const r=await fetch("/api/audit/events");const d=await r.json();box.replaceChildren();(d.events||[]).slice(-60).reverse().forEach(item=>{const row=document.createElement("div");row.className="status-row";const a=document.createElement("span");a.textContent=item.event_type+" · "+(item.proposal_id||"profile/config")+" · "+new Date(item.occurred_at).toLocaleString();const b=document.createElement("b");b.textContent=item.actor;row.append(a,b);box.append(row);});if(!d.events?.length)box.textContent="No local audit events yet.";}catch(e){box.textContent="Audit stream unavailable.";}}
 document.getElementById("risk-refresh").addEventListener("click",()=>{loadRiskProfiles();loadApprovalQueue();loadAuditEvents();loadAccountHistory();loadAccountHistory();});
 document.getElementById("approval-refresh").addEventListener("click",loadApprovalQueue);
 document.getElementById("audit-refresh").addEventListener("click",loadAuditEvents);
