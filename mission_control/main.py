@@ -3,6 +3,8 @@ from __future__ import annotations
 import ipaddress
 import os
 import threading
+import subprocess
+import sys
 import math
 import time
 from datetime import UTC, date, datetime, timedelta
@@ -317,6 +319,19 @@ def shutdown_app(request: Request) -> JSONResponse:
         raise HTTPException(status_code=403, detail="Cross-origin shutdown denied.")
     threading.Timer(0.5, lambda: os._exit(0)).start()
     return JSONResponse({"ok": True, "message": "FAB787 QUANTUM is stopping."})
+
+@app.post("/api/webull/reconnect")
+def webull_reconnect(request: Request) -> dict[str, Any]:
+    """Open the Webull sign-in window in a separate console. Same-origin requests only."""
+    if not _same_origin(request):
+        raise HTTPException(status_code=403, detail="Cross-origin reconnect denied.")
+    creation = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
+    subprocess.Popen(
+        [sys.executable, "-m", "mission_control.webull_auth"],
+        cwd=str(ROOT),
+        creationflags=creation,
+    )
+    return {"ok": True, "message": "Webull sign-in window opened."}
 
 @app.get("/api/health")
 def health() -> dict[str, str]:
