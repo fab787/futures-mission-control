@@ -1438,7 +1438,21 @@ if(lwSel)lwSel.addEventListener("change",function(){
   lvTitleTick();
   lvFastSpark(lvSymbol);
 });
-lvTitleTick();function formatNewsTime(value){
+lvTitleTick();// ---- Sign-out closes the app: stops the live feed, stops the local server, shows a stopped screen ----
+(function(){
+  const old=document.getElementById("logout-button");
+  if(!old)return;
+  const btn=old.cloneNode(true);
+  old.parentNode.replaceChild(btn,old);
+  btn.addEventListener("click",async function(){
+    if(!confirm("Sign out and close FAB787 QUANTUM? This stops the local server."))return;
+    btn.disabled=true;
+    try{if(typeof stopFastRefresh==="function")stopFastRefresh();}catch(e){}
+    try{await fetch("/api/app/shutdown",{method:"POST"});}catch(e){}
+    document.body.innerHTML='<div style="padding:48px;font-family:system-ui,sans-serif;color:#dfe9f5"><h2>FAB787 QUANTUM has stopped.</h2><p>The local server was shut down. You can close this tab.</p></div>';
+    try{window.close();}catch(e){}
+  });
+})();function formatNewsTime(value){
   if(!value)return "Time unavailable";
   const date=new Date(value);
   if(Number.isNaN(date.getTime()))return "Time unavailable";

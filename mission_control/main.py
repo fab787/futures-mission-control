@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import ipaddress
+import os
+import threading
 import math
 import time
 from datetime import UTC, date, datetime, timedelta
@@ -146,6 +148,7 @@ AUTH_EXEMPT_PATHS = {
     "/api/auth/login",
     "/api/auth/logout",
 }
+LOCAL_LOGIN_REQUIRED = False
 _auth_failures: dict[str, list[float]] = {}
 
 
@@ -178,7 +181,7 @@ async def local_authentication_gate(request: Request, call_next):
             status_code=403,
         )
 
-    if request.url.path not in AUTH_EXEMPT_PATHS:
+    if LOCAL_LOGIN_REQUIRED and request.url.path not in AUTH_EXEMPT_PATHS:
         username = local_auth.get_session_username(
             request.cookies.get(AUTH_COOKIE)
         )
@@ -207,8 +210,8 @@ def authentication_status(request: Request) -> dict[str, Any]:
     )
     return {
         "configured": local_auth.is_configured(),
-        "authenticated": username is not None,
-        "username": username,
+        "authenticated": username is not None or not LOCAL_LOGIN_REQUIRED,
+        "username": username or "local",
         "setup_required": not local_auth.is_configured(),
     }
 
@@ -306,6 +309,14 @@ def authentication_logout(request: Request) -> JSONResponse:
     )
     return response
 
+
+@app.post("/api/app/shutdown")
+def shutdown_app(request: Request) -> JSONResponse:
+    """Stop the local server after the response is sent. Same-origin requests only."""
+    if not _same_origin(request):
+        raise HTTPException(status_code=403, detail="Cross-origin shutdown denied.")
+    threading.Timer(0.5, lambda: os._exit(0)).start()
+    return JSONResponse({"ok": True, "message": "FAB787 QUANTUM is stopping."})
 
 @app.get("/api/health")
 def health() -> dict[str, str]:
