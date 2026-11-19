@@ -272,7 +272,7 @@ select:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,te
   <div class="toolbar">
     <label for="gex-futures-price">MNQ / NQ futures price (optional)</label>
     <input id="gex-futures-price" type="number" min="0.01" step="0.25" placeholder="Use fresh cached MNQ price" style="width:210px;background:#0a1421;color:var(--text);border:1px solid #30445c;border-radius:7px;padding:8px 10px">
-    <select id="gex-ticker" class="control" aria-label="GEX instrument"><option value="NDX">MNQ · NDX options</option><option value="SPX">MES · SPX options</option><option value="QQQ">MNQ · QQQ ETF</option><option value="SPY">MES · SPY ETF</option><option value="GLD">MGC · GLD ETF</option></select><select id="gex-source" class="control" aria-label="GEX data source"><option value="cboe" selected>Cboe delayed</option><option value="webull">Webull</option></select><input id="gex-spot-input" type="number" min="0.01" step="0.01" placeholder="NDX or SPX index spot (Webull)" style="width:210px;background:#0a1421;color:var(--text);border:1px solid #30445c;border-radius:7px;padding:8px 10px"> <button class="btn" id="load-gex">Load / Update GEX</button><div id="gex-expiries" class="toolbar" style="margin-top:8px;flex-wrap:wrap"></div>
+    <select id="gex-ticker" class="control" aria-label="GEX instrument"><option value="NDX">MNQ · NDX options</option><option value="SPX">MES · SPX options</option><option value="QQQ">MNQ · QQQ ETF</option><option value="SPY">MES · SPY ETF</option><option value="GLD">MGC · GLD ETF</option></select><select id="gex-source" class="control" aria-label="GEX data source"><option value="cboe">Cboe delayed (backup)</option><option value="webull" selected>Webull (default)</option></select><input id="gex-spot-input" type="number" min="0.01" step="0.01" placeholder="NDX or SPX index spot (Webull)" style="width:210px;background:#0a1421;color:var(--text);border:1px solid #30445c;border-radius:7px;padding:8px 10px"> <label class="muted small" style="display:inline-flex;align-items:center;gap:6px;margin-left:8px"><input type="checkbox" id="gex-auto"> Auto update with live feed</label><span class="muted small" id="gex-auto-status" style="margin-left:6px"></span> <select id="gex-pull" class="control" aria-label="GEX refresh pull" style="margin-left:6px"><option value="0" selected>Manual (default)</option><option value="10000">Every 10 s</option><option value="30000">Every 30 s</option><option value="60000">Every 1 min</option><option value="120000">Every 2 min</option></select><span class="muted small" id="gex-pull-status" style="margin-left:6px"></span> <button class="btn" id="load-gex">Load / Update GEX</button><div id="gex-expiries" class="toolbar" style="margin-top:8px;flex-wrap:wrap"></div>
   </div>
   <p class="muted small" id="gex-help" style="margin-top:10px">GEX makes no TradingView request. It uses a fresh MNQ price already in the central cache, or the manual price above. Cboe options data is delayed; repeat requests reuse the 15-minute cached chain.</p>
 </div>
@@ -642,14 +642,14 @@ async function loadGex(){
   if(spotRaw)params.set("spot",spotRaw);
   const checkedDays=[...document.querySelectorAll("#gex-expiries input:checked")].map(x=>x.value);
   if(checkedDays.length)params.set("expiries",checkedDays.join(","));
-  const query="?"+params.toString();
+  if(params.get("source")==="webull"&&reqTicker==="NDX"&&!spotRaw)params.set("source","cboe");const query="?"+params.toString();
   status.textContent="REQUESTING CBOE DATA";
   status.className="pill warn";
   try{
     const response=await fetch("/api/gex"+query);
     const data=await response.json();
     if(!response.ok){clearGexDisplay();status.textContent="GEX UNAVAILABLE";document.getElementById("gex-help").textContent=data.detail||"GEX request failed.";return;}
-    status.textContent=data.status.toUpperCase()+" · CBOE DELAYED";
+    status.textContent=data.status.toUpperCase()+(reqSource==="webull"?" · WEBULL":" · CBOE DELAYED");
     status.className=data.status==="stale"?"pill warn":"pill ok";
     document.getElementById("gex-help").textContent="Ticker "+reqTicker+" · source "+reqSource+" · Retrieved "+data.retrieved_at+" · chain age "+data.cache_age_seconds+"s · approx. "+data.source_delay_minutes_estimate+"-minute delayed options · futures price source: "+data.futures_price_source+".";
     document.getElementById("gex-spot").textContent=fmt(data.underlying_spot);
@@ -689,7 +689,7 @@ async function loadGex(){
 }
 function clearGexDisplay(){["gex-spot","gex-futures","gex-net","gex-call-wall","gex-put-wall","gex-flip","gex-c1","gex-c2","gex-c3","gex-p1","gex-p2","gex-p3"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="\u2014";});const body=document.querySelector("#gex-table tbody");if(body)body.replaceChildren();const svg=document.getElementById("gex-chart");if(svg)svg.innerHTML="";const cap=document.getElementById("gex-chart-caption");if(cap)cap.textContent="No data for this ticker and source";}
 document.getElementById("gex-ticker").addEventListener("change",()=>{if(document.getElementById("gex-ticker").value!=="NDX")document.getElementById("gex-source").value="webull";});
-document.getElementById("load-gex").addEventListener("click",loadGex);
+document.getElementById("load-gex").addEventListener("click",loadGex);document.getElementById("gex-ticker").addEventListener("change",()=>{document.getElementById("gex-source").value="webull";});
 loadGexExpiries();
 fillFuturesFromCache();
 setInterval(fillFuturesFromCache,15000);
@@ -1480,7 +1480,493 @@ lvTitleTick();// ---- Sign-out closes the app: stops the live feed, stops the lo
       b.disabled=false;
     }
   });
-})();function formatNewsTime(value){
+})();// ---- GEX auto-update: re-maps levels to the live fast-feed price every second ----
+// Uses the same API as Load / Update GEX, but renders only the GEX panel (not the home panel).
+const GEX_FUT_SYM={NDX:"MNQ",QQQ:"MNQ",SPX:"MES",SPY:"MES",GLD:"MGC"};
+let gexAutoBusy=false,gexAutoLast=0,gexAutoFails=0;
+function gexAutoSetStatus(text){const el=document.getElementById("gex-auto-status");if(el)el.textContent=text;}
+function gexLivePrice(sym){
+  const m=lvTradeBuf[sym];if(!m||!m.size)return null;
+  let best=null;for(const t of m.values()){if(!best||t.time_ms>best.time_ms)best=t;}
+  if(!best||Date.now()-best.time_ms>5000)return null;
+  return best.price;
+}
+function gexRenderAuto(data,ticker,source){
+  const status=document.getElementById("gex-status");
+  status.textContent="AUTO · "+data.status.toUpperCase()+" · "+(source==="webull"?"WEBULL":"CBOE DELAYED");
+  status.className=data.status==="stale"?"pill warn":"pill ok";
+  document.getElementById("gex-help").textContent="Auto update on · ticker "+ticker+" · source "+source+" · chain age "+data.cache_age_seconds+"s · futures price source: "+data.futures_price_source+" · updated "+new Date().toLocaleTimeString()+".";
+  document.getElementById("gex-spot").textContent=fmt(data.underlying_spot);
+  document.getElementById("gex-futures").textContent=fmt(data.futures_price);
+  document.getElementById("gex-net").textContent=gexMoney(data.net_gex_per_1pct_move);
+  document.getElementById("gex-call-wall").textContent=fmt(data.call_wall_futures);
+  document.getElementById("gex-put-wall").textContent=fmt(data.put_wall_futures);
+  document.getElementById("gex-flip").textContent=data.gamma_flip_futures==null?"Not detected":fmt(data.gamma_flip_futures);
+  ["c1","c2","c3"].forEach((key,i)=>{document.getElementById("gex-"+key).textContent=gexLevelText((data.call_levels||[])[i]);});
+  ["p1","p2","p3"].forEach((key,i)=>{document.getElementById("gex-"+key).textContent=gexLevelText((data.put_levels||[])[i]);});
+  const em=data.expected_move||{};
+  document.getElementById("gex-em-points").textContent=em.status==="ready"?fmt(data.expected_move_points_ndx)+" pts":"Unavailable";
+  document.getElementById("gex-em-percent").textContent=em.status==="ready"?Number(data.expected_move_pct).toFixed(2)+"%":"Unavailable";
+  document.getElementById("gex-em-range").textContent=em.status==="ready"?fmt(data.expected_move_lower_futures)+" – "+fmt(data.expected_move_upper_futures):"Unavailable";
+  document.getElementById("gex-em-iv").textContent=em.status==="ready"?Number(data.expected_move_atm_iv_pct).toFixed(2)+"%":"Unavailable";
+  document.getElementById("gex-em-expiry").textContent=em.status==="ready"?data.expected_move_expiration+" · "+data.expected_move_trading_days+" weekdays":"Unavailable";
+  document.getElementById("gex-realized-vol").textContent=gexVolText(data.realized_volatility);
+  document.getElementById("gex-count").textContent=data.contracts_used+" contracts · "+data.expirations_used.length+" expirations · "+data.top_strikes.length+" largest strikes";
+  const body=document.querySelector("#gex-table tbody");
+  body.replaceChildren();
+  (data.top_strikes||[]).forEach(item=>{
+    const tr=document.createElement("tr");
+    tr.style.borderBottom="1px solid #1e2d40";
+    [fmt(item.futures_level),gexMoney(item.net_gex),gexMoney(item.call_gex),gexMoney(item.put_gex),fmt(item.call_oi),fmt(item.put_oi)].forEach((value,index)=>{
+      const td=document.createElement("td");td.style.padding="9px";td.textContent=value;
+      if(index===0)td.style.fontWeight="750";
+      if(index===1)td.style.color=Number(item.net_gex)>=0?"var(--green)":"var(--red)";
+      if(index===2)td.style.color="var(--green)";
+      if(index===3)td.style.color="var(--red)";
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+  lastGex=data;renderGexChart(data);renderGexTable(gexView);
+  document.getElementById("gex-assumptions").textContent=data.assumptions.join(" ");
+}
+async function gexAutoStep(){
+  const toggle=document.getElementById("gex-auto");
+  if(!toggle||!toggle.checked)return;
+  if(!document.getElementById("gex")?.classList.contains("active"))return;
+  if(gexAutoBusy||Date.now()-gexAutoLast<1000)return;
+  const ticker=document.getElementById("gex-ticker").value;
+  if(ticker==="SPX"&&!(document.getElementById("gex-spot-input")?.value.trim())){gexAutoSetStatus("Auto paused for MES: type the SPX index spot above (Webull has no SPX quote).");return;}
+  const sym=GEX_FUT_SYM[ticker]||"MNQ";
+  const price=gexLivePrice(sym);
+  if(price==null){gexAutoSetStatus("Auto waiting for a live "+sym+" price: select "+sym+" in the picker and run the 1-second option.");return;}
+  gexAutoBusy=true;gexAutoLast=Date.now();
+  try{
+    let source=document.getElementById("gex-source").value;if(source==="webull"&&ticker==="NDX"&&!(document.getElementById("gex-spot-input")?.value.trim()))source="cboe";
+    const params=new URLSearchParams({provider:"webull",source,ticker,futures_price:String(price)});
+    const spotRaw=document.getElementById("gex-spot-input")?.value.trim();
+    if(spotRaw)params.set("spot",spotRaw);
+    const days=[...document.querySelectorAll("#gex-expiries input:checked")].map(x=>x.value);
+    if(days.length)params.set("expiries",days.join(","));
+    const r=await fetch("/api/gex?"+params.toString());
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.detail||("HTTP "+r.status));
+    gexAutoFails=0;
+    gexRenderAuto(data,ticker,source);
+    gexAutoSetStatus("Auto · "+sym+" "+price.toFixed(2)+" · refreshed "+new Date().toLocaleTimeString());
+  }catch(e){
+    gexAutoFails++;
+    gexAutoSetStatus("Auto error ("+gexAutoFails+"/5): "+(e.message||e));
+    if(gexAutoFails>=5){toggle.checked=false;gexAutoSetStatus("Auto update stopped after 5 errors. Turn it on again to retry.");}
+  }finally{gexAutoBusy=false;}
+}
+document.getElementById("gex-auto")?.addEventListener("change",gexAutoStep);
+setInterval(gexAutoStep,1000);// ---- GEX panel: labels follow the selected ticker, colored table, larger text ----
+const GEX_LABELS={NDX:{index:"NDX",fut:"MNQ",label:"MNQ/NQ"},QQQ:{index:"QQQ",fut:"MNQ",label:"MNQ/NQ"},SPX:{index:"SPX",fut:"MES",label:"MES"},SPY:{index:"SPY",fut:"MES",label:"MES"},GLD:{index:"GLD",fut:"MGC",label:"MGC"}};
+const gexOrigText=new WeakMap();
+function gexRelabel(){
+  const root=document.getElementById("gex");if(!root)return;
+  const ticker=document.getElementById("gex-ticker")?.value||"NDX";
+  const map=GEX_LABELS[ticker]||GEX_LABELS.NDX;
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  const nodes=[];let node;while((node=walker.nextNode()))nodes.push(node);
+  nodes.forEach(function(n){
+    const parent=n.parentElement;
+    if(!parent||/^(OPTION|SCRIPT|STYLE)$/.test(parent.tagName))return;
+    if(!gexOrigText.has(n)){
+      if(!/NDX|MNQ/i.test(n.nodeValue))return;
+      gexOrigText.set(n,n.nodeValue);
+    }
+    const orig=gexOrigText.get(n);
+    if(/Cboe source/.test(orig))return;
+    const next=orig.replace(/MNQ\/NQ/gi,map.label).replace(/MNQ/gi,map.fut).replace(/NDX/g,map.index);
+    if(n.nodeValue!==next)n.nodeValue=next;
+  });
+}
+function gexColorTable(){
+  const table=document.getElementById("gex-table");if(!table)return;
+  const heads=Array.from(table.querySelectorAll("thead th")).map(function(th){return th.textContent.trim();});
+  const signed=heads.length?heads.map(function(h){return /GEX|vs spot/i.test(h);}):[false,false,true,true,true,true];
+  table.querySelectorAll("tbody tr").forEach(function(tr){
+    Array.from(tr.children).forEach(function(td,i){
+      if(i===0){td.style.fontWeight="700";return;}
+      const v=td.textContent.trim();
+      if(!signed[i]||v==="-"||v===""){td.style.color="";return;}
+      td.style.color=v.startsWith("-")?"var(--red)":"var(--green)";
+    });
+  });
+}
+(function(){
+  const s=document.createElement("style");
+  s.id="gex-readable";
+  s.textContent="#gex .metric small{font-size:13px!important}#gex .metric b{font-size:21px!important}#gex-table{font-size:15px}#gex-table th{font-size:13px;padding:10px 12px}#gex-table td{padding:9px 12px}";
+  document.head.appendChild(s);
+  const root=document.getElementById("gex");
+  if(root)new MutationObserver(function(){gexColorTable();}).observe(root,{childList:true,subtree:true});
+  document.getElementById("gex-ticker")?.addEventListener("change",gexRelabel);
+  setInterval(function(){gexRelabel();gexColorTable();},1500);
+  gexRelabel();gexColorTable();
+})();// ---- GEX header, colored values, and rebuilt chart (later definitions replace the older renderGexChart) ----
+const GEX_C={spot:"#62d9f5",flip:"#f5c542",callWall:"#46d6a0",putWall:"#f07883",em:"#8da1ba",pos:"#46d6a0",neg:"#f07883",zero:"#30445c",text:"#dfe9f5"};
+function gexNum(v){if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)?n:null;}
+function gexNiceStep(range){const steps=[1,2,5,10,20,25,50,100,200,250,500,1000,2000];for(const s of steps){if(range/s<=7)return s;}return 5000;}
+function gexColorValues(data){
+  const set=function(id,color){const el=document.getElementById(id);if(el&&color)el.style.color=color;};
+  const net=gexNum(data&&data.net_gex_per_1pct_move);
+  set("gex-spot",GEX_C.spot);set("gex-futures",GEX_C.spot);
+  set("gex-net",net===null?null:(net>=0?GEX_C.pos:GEX_C.neg));
+  set("gex-call-wall",GEX_C.callWall);set("gex-put-wall",GEX_C.putWall);set("gex-flip",GEX_C.flip);
+  ["c1","c2","c3"].forEach(function(k){set("gex-"+k,GEX_C.callWall);});
+  ["p1","p2","p3"].forEach(function(k){set("gex-"+k,GEX_C.putWall);});
+  ["gex-em-points","gex-em-percent","gex-em-range"].forEach(function(id){set(id,GEX_C.em);});
+}
+function gexUpdateHeader(data){
+  const sec=document.getElementById("gex");if(!sec)return;
+  let h=document.getElementById("gex-header");
+  if(!h){
+    h=document.createElement("div");h.id="gex-header";
+    h.style.cssText="margin:0 0 12px;padding:12px 14px;border:1px solid #1e2d40;border-radius:10px;background:#0a1421";
+    sec.insertBefore(h,sec.firstChild);
+  }
+  const ticker=document.getElementById("gex-ticker")?.value||"NDX";
+  const map=(typeof GEX_LABELS!=="undefined"&&GEX_LABELS[ticker])||{fut:"MNQ"};
+  const src=document.getElementById("gex-source")?.value==="webull"?"Webull":"Cboe delayed";
+  const fut=gexNum(data&&data.futures_price);
+  const spot=gexNum(data&&data.underlying_spot);
+  const net=gexNum(data&&data.net_gex_per_1pct_move);
+  const netColor=net===null?GEX_C.text:(net>=0?GEX_C.pos:GEX_C.neg);
+  const f=function(v){return v===null||v===undefined?"-":fmt(v);};
+  h.innerHTML=
+    '<div style="font-size:20px;font-weight:700;letter-spacing:.02em">GEX - <span style="color:'+GEX_C.spot+'">'+ticker+'</span> · mapped to <span style="color:'+GEX_C.spot+'">'+map.fut+'</span> <span style="color:#8da1ba;font-size:14px;font-weight:500">· '+src+'</span></div>'
+    +'<div style="margin-top:6px;font-size:15px;display:flex;flex-wrap:wrap;gap:18px">'
+    +'<span>Spot <b style="color:'+GEX_C.spot+'">'+f(spot)+'</b></span>'
+    +'<span>'+map.fut+' <b style="color:'+GEX_C.spot+'">'+f(fut)+'</b></span>'
+    +'<span>Net GEX <b style="color:'+netColor+'">'+(net===null?"-":gexMoney(net))+'</b></span>'
+    +'<span>Call wall <b style="color:'+GEX_C.callWall+'">'+f(gexNum(data&&data.call_wall_futures))+'</b></span>'
+    +'<span>Put wall <b style="color:'+GEX_C.putWall+'">'+f(gexNum(data&&data.put_wall_futures))+'</b></span>'
+    +'<span>Flip <b style="color:'+GEX_C.flip+'">'+(gexNum(data&&data.gamma_flip_futures)===null?"Not detected":fmt(data.gamma_flip_futures))+'</b></span>'
+    +'<span style="color:#8da1ba">Updated '+new Date().toLocaleTimeString()+'</span></div>';
+}
+function renderGexChart(data){
+  const svg=document.getElementById("gex-chart");
+  const cap=document.getElementById("gex-chart-caption");
+  gexUpdateHeader(data);gexColorValues(data);
+  if(!svg)return;
+  const fut=gexNum(data&&data.futures_price);
+  const rows=((data&&data.all_strikes)||[]).map(function(s){return {p:gexNum(s.futures_level),net:gexNum(s.net_gex)};})
+    .filter(function(s){return s.p!==null&&s.net!==null;}).sort(function(a,b){return a.p-b.p;});
+  if(fut===null||!rows.length){svg.innerHTML="";if(cap)cap.textContent="No strike data for this ticker and source";return;}
+  const W=1000,H=440,L=70,R=980,TOP=78,BASE=352,AX=372;
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  svg.style.minHeight="380px";
+  const marks=[];
+  function mark(v,label,color,kind){const n=gexNum(v);if(n!==null)marks.push({p:n,label:label,color:color,kind:kind});}
+  mark(fut,"Spot "+fmt(fut),GEX_C.spot,"spot");
+  mark(data.gamma_flip_futures,"Flip "+fmt(data.gamma_flip_futures),GEX_C.flip,"flip");
+  mark(data.call_wall_futures,"Call wall "+fmt(data.call_wall_futures),GEX_C.callWall,"wall");
+  mark(data.put_wall_futures,"Put wall "+fmt(data.put_wall_futures),GEX_C.putWall,"wall");
+  const em=data.expected_move||{};
+  if(em.status==="ready"){
+    mark(data.expected_move_lower_futures,"EM low",GEX_C.em,"em");
+    mark(data.expected_move_upper_futures,"EM high",GEX_C.em,"em");
+  }
+  let lo=fut,hi=fut;
+  marks.forEach(function(m){lo=Math.min(lo,m.p);hi=Math.max(hi,m.p);});
+  const minSpan=fut*0.012;
+  let span=Math.max(hi-lo,minSpan);
+  const pad=span*0.08;
+  let x0=lo-pad,x1=hi+pad;
+  if(x1-x0<minSpan){x0=fut-minSpan/2;x1=fut+minSpan/2;}
+  const vis=rows.filter(function(r){return r.p>=x0&&r.p<=x1;});
+  const sx=function(p){return L+(p-x0)/(x1-x0)*(R-L);};
+  let maxAbs=1;vis.forEach(function(r){maxAbs=Math.max(maxAbs,Math.abs(r.net));});
+  const halfH=(BASE-TOP)/2,zeroY=TOP+halfH;
+  const bw=Math.max(1.5,(R-L)/Math.max(1,vis.length)*0.72);
+  let out='';
+  out+='<line x1="'+L+'" y1="'+zeroY+'" x2="'+R+'" y2="'+zeroY+'" stroke="'+GEX_C.zero+'" stroke-width="1"/>';
+  out+='<text x="8" y="'+(TOP+10)+'" font-size="12" fill="#8da1ba">+ GEX</text>';
+  out+='<text x="8" y="'+(BASE-4)+'" font-size="12" fill="#8da1ba">- GEX</text>';
+  vis.forEach(function(r){
+    const h=Math.abs(r.net)/maxAbs*halfH;
+    const x=sx(r.p)-bw/2;
+    const y=r.net>=0?zeroY-h:zeroY;
+    out+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0.5,h).toFixed(1)+'" fill="'+(r.net>=0?GEX_C.pos:GEX_C.neg)+'" opacity="0.85"/>';
+  });
+  marks.forEach(function(m){
+    const x=sx(m.p).toFixed(1);
+    const dash=m.kind==="flip"?"6 4":(m.kind==="em"?"2 4":"");
+    out+='<line x1="'+x+'" y1="'+(TOP-6)+'" x2="'+x+'" y2="'+BASE+'" stroke="'+m.color+'" stroke-width="'+(m.kind==="spot"?2:1.5)+'"'+(dash?' stroke-dasharray="'+dash+'"':'')+' opacity="0.9"/>';
+  });
+  const rowY=[20,40,60],rowEnd=[-1e9,-1e9,-1e9];
+  marks.slice().sort(function(a,b){return a.p-b.p;}).forEach(function(m){
+    const x=sx(m.p),w=m.label.length*7.4+8;
+    for(let i=0;i<rowY.length;i++){
+      if(x-w/2>rowEnd[i]+6){
+        rowEnd[i]=x+w/2;
+        out+='<text x="'+x.toFixed(1)+'" y="'+rowY[i]+'" text-anchor="middle" font-size="13" font-weight="700" fill="'+m.color+'">'+m.label+'</text>';
+        break;
+      }
+    }
+  });
+  const levelMark=function(list,color,prefix){
+    (list||[]).forEach(function(lv,i){
+      const p=gexNum(lv&&lv.futures_level);
+      if(p===null||p<x0||p>x1)return;
+      const x=sx(p).toFixed(1);
+      out+='<line x1="'+x+'" y1="'+(TOP-6)+'" x2="'+x+'" y2="'+BASE+'" stroke="'+color+'" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.95"/>';
+      out+='<text x="'+x+'" y="'+(BASE-6-(i%2)*14)+'" text-anchor="middle" font-size="12" font-weight="700" fill="'+color+'" stroke="#0a1421" stroke-width="3" paint-order="stroke">'+prefix+(i+1)+'</text>';
+    });
+  };
+  levelMark(data.call_levels,GEX_C.callWall,"C");
+  levelMark(data.put_levels,GEX_C.putWall,"P");
+  const step=gexNiceStep(x1-x0);
+  out+='<line x1="'+L+'" y1="'+AX+'" x2="'+R+'" y2="'+AX+'" stroke="#8da1ba" stroke-width="1"/>';
+  for(let v=Math.ceil(x0/step)*step;v<=x1;v+=step){
+    const x=sx(v).toFixed(1);
+    out+='<line x1="'+x+'" y1="'+AX+'" x2="'+x+'" y2="'+(AX+6)+'" stroke="#8da1ba"/>';
+    out+='<text x="'+x+'" y="'+(AX+22)+'" text-anchor="middle" font-size="13" fill="'+GEX_C.text+'">'+Math.round(v).toLocaleString()+'</text>';
+  }
+  svg.innerHTML=out;
+  if(cap)cap.textContent="Bars: net GEX per strike (green positive, red negative). Price axis fits spot, walls, flip and expected move. Lines: spot cyan, flip amber, walls green and red, expected move grey. Dots: top call (C) and put (P) levels.";
+}
+setInterval(function(){if(typeof lastGex!=="undefined"&&lastGex)gexColorValues(lastGex);},1500);// ---- GEX refresh pull: Manual by default; timed pulls when Webull is the source ----
+// Webull chains are cached 60 s on the server, so short intervals mostly reuse the cache.
+let gexPullTimer=null,gexPullBusy=false;
+function gexPullMs(){const s=document.getElementById("gex-pull");return s?Number(s.value):0;}
+function gexPullStatus(text){const el=document.getElementById("gex-pull-status");if(el)el.textContent=text;}
+function gexSchedulePull(){
+  if(gexPullTimer){clearInterval(gexPullTimer);gexPullTimer=null;}
+  const ms=gexPullMs();
+  if(!ms){gexPullStatus("");return;}
+  const src=document.getElementById("gex-source")?.value;
+  if(src!=="webull"){gexPullStatus("Timed pull needs Webull as the source.");return;}
+  gexPullTimer=setInterval(gexPullOnce,ms);
+  gexPullOnce();
+}
+async function gexPullOnce(){
+  if(gexPullBusy)return;
+  if(!document.getElementById("gex")?.classList.contains("active"))return;
+  if(document.getElementById("gex-source")?.value!=="webull")return;
+  const ticker=document.getElementById("gex-ticker").value;
+  const spotRaw=document.getElementById("gex-spot-input")?.value.trim();
+  if(ticker==="SPX"&&!spotRaw){gexPullStatus("Timed pull paused for MES: type the SPX index spot above.");return;}
+  gexPullBusy=true;
+  try{
+    const params=new URLSearchParams({provider:"webull",source:"webull",ticker:ticker});
+    if(spotRaw)params.set("spot",spotRaw);
+    const price=gexLivePrice(GEX_FUT_SYM[ticker]||"MNQ");
+    if(price!=null)params.set("futures_price",String(price));
+    const days=[...document.querySelectorAll("#gex-expiries input:checked")].map(function(x){return x.value;});
+    if(days.length)params.set("expiries",days.join(","));
+    const r=await fetch("/api/gex?"+params.toString());
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.detail||("HTTP "+r.status));
+    gexRenderAuto(data,ticker,"webull");
+    gexPullStatus("Pulled · "+ticker+" · "+new Date().toLocaleTimeString()+" · chain age "+data.cache_age_seconds+"s");
+  }catch(e){
+    gexPullStatus("Pull error: "+(e.message||e));
+  }finally{gexPullBusy=false;}
+}
+document.getElementById("gex-pull")?.addEventListener("change",gexSchedulePull);
+document.getElementById("gex-source")?.addEventListener("change",function(){setTimeout(gexSchedulePull,50);});
+document.getElementById("gex-ticker")?.addEventListener("change",function(){setTimeout(gexSchedulePull,50);});// ---- GEX levels in the strike table: tag and highlight matching rows; larger numbers ----
+function gexTagTable(){
+  const table=document.getElementById("gex-table");
+  if(!table||typeof lastGex==="undefined"||!lastGex)return;
+  const levels=[];
+  (lastGex.call_levels||[]).forEach(function(l,i){const p=Number(l&&l.futures_level);if(Number.isFinite(p))levels.push({p:p,tag:"C"+(i+1),color:GEX_C.callWall});});
+  (lastGex.put_levels||[]).forEach(function(l,i){const p=Number(l&&l.futures_level);if(Number.isFinite(p))levels.push({p:p,tag:"P"+(i+1),color:GEX_C.putWall});});
+  table.querySelectorAll("tbody tr").forEach(function(tr){
+    let hit=null,hitCell=null;
+    Array.from(tr.children).forEach(function(td){
+      if(hit)return;
+      const raw=Array.from(td.childNodes).filter(function(n){return n.nodeType===3;}).map(function(n){return n.textContent;}).join("").trim().replace(/,/g,"");
+      if(!/^[+-]?\d+(\.\d+)?$/.test(raw))return;
+      const v=Number(raw);
+      const m=levels.find(function(l){return Math.abs(l.p-v)<0.05;});
+      if(m){hit=m;hitCell=td;}
+    });
+    if(!hit)return;
+    tr.style.background="rgba(98,217,245,0.10)";
+    if(!hitCell.querySelector(".gex-tag")){
+      const tag=document.createElement("span");
+      tag.className="gex-tag";
+      tag.textContent=hit.tag+"  ";
+      tag.style.cssText="color:"+hit.color+";font-weight:800;margin-right:6px";
+      hitCell.insertBefore(tag,hitCell.firstChild);
+    }
+  });
+}
+(function(){
+  const s=document.createElement("style");
+  s.id="gex-table-big";
+  s.textContent="#gex-table td{font-size:18px!important;padding:10px 14px!important}#gex-table th{font-size:14px!important;padding:10px 14px!important}";
+  document.head.appendChild(s);
+  const root=document.getElementById("gex");
+  if(root)new MutationObserver(function(){gexTagTable();}).observe(root,{childList:true,subtree:true});
+  setInterval(gexTagTable,1500);
+  gexTagTable();
+})();// ---- GEX v3: C and P levels in their own colors with prices; timed pulls use live price only ----
+GEX_C.callLevel="#a6ff5c";
+GEX_C.putLevel="#ff7fd1";
+function gexColorValues(data){
+  const set=function(id,color){const el=document.getElementById(id);if(el&&color)el.style.color=color;};
+  const net=gexNum(data&&data.net_gex_per_1pct_move);
+  set("gex-spot",GEX_C.spot);set("gex-futures",GEX_C.spot);
+  set("gex-net",net===null?null:(net>=0?GEX_C.pos:GEX_C.neg));
+  set("gex-call-wall",GEX_C.callWall);set("gex-put-wall",GEX_C.putWall);set("gex-flip",GEX_C.flip);
+  ["c1","c2","c3"].forEach(function(k){set("gex-"+k,GEX_C.callLevel);});
+  ["p1","p2","p3"].forEach(function(k){set("gex-"+k,GEX_C.putLevel);});
+  ["gex-em-points","gex-em-percent","gex-em-range"].forEach(function(id){set(id,GEX_C.em);});
+}
+function gexTagTable(){
+  const table=document.getElementById("gex-table");
+  if(!table||typeof lastGex==="undefined"||!lastGex)return;
+  const levels=[];
+  (lastGex.call_levels||[]).forEach(function(l,i){const p=Number(l&&l.futures_level);if(Number.isFinite(p))levels.push({p:p,tag:"C"+(i+1),color:GEX_C.callLevel});});
+  (lastGex.put_levels||[]).forEach(function(l,i){const p=Number(l&&l.futures_level);if(Number.isFinite(p))levels.push({p:p,tag:"P"+(i+1),color:GEX_C.putLevel});});
+  table.querySelectorAll("tbody tr").forEach(function(tr){
+    let hit=null,hitCell=null;
+    Array.from(tr.children).forEach(function(td){
+      if(hit)return;
+      const raw=Array.from(td.childNodes).filter(function(n){return n.nodeType===3;}).map(function(n){return n.textContent;}).join("").trim().replace(/,/g,"");
+      if(!/^[+-]?\d+(\.\d+)?$/.test(raw))return;
+      const v=Number(raw);
+      const m=levels.find(function(l){return Math.abs(l.p-v)<0.05;});
+      if(m){hit=m;hitCell=td;}
+    });
+    if(!hit)return;
+    tr.style.background=hit.tag[0]==="C"?"rgba(166,255,92,0.08)":"rgba(255,127,209,0.08)";
+    if(!hitCell.querySelector(".gex-tag")){
+      const tag=document.createElement("span");
+      tag.className="gex-tag";
+      tag.textContent=hit.tag+"  ";
+      tag.style.cssText="color:"+hit.color+";font-weight:800;margin-right:6px";
+      hitCell.insertBefore(tag,hitCell.firstChild);
+    }
+  });
+}
+async function gexPullOnce(){
+  if(gexPullBusy)return;
+  if(!document.getElementById("gex")?.classList.contains("active"))return;
+  if(document.getElementById("gex-source")?.value!=="webull")return;
+  const ticker=document.getElementById("gex-ticker").value;
+  const sym=GEX_FUT_SYM[ticker]||"MNQ";
+  const spotRaw=document.getElementById("gex-spot-input")?.value.trim();
+  if(ticker==="SPX"&&!spotRaw){gexPullStatus("Timed pull paused for MES: type the SPX index spot above.");return;}
+  const price=gexLivePrice(sym);
+  if(price==null){gexPullStatus("Waiting for a live "+sym+" price. The cached price is not used, because it can be stale.");return;}
+  gexPullBusy=true;
+  try{
+    const params=new URLSearchParams({provider:"webull",source:"webull",ticker:ticker,futures_price:String(price)});
+    if(spotRaw)params.set("spot",spotRaw);
+    const days=[...document.querySelectorAll("#gex-expiries input:checked")].map(function(x){return x.value;});
+    if(days.length)params.set("expiries",days.join(","));
+    const r=await fetch("/api/gex?"+params.toString());
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.detail||("HTTP "+r.status));
+    gexRenderAuto(data,ticker,"webull");
+    gexPullStatus("Pulled · "+sym+" "+price.toFixed(2)+" live · "+new Date().toLocaleTimeString()+" · chain age "+data.cache_age_seconds+"s");
+  }catch(e){
+    gexPullStatus("Pull error: "+(e.message||e));
+  }finally{gexPullBusy=false;}
+}
+function renderGexChart(data){
+  const svg=document.getElementById("gex-chart");
+  const cap=document.getElementById("gex-chart-caption");
+  gexUpdateHeader(data);
+  gexColorValues(data);
+  const h=document.getElementById("gex-header");
+  if(h&&data){h.insertAdjacentHTML("beforeend",'<div style="margin-top:6px;font-size:13px;color:#8da1ba">Price used: '+fmt(data.futures_price)+' · source: '+String(data.futures_price_source||"unknown")+'</div>');}
+  if(!svg)return;
+  const fut=gexNum(data&&data.futures_price);
+  const rows=((data&&data.all_strikes)||[]).map(function(s){return {p:gexNum(s.futures_level),net:gexNum(s.net_gex)};})
+    .filter(function(s){return s.p!==null&&s.net!==null;}).sort(function(a,b){return a.p-b.p;});
+  if(fut===null||!rows.length){svg.innerHTML="";if(cap)cap.textContent="No strike data for this ticker and source";return;}
+  const W=1000,H=440,L=70,R=980,TOP=78,BASE=352,AX=372;
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  svg.style.minHeight="380px";
+  const levels=(data.call_levels||[]).map(function(l,i){return {p:gexNum(l&&l.futures_level),tag:"C"+(i+1),color:GEX_C.callLevel};})
+    .concat((data.put_levels||[]).map(function(l,i){return {p:gexNum(l&&l.futures_level),tag:"P"+(i+1),color:GEX_C.putLevel};}))
+    .filter(function(x){return x.p!==null;});
+  const marks=[];
+  function mark(v,label,color,kind){const n=gexNum(v);if(n!==null)marks.push({p:n,label:label,color:color,kind:kind});}
+  mark(fut,"Spot "+fmt(fut),GEX_C.spot,"spot");
+  mark(data.gamma_flip_futures,"Flip "+fmt(data.gamma_flip_futures),GEX_C.flip,"flip");
+  mark(data.call_wall_futures,"Call wall "+fmt(data.call_wall_futures),GEX_C.callWall,"wall");
+  mark(data.put_wall_futures,"Put wall "+fmt(data.put_wall_futures),GEX_C.putWall,"wall");
+  const em=data.expected_move||{};
+  if(em.status==="ready"){
+    mark(data.expected_move_lower_futures,"EM low",GEX_C.em,"em");
+    mark(data.expected_move_upper_futures,"EM high",GEX_C.em,"em");
+  }
+  let lo=fut,hi=fut;
+  marks.forEach(function(m){lo=Math.min(lo,m.p);hi=Math.max(hi,m.p);});
+  levels.forEach(function(l){lo=Math.min(lo,l.p);hi=Math.max(hi,l.p);});
+  const minSpan=fut*0.012;
+  const span=Math.max(hi-lo,minSpan);
+  const pad=span*0.08;
+  let x0=lo-pad,x1=hi+pad;
+  if(x1-x0<minSpan){x0=fut-minSpan/2;x1=fut+minSpan/2;}
+  const vis=rows.filter(function(r){return r.p>=x0&&r.p<=x1;});
+  const sx=function(p){return L+(p-x0)/(x1-x0)*(R-L);};
+  let maxAbs=1;vis.forEach(function(r){maxAbs=Math.max(maxAbs,Math.abs(r.net));});
+  const halfH=(BASE-TOP)/2,zeroY=TOP+halfH;
+  const bw=Math.max(1.5,(R-L)/Math.max(1,vis.length)*0.72);
+  let out='';
+  out+='<line x1="'+L+'" y1="'+zeroY+'" x2="'+R+'" y2="'+zeroY+'" stroke="'+GEX_C.zero+'" stroke-width="1"/>';
+  out+='<text x="8" y="'+(TOP+10)+'" font-size="12" fill="#8da1ba">+ GEX</text>';
+  out+='<text x="8" y="'+(BASE-4)+'" font-size="12" fill="#8da1ba">- GEX</text>';
+  vis.forEach(function(r){
+    const hgt=Math.abs(r.net)/maxAbs*halfH;
+    const x=sx(r.p)-bw/2;
+    const y=r.net>=0?zeroY-hgt:zeroY;
+    out+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0.5,hgt).toFixed(1)+'" fill="'+(r.net>=0?GEX_C.pos:GEX_C.neg)+'" opacity="0.85"/>';
+  });
+  levels.forEach(function(l){
+    if(l.p<x0||l.p>x1)return;
+    const x=sx(l.p).toFixed(1);
+    out+='<line x1="'+x+'" y1="'+(TOP-6)+'" x2="'+x+'" y2="'+BASE+'" stroke="'+l.color+'" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.95"/>';
+  });
+  marks.forEach(function(m){
+    const x=sx(m.p).toFixed(1);
+    const dash=m.kind==="flip"?"6 4":(m.kind==="em"?"2 4":"");
+    out+='<line x1="'+x+'" y1="'+(TOP-6)+'" x2="'+x+'" y2="'+BASE+'" stroke="'+m.color+'" stroke-width="'+(m.kind==="spot"?2:1.5)+'"'+(dash?' stroke-dasharray="'+dash+'"':'')+' opacity="0.9"/>';
+  });
+  const topRows=[20,40,60],topEnd=[-1e9,-1e9,-1e9];
+  marks.slice().sort(function(a,b){return a.p-b.p;}).forEach(function(m){
+    const x=sx(m.p),w=m.label.length*7.4+8;
+    for(let i=0;i<topRows.length;i++){
+      if(x-w/2>topEnd[i]+6){
+        topEnd[i]=x+w/2;
+        out+='<text x="'+x.toFixed(1)+'" y="'+topRows[i]+'" text-anchor="middle" font-size="13" font-weight="700" fill="'+m.color+'">'+m.label+'</text>';
+        break;
+      }
+    }
+  });
+  const lblRows=[BASE-8,BASE-22,BASE-36],lblEnd=[-1e9,-1e9,-1e9];
+  levels.filter(function(l){return l.p>=x0&&l.p<=x1;})
+    .sort(function(a,b){return sx(a.p)-sx(b.p);})
+    .forEach(function(l){
+      const x=sx(l.p),text=l.tag+" "+fmt(l.p),w=text.length*7.2+10;
+      for(let i=0;i<lblRows.length;i++){
+        if(x-w/2>lblEnd[i]+4){
+          lblEnd[i]=x+w/2;
+          out+='<text x="'+x.toFixed(1)+'" y="'+lblRows[i]+'" text-anchor="middle" font-size="12" font-weight="700" fill="'+l.color+'" stroke="#0a1421" stroke-width="3" paint-order="stroke">'+text+'</text>';
+          break;
+        }
+      }
+    });
+  const step=gexNiceStep(x1-x0);
+  out+='<line x1="'+L+'" y1="'+AX+'" x2="'+R+'" y2="'+AX+'" stroke="#8da1ba" stroke-width="1"/>';
+  for(let v=Math.ceil(x0/step)*step;v<=x1;v+=step){
+    const x=sx(v).toFixed(1);
+    out+='<line x1="'+x+'" y1="'+AX+'" x2="'+x+'" y2="'+(AX+6)+'" stroke="#8da1ba"/>';
+    out+='<text x="'+x+'" y="'+(AX+22)+'" text-anchor="middle" font-size="13" fill="'+GEX_C.text+'">'+Math.round(v).toLocaleString()+'</text>';
+  }
+  svg.innerHTML=out;
+  if(cap)cap.textContent="Dashed: C1 to C3 call levels (lime) and P1 to P3 put levels (pink), labeled with price at the bottom. Solid: call wall (green), put wall (red), spot (cyan). Dashed amber: gamma flip. Bars: net GEX per strike, green positive, red negative.";
+}function formatNewsTime(value){
   if(!value)return "Time unavailable";
   const date=new Date(value);
   if(Number.isNaN(date.getTime()))return "Time unavailable";
