@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import secrets
 import time
@@ -29,6 +29,7 @@ def isolated_auth(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     )
 
 
+@pytest.mark.skip(reason="Dashboard login disabled (commit 99231b9); re-enable when login returns")
 def test_first_run_redirects_to_setup_and_setup_authenticates(
     isolated_auth: None,
 ) -> None:
@@ -117,6 +118,7 @@ def test_remote_access_is_rejected(isolated_auth: None) -> None:
     assert "restricted to this computer" in response.json()["detail"]
 
 
+@pytest.mark.skip(reason="Dashboard login disabled (commit 99231b9); re-enable when login returns")
 def test_unauthenticated_api_requests_are_rejected(isolated_auth: None) -> None:
     with TestClient(app) as client:
         response = client.get("/api/instruments")
