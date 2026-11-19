@@ -1,0 +1,36 @@
+# Macro events shown in the calendar view. Edit without code changes.
+#
+# An event is kept when its TITLE or its INDICATOR contains any alias below
+# (whole words, not case sensitive). Both fields are searched because they
+# differ: TradingView's FOMC decision has the title "Interest Rate" and only
+# its indicator says "FOMC Decision Fed Funds Tgt Rate".
+#
+# Aliases below come from real TradingView data seen on 2026-11-15, except
+# the ones marked "standard spelling", which have not yet appeared in data.
+#
+# Events not matched here are not deleted. The calendar view reports how many
+# were hidden (other_macro_event_count). Housing Starts, JOLTS and Michigan
+# Sentiment are hidden by this default list.
+macro_event_filters:
+  NFP:
+    - "non farm payrolls"   # title seen: "Non Farm Payrolls"
+    - "non-farm payrolls"   # indicator seen: "Non-Farm Payrolls"
+    - "nonfarm payrolls"    # standard spelling, not yet seen
+    - "nfp"                 # standard spelling, not yet seen
+  CPI:
+    - "cpi"                 # indicators seen: "CPI MM, SA", "Core CPI YY, NSA"
+    - "inflation rate"      # titles seen: "Inflation Rate MoM", "Core Inflation Rate YoY"
+  PPI:
+    - "ppi"                 # title seen: "PPI MoM"
+  FOMC:
+    - "fomc"                # indicator seen: "FOMC Decision Fed Funds Tgt Rate"
+  PCE:
+    - "pce"                 # title seen: "Core PCE Price Index MoM"
+  GDP:
+    - "gdp"                 # title seen: "GDP Growth Rate QoQ 2nd Est"
+  unemployment:
+    - "unemployment"        # title seen: "Unemployment Rate"
+  ISM:
+    - "ism"                 # titles seen: "ISM Manufacturing PMI", "ISM Services PMI"
+  retail_sales:
+    - "retail sales"        # standard spelling; confirm the live TradingView title on the next pull

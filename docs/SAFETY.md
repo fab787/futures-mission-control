@@ -3,10 +3,95 @@
 ## Initial operating mode
 
 - Read-only research by default.
+- TradingView MCP access is restricted to an explicit allow-list of read-only tools.
 - Paper trading only; no live brokerage connection.
 - Human approval is mandatory for every proposed paper trade.
 - No autonomous order execution.
 - No agent may edit risk limits or grant itself additional permissions.
+
+## TradingView MCP permissions
+
+- OAuth 2.1 is authorized separately for this local FAB787 QUANTUM application; Claude Desktop's login is not reused.
+- OAuth tokens and client registration are stored in the OS keyring, never in source control, dashboard HTML, or plaintext project files.
+- Only historical OHLCV and symbol quote-batch tools are allow-listed.
+- TradingView news and economic-calendar tools are not enabled. Yahoo Finance is the sole news/calendar provider in this phase.
+- Watchlist writes, alert creation/modification/deletion, paper-account actions and order submission are not exposed by the adapter.
+- A successful OAuth login does not prove that every futures symbol is available or real-time.
+- Market data is polled, not streamed. Every display must preserve source and timestamp/freshness information.
+- If authentication, symbol mapping, parsing or data freshness fails, show unavailable and block dependent analysis.
+
+## News and calendar limitations
+
+- Yahoo ticker headlines are fetched through one combined RSS request, cached for ten minutes, and protected by a fifteen-minute failure cooldown.
+- Stale headlines must be labeled with their cache age. Publisher, original publication time, received time and source URL must be retained.
+- Yahoo ticker RSS is a bounded ticker-headline feed, not a complete real-time market-news service.
+- The Yahoo economic calendar is currently a page link only. Do not display invented event rows or infer an event's time when structured Yahoo data has not been verified.
+- Yahoo's current calendar page displays event times in UTC. Do not label them New York time until a validated structured timestamp can be converted correctly.
+- No news or calendar component may call TradingView or introduce a backup provider during this phase.
+
+## GEX data limitations
+
+- GEX uses Cboe delayed NDX options data only and is requested on demand.
+- The raw options chain is cached for 15 minutes; stale output must be visibly labeled.
+- NDX-to-MNQ/NQ levels use a futures/spot ratio and require a fresh cached MNQ price or explicit manual input. GEX must not trigger a TradingView refresh to obtain that price.
+- The calls-positive / puts-negative convention is an assumption about dealer positioning, not verified dealer inventory.
+- Open interest is generally prior-session data; the options quote feed is delayed. GEX estimates are contextual reference levels, never trade authorization or standalone signals.
+- The current GEX integration supports NDX-to-MNQ/NQ mapping only. Do not imply MES or MGC coverage.
+
+
+
+## Account Protection Analyst boundary
+
+- The analyst evaluates only explicitly supplied account snapshots and risk limits; it has no broker/account connection in this phase.
+- Never assume account size, prop-firm rules, loss limits, contract caps, or profit-protection settings. Missing required inputs block the assessment.
+- Account snapshots must include a timezone-aware `snapshot_at`; snapshots older than 120 seconds or more than 60 seconds in the future are blocked.
+- Position state must be verified as flat or open and consistent with the supplied open-contract count. Unknown or contradictory exposure blocks downstream decisions.
+- Breaches and reached profit targets block new trade proposals; warnings require attention. The analyst cannot close positions, cancel orders, or alter risk settings.
+- Profit-protection giveback checks require the day's P&L high-water value; current P&L alone cannot prove whether an activation threshold was previously reached.
+- This is point-in-time assessment, not continuous monitoring or broker-side enforcement.
+- The independent Master Risk Engine retains veto authority and explicit human approval remains mandatory.
+
+## Sentiment Analyst boundary
+
+- Claude and ChatGPT share `mission_control.fab787_ai_providers.AIProviderManager`; the singleton is fail-closed and makes no network calls by default.
+- A real request requires both an explicitly opted-in manager instance and `FAB787_AI_API_CALLS_ENABLED=true`; credentials are read only from `ANTHROPIC_API_KEY` / `OPENAI_API_KEY`, with optional model overrides in `ANTHROPIC_MODEL` / `OPENAI_MODEL`.
+- Provider calls are not enabled by the application or dashboard in this phase. Tests use an injected mock transport; no real provider requests or paid API usage are part of automated tests.
+- The manager exposes text generation only, no tools/function calling, broker access, market-data refresh, risk-setting mutation, trade approval, or order execution.
+- Only structured external reviews with provider identity, timezone-aware analysis timestamp, instrument scope and cited HTTPS sources may be compared.
+- Reviews older than 15 minutes, malformed reviews, unknown instruments/stances and duplicate provider submissions must be rejected.
+- Preserve provider disagreement; never average conflicting views into artificial consensus.
+- Model agreement is not proof of correctness and is never a trade signal.
+- Sentiment analysis cannot refresh market data or news, change risk settings, approve trades, or submit orders.
+- Every future trade proposal remains subject to the independent Master Risk Engine and explicit human approval.
+
+## Opportunity Scout boundary
+
+- Opportunity Scout may read only the existing instrument, Market Structure and Yahoo news cache results.
+- It must not call TradingView or Yahoo provider refresh methods, Claude, ChatGPT, or any backup provider.
+- Context scores are deterministic confluence points, not probabilities, forecasts, expected returns, or win rates.
+- It must not generate entries, exits, stop-losses, profit targets, contract sizes, or executable trade proposals.
+- It has no risk authority and no trade authority. Any future trade proposal must pass the independent Master Risk Engine and explicit human approval.
+
+## News specialist boundary
+
+- News & Catalyst Intelligence may read only the existing Yahoo RSS cache through the cache-only accessor.
+- It must not call the Yahoo refresh method, TradingView, or any backup provider.
+- Headline theme and priority tags are keyword-based triage, not market-impact or directional assessments.
+- Combined-feed headlines must not be attributed to a specific futures contract without source-provided mapping.
+- Stale headlines must remain labeled stale; unavailable headlines block the specialist.
+- The specialist must not create economic-calendar events while Yahoo structured event extraction remains unverified.
+
+## Instrument-agent boundary
+
+- Initial MNQ/MES/MGC agents are deterministic and descriptive; they are not trade signals.
+- The instrument-agent endpoint may read only the existing cached 1-minute snapshot through the cache-only accessor. It must never call a provider refresh.
+- Reports are blocked if the latest bar timestamp is missing, fewer than 20 valid OHLC bars exist, the latest bar is older than 15 minutes, or the cache marks the snapshot stale.
+- Instrument agents have no authority to modify risk settings, approve trades, or submit orders.
+- Every report must disclose freshness and confirm zero provider requests triggered by analysis.
+
+
+- Chief Decision Agent must block its downstream gate on Account Protection warnings, breaches, missing explicit permission, or unknown account state. A warning is not a pass to the Master Risk Engine.
+- Malformed sentiment or calendar specialist payloads must be surfaced as unavailable caveats, never interpreted as agreement or clean data.
 
 ## Fail-safe behavior
 
@@ -21,8 +106,80 @@ Existing positions must never be represented as flat merely because a data sourc
 
 ## Secrets
 
-Never commit API keys, access tokens, passwords, account identifiers, or populated environment files. Use environment variables or a local untracked `.env` file. Rotate any credential that is accidentally exposed.
+Never commit API keys, access tokens, passwords, account identifiers, or populated environment files. Use OS credential storage or a dedicated secret manager. Rotate any credential that is accidentally exposed.
 
 ## TradingView Paper Trading
 
 Paper Trading is the intended initial simulation environment. Do not assume the available TradingView MCP exposes paper-account balances, positions, or simulated order submission. Verify each capability independently before enabling it. A chart-control tool is not automatically a trading tool.
+
+
+## Chief Decision Agent boundary
+
+- The Chief Decision Agent may coordinate specialist outputs but may not bypass or replace the independent Master Risk Engine.
+- It reads TradingView market data and Yahoo headlines only through existing cache-only accessors; it must never trigger provider refreshes.
+- Claude/ChatGPT reviews and account snapshots are caller-supplied, validated inputs; no automatic AI API or broker calls are enabled.
+- Missing, stale, malformed, or contradictory market/account inputs block downstream risk review. Model disagreement and missing news must be disclosed, not hidden.
+- The agent creates no entries, exits, stops, targets, contract sizes, or orders. It has no trade or risk-setting authority.
+- Master Risk Engine review and explicit human approval remain mandatory for every trade.
+
+
+## Master Risk Engine veto boundary
+
+- The Master Risk Engine is independent of the Chief Decision Agent and Account Protection Analyst; it may veto but never approve or submit orders.
+- It requires explicit maximum per-trade risk, maximum account exposure, allowed session(s), a fresh account snapshot, and a complete proposal.
+- Unknown instruments, invalid stop/target orientation, excess risk, excess projected contracts, disallowed or mismatched session, account warnings/breaches, and missing/stale/contradictory inputs veto the proposal.
+- A non-veto result means eligible for human review only. It is not trade approval; human approval remains mandatory.
+- Stop-risk calculations exclude fees, slippage, gaps and execution uncertainty and must never be represented as guaranteed maximum loss.
+- No broker connection, order submission, automatic flattening, provider refresh, risk-setting mutation or strategy update is permitted.
+
+
+## Human approval and audit controls
+
+- Every proposal must pass the independent Master Risk Engine before entering the pending queue; the engine is re-run at decision time.
+- A vetoed proposal cannot be approved. A pending proposal can receive exactly one final decision; repeat or conflicting decisions are rejected.
+- Approval and rejection require an actor label and written reason. Each event is appended to a local SQLite ledger with UTC timestamp and proposal ID.
+- SQLite triggers prevent update/delete of audit-event rows through the application database connection. This is not cryptographic tamper-proof storage or an external immutable archive.
+- Actor labels are supplied by the caller and are not authenticated in this phase. Bind the application to localhost and do not expose approval endpoints to an untrusted network.
+- Approval records a human decision only. No broker connection, order submission, execution, automatic position management or risk-setting change exists.
+
+
+## Master Risk Configuration Manager
+
+- Risk profiles are immutable, versioned local snapshots; changes create new versions and retain prior versions.
+- Prop-firm maximums must be entered from current official rules. No firm values, account sizes, drawdown methods, consistency rules, or payout conditions are invented.
+- User settings may only tighten limits: lower loss/drawdown/contract/per-trade caps, session intersection, lower profit-target/activation thresholds, and higher profit-protection floors.
+- Missing required maximums, invalid values, or empty session intersections reject profile creation. Unverified profiles cannot be used by the Master Risk Engine.
+- Profile mutation requires an explicit local API action. Actor labels are not authenticated; bind locally and do not expose mutation endpoints to untrusted networks.
+- The Master Risk Engine accepts `risk_profile_id` and resolves its latest verified version locally. Account state remains caller-supplied and unauthenticated in this phase.
+- Configuration causes zero provider requests, broker connections, or orders. AI agents cannot mutate profiles.
+
+
+## Prop-Firm Rules & Consistency Evaluator
+
+- Profiles must explicitly mark rule coverage complete or incomplete; incomplete rule sets cannot pass the Prop-Firm Rules Evaluator.
+- Consistency rules, minimum trading days, profit targets, drawdown method and firm maximums must come from current official rules entered and verified by the operator. A null minimum-day value explicitly means no minimum is applicable; a null consistency rule explicitly means no best-day consistency rule applies.
+- The evaluator recalculates trailing drawdown from chronological intraday equity observations, end-of-day drawdown from end-of-day observations only, and static drawdown from the configured starting balance.
+- Daily and session loss history, best-day profit share and minimum trading days require explicit account-history records. Missing or malformed records block new proposals.
+- Account history and account state remain caller-supplied and unauthenticated. These checks are analytical safeguards, not broker-side enforcement or proof of prop-firm compliance.
+- The Master Risk Engine runs this evaluator for saved-profile proposals and vetoes when it does not return within_rules.
+- The evaluator has no provider, broker, persistence, order, or risk-configuration mutation authority.
+
+
+## Account History & Performance Tracker
+
+- Account history is imported by an explicit local operator action as a complete snapshot; no provider, broker, or order calls are made.
+- Every saved revision is immutable through application SQL triggers and retains source label, actor label, UTC timestamp and content hash. Corrections create new revisions; identical content is idempotent.
+- Approval proposals use the latest saved history revision, not a caller-provided replacement. The latest revision is re-read when a human decision is recorded; new historical breaches can veto a pending proposal.
+- Imported account history and actor labels are not authenticated. The tracker is an audit aid, not broker-side enforcement or proof of prop-firm compliance.
+- The current account-state snapshot remains separately supplied and must pass the existing freshness and consistency checks.
+
+- Every account-history snapshot is bound to one saved risk-profile ID. A different evaluation/funded profile cannot read or reuse another profile's history.
+
+## Account statement CSV import boundary
+
+- CSV upload is a local operator action and is limited to 2 MB / 5,000 data rows.
+- Column mappings must be reviewed; preview validation does not save or mutate account history.
+- Equity timestamps must be timezone-aware; daily and session records must be complete, non-duplicated, and use supported NY/GLOBEX session labels.
+- Starting balance is supplied explicitly. Missing rows or values are never synthesized.
+- Only after the operator reviews the normalized preview may the existing save action append a new immutable revision for the selected risk profile.
+- The importer has no broker, account, TradingView, Yahoo Finance, or other provider connection. Imported statement data remains operator-supplied and is not broker-authenticated.

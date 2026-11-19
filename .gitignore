@@ -23,3 +23,9 @@ logs/
 .idea/
 .DS_Store
 Thumbs.db
+
+*.bak
+*.bak-*
+*.before_*.bak
+*.egg-info/
+*.disabled

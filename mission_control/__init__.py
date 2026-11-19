@@ -1,1 +1,1 @@
-"""Futures Mission Control application package."""
+"""FAB787 QUANTUM application package."""

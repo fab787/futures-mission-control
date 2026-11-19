@@ -1,0 +1,72 @@
+import pytest
+import sqlite3
+from datetime import datetime, timezone
+from mission_control import risk_config
+from mission_control.risk_config import create_profile,get_profile,list_profiles,list_profile_versions,resolve_effective_profile
+from mission_control.master_risk_engine import evaluate_master_risk
+
+def sample():
+ return {"profile_name":"Example 50K","prop_firm":"User supplied","account_mode":"evaluation","drawdown_type":"end_of_day","verification_status":"user_verified","rule_coverage_status":"complete","evaluation_rules":{"minimum_trading_days":None},"prop_firm_maximums":{"max_daily_loss":500,"max_session_loss":300,"max_drawdown":2000,"max_contracts":10,"max_per_trade_risk":200,"allowed_sessions":["NY","GLOBEX"]},"user_limits":{"max_daily_loss":250,"max_contracts":3,"max_per_trade_risk":100,"allowed_sessions":["NY"]}}
+
+def test_strictest_limits_and_versions(tmp_path):
+ db=tmp_path/"risk.db"; a=create_profile(sample(),"operator",db); e=resolve_effective_profile(a["profile_id"],db)["effective_limits"]
+ assert e["max_daily_loss"]==250 and e["max_session_loss"]==300 and e["max_contracts"]==3 and e["max_per_trade_risk"]==100 and e["allowed_sessions"]==["NY"]
+ p=sample(); p["profile_id"]=a["profile_id"]; p["user_limits"]["max_daily_loss"]=200
+ b=create_profile(p,"operator",db); assert b["version"]==2 and get_profile(a["profile_id"],db)["version"]==2 and len(list_profiles(db)["profiles"])==1
+
+def test_missing_prop_limit_rejected(tmp_path):
+ p=sample(); del p["prop_firm_maximums"]["max_drawdown"]
+ with pytest.raises(ValueError): create_profile(p,"operator",tmp_path/"risk.db")
+
+def test_session_intersection_rejected(tmp_path):
+ p=sample(); p["prop_firm_maximums"]["allowed_sessions"]=["NY"]; p["user_limits"]["allowed_sessions"]=["GLOBEX"]
+ with pytest.raises(ValueError): create_profile(p,"operator",tmp_path/"risk.db")
+
+def test_unverified_profile_blocked(tmp_path):
+ p=sample(); p["verification_status"]="unverified"; a=create_profile(p,"operator",tmp_path/"risk.db")
+ with pytest.raises(ValueError): resolve_effective_profile(a["profile_id"],tmp_path/"risk.db")
+
+def test_no_provider_or_order_actions(tmp_path):
+ a=create_profile(sample(),"operator",tmp_path/"risk.db")
+ assert a["provider_requests_triggered"]==0 and a["orders_created"]==0 and a["execution"]=="disabled"
+
+def test_versions_are_append_only_and_auditable(tmp_path):
+ db=tmp_path/"risk.db"; a=create_profile(sample(),"operator",db)
+ p=sample(); p["profile_id"]=a["profile_id"]; create_profile(p,"operator",db)
+ history=list_profile_versions(a["profile_id"],db)
+ assert [v["version"] for v in history["versions"]]==[1,2]
+ assert [e["event_type"] for e in history["events"]]==["profile_version_created","profile_version_created"]
+ with sqlite3.connect(db) as conn:
+  with pytest.raises(sqlite3.IntegrityError): conn.execute("UPDATE risk_profiles SET actor='tampered' WHERE profile_id=?",(a["profile_id"],))
+  with pytest.raises(sqlite3.IntegrityError): conn.execute("DELETE FROM risk_profiles WHERE profile_id=?",(a["profile_id"],))
+
+def test_master_risk_uses_trusted_profile_not_caller_limits(tmp_path,monkeypatch):
+ db=tmp_path/"risk.db"; monkeypatch.setattr(risk_config,"DB",db)
+ p=sample(); p["user_limits"]["max_per_trade_risk"]=50
+ saved=create_profile(p,"operator")
+ review={"risk_profile_id":saved["profile_id"],"risk_limits":{"max_per_trade_risk":9999,"max_contracts":99,"max_daily_loss":9999,"max_session_loss":9999,"max_drawdown":9999,"allowed_sessions":["NY","GLOBEX"]},
+  "account_state":{"snapshot_at":datetime.now(timezone.utc).isoformat(),"daily_pnl":0,"session_pnl":0,"drawdown_from_high_water":0,"open_contracts":0,"position_state":"flat","current_session":"NY"},
+  "proposal":{"symbol":"MNQ","side":"long","quantity":1,"entry_price":20000,"stop_price":19950,"target_price":20100,"session":"NY"}}
+ result=evaluate_master_risk(review)
+ assert result["veto"] is True
+ assert result["risk_profile"]["effective_limits"]["max_per_trade_risk"]==50
+ assert any("max_per_trade_risk" in x for x in result["blockers"])
+
+def test_invalid_consistency_threshold_rejected(tmp_path):
+ p=sample(); p["consistency_rule"]={"max_best_day_profit_share_pct":0}
+ with pytest.raises(ValueError): create_profile(p,"operator",tmp_path/"risk.db")
+
+
+def test_resolved_profile_preserves_verification_status_for_rules_evaluator(tmp_path):
+ db=tmp_path/"risk.db"
+ saved=create_profile(sample(),"operator",db)
+ resolved=resolve_effective_profile(saved["profile_id"],db)
+ assert resolved["verification_status"]=="user_verified"
+ assert resolved["rule_coverage_status"]=="complete"
+
+
+def test_unsupported_daily_profit_share_setting_is_rejected(tmp_path):
+ p=sample()
+ p["user_limits"]["max_daily_profit_share"]=40
+ with pytest.raises(ValueError,match="max_daily_profit_share is not currently enforced"):
+  create_profile(p,"operator",tmp_path/"risk.db")
