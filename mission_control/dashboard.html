@@ -202,7 +202,7 @@ select:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,te
 
 </style></head>
 <body><div class="shell">
-<header class="top"><div class="brand"><div class="mark">FQ</div><div><div class="eyebrow">Futures intelligence platform</div><div class="title">FAB787 QUANTUM</div></div></div><div class="top-right"><span class="clock" id="clock">LOCAL TIME</span><span class="safety">● READ-ONLY · EXECUTION DISABLED</span></div><div class="session-controls"><span class="session-user" id="session-user">LOCAL SESSION</span><button class="logout-button" id="logout-button" type="button">Sign out</button></div></header>
+<header class="top"><div class="brand"><div class="mark">FQ</div><div><div class="eyebrow">Futures intelligence platform</div><div class="title">FAB787 QUANTUM</div></div></div><div class="top-right"><span class="clock" id="clock">LOCAL TIME</span><span class="safety">● READ-ONLY · EXECUTION DISABLED</span></div><div class="session-controls"><span class="session-user" id="session-user">LOCAL SESSION</span><button class="logout-button" id="logout-button" type="button">Sign out</button></div><div id="mode-bar" style="flex-basis:100%;width:100%;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 12px;margin:8px 0 0;border:1px solid #22334a;border-radius:10px;background:#0b1421"><span class="eyebrow">Operating mode</span><button id="mode-signal" type="button" aria-pressed="true" style="padding:8px 18px;border-radius:8px;border:1px solid #43d39a;background:rgba(67,211,154,.16);color:#43d39a;font-weight:700;letter-spacing:.06em;cursor:pointer">SIGNAL</button><button id="mode-trading" type="button" aria-pressed="false" style="padding:8px 18px;border-radius:8px;border:1px solid #22334a;background:#101a29;color:#e8f0fa;font-weight:700;letter-spacing:.06em;cursor:pointer;opacity:.4">TRADING</button><span id="mode-status" class="muted small"></span></div></header>
 <nav class="nav" aria-label="FAB787 QUANTUM workspaces">
 <button class="active" data-tab="overview">Overview</button><button data-tab="charts">Charts</button><button data-tab="gex">GEX</button><button data-tab="news">News & Events</button><button data-tab="agents">AI Desk</button><button data-tab="risk">Risk & Approvals</button><button data-tab="help">Help Center</button>
 </nav>
@@ -2699,4 +2699,53 @@ document.getElementById("risk-refresh").addEventListener("click",()=>{loadRiskPr
 document.getElementById("approval-refresh").addEventListener("click",loadApprovalQueue);
 document.getElementById("audit-refresh").addEventListener("click",loadAuditEvents);
 loadRiskProfiles();loadApprovalQueue();loadAuditEvents();
+</script><script>
+(function () {
+  var signalBtn = document.getElementById("mode-signal");
+  var tradingBtn = document.getElementById("mode-trading");
+  var status = document.getElementById("mode-status");
+  function paint(mode) {
+    var isSignal = mode === "signal";
+    signalBtn.setAttribute("aria-pressed", String(isSignal));
+    tradingBtn.setAttribute("aria-pressed", String(!isSignal));
+    signalBtn.style.outline = isSignal ? "2px solid #43d39a" : "none";
+    tradingBtn.style.outline = isSignal ? "none" : "2px solid #e8b45c";
+    status.textContent = isSignal
+      ? "Signals only. No orders can be sent."
+      : "Trading mode requested. Paper venue only; every order still needs risk-engine and human approval.";
+  }
+  signalBtn.addEventListener("click", function () { paint("signal"); });
+  tradingBtn.addEventListener("click", function () {
+    var typed = window.prompt("Type TRADING to enable trading mode (paper venue only):", "");
+    paint(typed === "TRADING" ? "trading" : "signal");
+  });
+  paint("signal");
+})();
+</script><script>
+(function () {
+  var signalBtn = document.getElementById("mode-signal");
+  var tradingBtn = document.getElementById("mode-trading");
+  var status = document.getElementById("mode-status");
+  function style(btn, on) {
+    btn.setAttribute("aria-pressed", String(on));
+    btn.style.opacity = on ? "1" : "0.4";
+    btn.style.color = on ? "#43d39a" : "#e8f0fa";
+    btn.style.borderColor = on ? "#43d39a" : "#22334a";
+    btn.style.background = on ? "rgba(67,211,154,.16)" : "#101a29";
+  }
+  function paint(mode) {
+    var isSignal = mode === "signal";
+    style(signalBtn, isSignal);
+    style(tradingBtn, !isSignal);
+    status.textContent = isSignal
+      ? "Signal mode: scanning and signals only. No orders are sent."
+      : "Trading mode (paper only): every order still needs risk-engine and human approval.";
+  }
+  signalBtn.addEventListener("click", function () { paint("signal"); });
+  tradingBtn.addEventListener("click", function () {
+    var typed = window.prompt("Type TRADING to enable trading mode (paper only):", "");
+    paint(typed === "TRADING" ? "trading" : "signal");
+  });
+  paint("signal");
+})();
 </script></body></html>
