@@ -1966,7 +1966,55 @@ function renderGexChart(data){
   }
   svg.innerHTML=out;
   if(cap)cap.textContent="Dashed: C1 to C3 call levels (lime) and P1 to P3 put levels (pink), labeled with price at the bottom. Solid: call wall (green), put wall (red), spot (cyan). Dashed amber: gamma flip. Bars: net GEX per strike, green positive, red negative.";
-}function formatNewsTime(value){
+}// ---- GEX top section: three labeled groups; titles follow the selected ticker (gexLayoutV4) ----
+(function gexLayoutV4(){
+  const grid=document.querySelector("#gex .grid3");
+  if(!grid||document.getElementById("gex-groups"))return;
+  const groups={
+    keys:["gex-spot","gex-futures","gex-net","gex-call-wall","gex-put-wall","gex-flip"],
+    levels:["gex-c1","gex-c2","gex-c3","gex-p1","gex-p2","gex-p3"],
+    vol:["gex-em-points","gex-em-percent","gex-em-range","gex-em-iv","gex-em-expiry","gex-realized-vol"]
+  };
+  const cardOf=function(id){const b=document.getElementById(id);return b?b.closest(".metric"):null;};
+  const wrap=document.createElement("div");
+  wrap.id="gex-groups";
+  wrap.style.cssText="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px";
+  function group(key,title,cardIds){
+    const box=document.createElement("div");
+    box.className="gex-group";
+    box.style.cssText="border:1px solid #1e2d40;border-radius:10px;padding:12px;background:#0a1421";
+    const h=document.createElement("div");
+    h.id="gex-g-"+key+"-title";
+    h.style.cssText="font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#8da1ba;margin-bottom:10px;font-weight:700";
+    h.textContent=title;
+    const row=document.createElement("div");
+    row.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:10px";
+    box.appendChild(h);box.appendChild(row);
+    cardIds.forEach(function(cid){const c=cardOf(cid);if(c)row.appendChild(c);});
+    return box;
+  }
+  wrap.appendChild(group("keys","Key levels",groups.keys));
+  wrap.appendChild(group("levels","C / P levels",groups.levels));
+  wrap.appendChild(group("vol","Volatility",groups.vol));
+  grid.parentNode.insertBefore(wrap,grid.nextSibling);
+  if(!grid.querySelector(".metric"))grid.style.display="none";
+  const s=document.createElement("style");
+  s.id="gex-layout-css";
+  s.textContent="#gex .metric b{font-size:24px!important;font-weight:700!important}#gex .metric small{font-size:12px!important;letter-spacing:.03em}#gex-groups .metric{padding:10px 12px}";
+  document.head.appendChild(s);
+})();
+function gexLayoutTitles(){
+  const t=document.getElementById("gex-ticker")?.value||"NDX";
+  const map=GEX_LABELS[t]||GEX_LABELS.NDX;
+  const tag=map.label+" ("+t+")";
+  const set=function(id,txt){const el=document.getElementById(id);if(el&&el.textContent!==txt)el.textContent=txt;};
+  set("gex-g-keys-title","Key levels · "+tag);
+  set("gex-g-levels-title","C / P levels · "+tag);
+  set("gex-g-vol-title","Volatility · "+tag);
+}
+document.getElementById("gex-ticker")?.addEventListener("change",gexLayoutTitles);
+setInterval(gexLayoutTitles,1500);
+gexLayoutTitles();function formatNewsTime(value){
   if(!value)return "Time unavailable";
   const date=new Date(value);
   if(Number.isNaN(date.getTime()))return "Time unavailable";
