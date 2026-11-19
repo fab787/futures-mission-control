@@ -1877,7 +1877,7 @@ function renderGexChart(data){
   gexUpdateHeader(data);
   gexColorValues(data);
   const h=document.getElementById("gex-header");
-  if(h&&data){h.insertAdjacentHTML("beforeend",'<div style="margin-top:6px;font-size:13px;color:#8da1ba">Price used: '+fmt(data.futures_price)+' · source: '+String(data.futures_price_source||"unknown")+'</div>');}
+  
   if(!svg)return;
   const fut=gexNum(data&&data.futures_price);
   const rows=((data&&data.all_strikes)||[]).map(function(s){return {p:gexNum(s.futures_level),net:gexNum(s.net_gex)};})
@@ -2014,7 +2014,399 @@ function gexLayoutTitles(){
 }
 document.getElementById("gex-ticker")?.addEventListener("change",gexLayoutTitles);
 setInterval(gexLayoutTitles,1500);
-gexLayoutTitles();function formatNewsTime(value){
+gexLayoutTitles();// ---- GEX header (gexHeaderFinal): one title line, one values row; home page copies it ----
+function gexUpdateHeader(data){
+  const sec=document.getElementById("gex");if(!sec)return;
+  document.querySelectorAll("#gex-header").forEach(function(x,i){if(i>0)x.remove();});
+  let h=document.getElementById("gex-header");
+  if(!h){
+    h=document.createElement("div");h.id="gex-header";
+    h.style.cssText="margin:0 0 12px;padding:12px 14px;border:1px solid #1e2d40;border-radius:10px;background:#0a1421";
+    sec.insertBefore(h,sec.firstChild);
+  }
+  const ticker=document.getElementById("gex-ticker")?.value||"NDX";
+  const map=(typeof GEX_LABELS!=="undefined"&&GEX_LABELS[ticker])||{fut:"MNQ"};
+  const src=document.getElementById("gex-source")?.value==="webull"?"Webull":"Cboe delayed";
+  const fut=gexNum(data&&data.futures_price);
+  const spot=gexNum(data&&data.underlying_spot);
+  const net=gexNum(data&&data.net_gex_per_1pct_move);
+  const f=function(v){return v===null||v===undefined?"-":fmt(v);};
+  const lvl=function(list,i){const x=(list||[])[i];return x?gexNum(x.futures_level):null;};
+  const c1=lvl(data&&data.call_levels,0),p1=lvl(data&&data.put_levels,0);
+  const flip=gexNum(data&&data.gamma_flip_futures);
+  const priceSrc=String((data&&data.futures_price_source)||"").toLowerCase().indexOf("manual")>=0?"manual price":"live price";
+  const item=function(label,value,color){return '<span>'+label+' <b style="color:'+color+'">'+value+'</b></span>';};
+  h.innerHTML=
+    '<div style="font-size:18px;font-weight:700;letter-spacing:.02em">GEX - <span style="color:'+GEX_C.spot+'">'+ticker+'</span> · mapped to <span style="color:'+GEX_C.spot+'">'+map.fut+'</span> · <span style="color:#8da1ba;font-weight:500">'+src+'</span></div>'
+    +'<div style="margin-top:8px;font-size:15px;display:flex;flex-wrap:wrap;gap:18px">'
+    +item("Spot",f(spot),GEX_C.spot)
+    +item(map.fut,f(fut),GEX_C.spot)
+    +item("Net GEX",net===null?"-":gexMoney(net),net===null?GEX_C.text:(net>=0?GEX_C.pos:GEX_C.neg))
+    +item("Call wall",f(gexNum(data&&data.call_wall_futures)),GEX_C.callWall)
+    +item("Put wall",f(gexNum(data&&data.put_wall_futures)),GEX_C.putWall)
+    +item("Flip",flip===null?"Not detected":fmt(flip),GEX_C.flip)
+    +item("C1",f(c1),GEX_C.callLevel||GEX_C.callWall)
+    +item("P1",f(p1),GEX_C.putLevel||GEX_C.putWall)
+    +'<span style="color:#8da1ba;font-size:13px;align-self:center">'+priceSrc+' · '+new Date().toLocaleTimeString()+'</span></div>';
+}
+function gexHomeSync(){
+  const src=document.getElementById("gex-header");
+  const spot=document.getElementById("home-gex-spot");
+  if(!spot)return;
+  let home=document.getElementById("home-gex-header");
+  if(!home){
+    const host=spot.closest(".snapshot-metric")?.parentElement;
+    if(!host)return;
+    home=document.createElement("div");home.id="home-gex-header";
+    home.style.cssText="margin:0 0 10px;padding:10px 12px;border:1px solid #1e2d40;border-radius:10px;background:#0a1421";
+    host.insertBefore(home,host.firstChild);
+  }
+  if(src&&src.innerHTML&&home.innerHTML!==src.innerHTML)home.innerHTML=src.innerHTML;
+  if(!src||!src.innerHTML)home.innerHTML='<div class="muted small">GEX header appears here after a GEX load or pull.</div>';
+}
+setInterval(gexHomeSync,1500);
+gexHomeSync();// ---- Expected move in the GEX header (gexEMRow): wraps gexUpdateHeader; home page copies it ----
+function gexEMRow(data){
+  const h=document.getElementById("gex-header");if(!h)return;
+  const row=h.children[1];if(!row)return;
+  const em=(data&&data.expected_move)||{};
+  const lo=gexNum(data&&data.expected_move_lower_futures);
+  const hi=gexNum(data&&data.expected_move_upper_futures);
+  const pct=gexNum(data&&data.expected_move_pct);
+  const txt=(em.status==="ready"&&lo!==null&&hi!==null)
+    ?fmt(lo)+" to "+fmt(hi)+(pct!==null?" (+/-"+pct.toFixed(2)+"%)":"")
+    :"-";
+  let el=document.getElementById("gex-em-item");
+  if(!el){
+    el=document.createElement("span");
+    el.id="gex-em-item";
+    el.innerHTML='Expected move <b></b>';
+    row.insertBefore(el,row.lastElementChild);
+  }
+  const b=el.querySelector("b");
+  b.textContent=txt;
+  b.style.color=GEX_C.em;
+}
+(function(){
+  const orig=gexUpdateHeader;
+  gexUpdateHeader=function(data){orig(data);gexEMRow(data);};
+})();// ---- Home page GEX header (gexHomeNoNet): copies the GEX header without the Net GEX item ----
+function gexHomeSync(){
+  const src=document.getElementById("gex-header");
+  const spot=document.getElementById("home-gex-spot");
+  if(!spot)return;
+  let home=document.getElementById("home-gex-header");
+  if(!home){
+    const host=spot.closest(".snapshot-metric")?.parentElement;
+    if(!host)return;
+    home=document.createElement("div");home.id="home-gex-header";
+    home.style.cssText="margin:0 0 10px;padding:10px 12px;border:1px solid #1e2d40;border-radius:10px;background:#0a1421";
+    host.insertBefore(home,host.firstChild);
+  }
+  if(!src||!src.innerHTML){
+    home.innerHTML='<div class="muted small">GEX header appears here after a GEX load or pull.</div>';
+    return;
+  }
+  const clone=src.cloneNode(true);
+  clone.querySelectorAll("span").forEach(function(s){
+    if(/^Net GEX/.test(s.textContent.trim()))s.remove();
+  });
+  if(home.innerHTML!==clone.innerHTML)home.innerHTML=clone.innerHTML;
+}// ---- Home page (gexHomeVolApplied): no GEX header copy; volatility block in the GEX snapshot card ----
+function gexHomeSync(){
+  const old=document.getElementById("home-gex-header");
+  if(old)old.remove();
+}
+function gexHomeVolRender(s){
+  const spot=document.getElementById("home-gex-spot");
+  if(!spot)return;
+  const host=spot.closest(".snapshot-metric")?.parentElement;
+  if(!host)return;
+  let box=document.getElementById("home-gex-vol");
+  if(!box){
+    box=document.createElement("div");
+    box.id="home-gex-vol";
+    box.style.cssText="margin-top:12px;padding:12px;border:1px solid #1e2d40;border-radius:10px;background:#0a1421";
+    (host.parentElement||host).insertBefore(box,host.nextSibling);
+  }
+  const em=(s&&s.expected_move)||{};
+  const ready=em.status==="ready";
+  const fmtN=function(v){return v==null||!isFinite(Number(v))?"-":Number(v).toLocaleString(undefined,{maximumFractionDigits:2});};
+  const rv=(s&&s.realized_volatility)||{};
+  const rvTxt=rv.status==="ready"?(Number(rv.annualized_pct).toFixed(2)+"% annualized ("+rv.observations+" daily returns)"):"Unavailable";
+  const line=function(label,value,color){return '<div style="display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid #1e2d40"><span style="color:#8da1ba">'+label+'</span><b style="color:'+color+';font-size:17px">'+value+'</b></div>';};
+  box.innerHTML='<div style="font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#8da1ba;font-weight:700;margin-bottom:8px">Volatility · NDX / MNQ proxy</div>'
+    +line("ATM implied volatility",ready?Number(s.expected_move_atm_iv_pct).toFixed(2)+"%":"-","#dfe9f5")
+    +line("Expected move (points)",ready?fmtN(s.expected_move_points_ndx)+" pts":"-","#8da1ba")
+    +line("Expected move (percent)",ready?Number(s.expected_move_pct).toFixed(2)+"%":"-","#8da1ba")
+    +line("Expected move range (MNQ)",ready?fmtN(s.expected_move_lower_futures)+" to "+fmtN(s.expected_move_upper_futures):"-","#8da1ba")
+    +line("Expiry",ready&&s.expected_move_expiration?s.expected_move_expiration:"-","#dfe9f5")
+    +line("Historical realized volatility",rvTxt,rv.status==="ready"?"#46d6a0":"#8da1ba");
+}
+async function gexHomeVolPull(){
+  try{
+    const prov=document.getElementById("market-data-provider")?.value||"webull";
+    const r=await fetch("/api/gex/snapshot?provider="+encodeURIComponent(prov));
+    if(!r.ok)return;
+    gexHomeVolRender(await r.json());
+  }catch(e){}
+}
+setInterval(gexHomeVolPull,60000);
+setTimeout(gexHomeVolPull,2500);// ---- Home card colors match the GEX tab; duplicate volatility box removed; source note (gexHomeColors) ----
+(function(){
+  const box=document.getElementById("home-gex-vol");if(box)box.remove();
+  const s=document.createElement("style");
+  s.id="gex-hide-values-row";
+  s.textContent="#gex-header>div:nth-child(2){display:none!important}";
+  document.head.appendChild(s);
+})();
+function gexHomeVolPull(){}
+const GEX_HOME_RULES=[
+  [/underlying spot|mapped price/i,"spot"],
+  [/gamma flip/i,"flip"],
+  [/call wall/i,"callWall"],
+  [/put wall/i,"putWall"],
+  [/^C[123]\b/i,"callLevel"],
+  [/^P[123]\b/i,"putLevel"],
+  [/expected move/i,"em"]
+];
+function gexColorHome(){
+  document.querySelectorAll(".snapshot-metric").forEach(function(m){
+    const lab=m.querySelector("small"),val=m.querySelector("b");
+    if(!lab||!val)return;
+    const text=lab.textContent.trim();
+    if(/net gex/i.test(text)){val.style.color=val.textContent.trim().startsWith("-")?GEX_C.neg:GEX_C.pos;return;}
+    for(const rule of GEX_HOME_RULES){
+      if(rule[0].test(text)){val.style.color=GEX_C[rule[1]]||GEX_C.text;return;}
+    }
+  });
+  if(!document.getElementById("home-gex-note")){
+    const spot=document.getElementById("home-gex-spot");
+    const host=spot&&spot.closest(".snapshot-metric")?.parentElement;
+    if(host){
+      const n=document.createElement("div");
+      n.id="home-gex-note";
+      n.style.cssText="margin-top:8px;font-size:12px;color:#8da1ba";
+      n.textContent="Source: NDX options from Cboe (delayed; cached up to 15 min). MNQ price: Webull cache. Home reads cache only and makes no options request. Ticker: NDX only.";
+      (host.parentElement||host).appendChild(n);
+    }
+  }
+}
+setInterval(gexColorHome,1500);
+gexColorHome();// ---- Home mirrors the GEX tab's last result (gexHomeMirror). Home makes no requests. ----
+(function(){
+  ["home-gex-header","home-gex-vol"].forEach(function(id){const el=document.getElementById(id);if(el)el.remove();});
+  if(!document.getElementById("gex-hide-values-row")){
+    const s=document.createElement("style");
+    s.id="gex-hide-values-row";
+    s.textContent="#gex-header>div:nth-child(2){display:none!important}";
+    document.head.appendChild(s);
+  }
+})();
+let gexHomeSeen=null,gexHomeSeenAt=0;
+const GEX_HOME_MAP=[
+  [/underlying spot/i,"spot"],[/mapped price/i,"fut"],[/gamma flip/i,"flip"],
+  [/call wall/i,"callWall"],[/put wall/i,"putWall"],[/net gex/i,"net"],
+  [/^C1\b/i,"c1"],[/^C2\b/i,"c2"],[/^C3\b/i,"c3"],
+  [/^P1\b/i,"p1"],[/^P2\b/i,"p2"],[/^P3\b/i,"p3"],
+  [/range/i,"emRange"],[/iv\s*\/\s*expiry/i,"emIv"],[/realized/i,"rv"]
+];
+function gexHomeCards(){
+  const out=[];
+  document.querySelectorAll(".snapshot-metric").forEach(function(m){
+    const lab=m.querySelector("small"),val=m.querySelector("b");
+    if(!lab||!val)return;
+    let key=m.dataset.gexkey;
+    if(!key){
+      const txt=lab.textContent.trim();
+      for(const r of GEX_HOME_MAP){if(r[0].test(txt)){key=r[1];break;}}
+      if(key)m.dataset.gexkey=key;
+    }
+    if(key)out.push({key:key,lab:lab,val:val});
+  });
+  return out;
+}
+function gexHomeNote(data,ticker){
+  let n=document.getElementById("home-gex-note");
+  if(!n){
+    const spot=document.getElementById("home-gex-spot");
+    const host=spot&&spot.closest(".snapshot-metric")?.parentElement;
+    if(!host)return;
+    n=document.createElement("div");
+    n.id="home-gex-note";
+    n.style.cssText="margin-top:8px;font-size:12px;color:#8da1ba";
+    (host.parentElement||host).appendChild(n);
+  }
+  if(!data){n.textContent="No GEX result yet. Load or pull on the GEX tab; Home then shows it here.";return;}
+  const src=document.getElementById("gex-source")?.value==="webull"?"Webull":"Cboe delayed";
+  const auto=document.getElementById("gex-auto")?.checked;
+  const ms=gexPullMs();
+  const rate=auto?"live price every 1 s":(ms?"chain pulls every "+Math.round(ms/1000)+" s":"manual (no timed pulls)");
+  n.textContent="From GEX tab · "+ticker+" · source "+src+" · refresh: "+rate+" · chain age "+data.cache_age_seconds+"s · MNQ price: "+(data.futures_price_source||"unknown")+" · updated "+new Date(gexHomeSeenAt).toLocaleTimeString()+".";
+}
+function gexColorHome(){
+  const data=(typeof lastGex!=="undefined")?lastGex:null;
+  if(data&&data!==gexHomeSeen){gexHomeSeen=data;gexHomeSeenAt=Date.now();}
+  const ticker=document.getElementById("gex-ticker")?.value||"NDX";
+  const map=GEX_LABELS[ticker]||GEX_LABELS.NDX;
+  const f=function(v){const n=gexNum(v);return n===null?"-":fmt(n);};
+  const lvl=function(list,i){const x=(list||[])[i];return (data&&x)?gexLevelText(x):"-";};
+  const em=(data&&data.expected_move)||{};
+  const emReady=!!data&&em.status==="ready";
+  const net=gexNum(data&&data.net_gex_per_1pct_move);
+  const flip=gexNum(data&&data.gamma_flip_futures);
+  const V={
+    spot:{label:ticker+" underlying spot",value:data?f(data.underlying_spot):"-",color:GEX_C.spot},
+    fut:{label:map.label+" mapped price",value:data?f(data.futures_price):"-",color:GEX_C.spot},
+    flip:{label:"Gamma flip",value:data?(flip===null?"Not detected":fmt(flip)):"-",color:GEX_C.flip},
+    callWall:{label:map.label+" call wall",value:data?f(data.call_wall_futures):"-",color:GEX_C.callWall},
+    putWall:{label:map.label+" put wall",value:data?f(data.put_wall_futures):"-",color:GEX_C.putWall},
+    net:{label:"Net GEX / 1% move",value:net===null?"-":gexMoney(net),color:net===null?GEX_C.text:(net>=0?GEX_C.pos:GEX_C.neg)},
+    c1:{label:"C1 · strongest call GEX",value:lvl(data&&data.call_levels,0),color:GEX_C.callLevel},
+    c2:{label:"C2 · second call GEX",value:lvl(data&&data.call_levels,1),color:GEX_C.callLevel},
+    c3:{label:"C3 · third call GEX",value:lvl(data&&data.call_levels,2),color:GEX_C.callLevel},
+    p1:{label:"P1 · strongest negative put GEX",value:lvl(data&&data.put_levels,0),color:GEX_C.putLevel},
+    p2:{label:"P2 · second put GEX",value:lvl(data&&data.put_levels,1),color:GEX_C.putLevel},
+    p3:{label:"P3 · third put GEX",value:lvl(data&&data.put_levels,2),color:GEX_C.putLevel},
+    emRange:{label:"Expected move · "+map.label+" range",value:emReady?f(data.expected_move_lower_futures)+" – "+f(data.expected_move_upper_futures):"-",color:GEX_C.em},
+    emIv:{label:"Expected move · IV / expiry",value:emReady?Number(data.expected_move_atm_iv_pct).toFixed(2)+"% · "+data.expected_move_expiration:"-",color:GEX_C.em},
+    rv:{label:"Historical realized volatility",value:data?gexVolText(data.realized_volatility):"-",color:GEX_C.text}
+  };
+  gexHomeCards().forEach(function(c){
+    const v=V[c.key];if(!v)return;
+    if(c.lab.textContent!==v.label)c.lab.textContent=v.label;
+    if(c.val.textContent!==v.value)c.val.textContent=v.value;
+    c.val.style.color=v.color;
+  });
+  const title=document.getElementById("home-gex-spot")?.closest(".panel")?.querySelector(".panel-title");
+  if(title)title.textContent="GEX snapshot · "+ticker+" / "+map.fut;
+  gexHomeNote(data,ticker);
+}
+// Timed pulls run while the page is visible, on any tab (so Home stays current). Replaces the earlier versions.
+async function gexPullOnce(){
+  if(gexPullBusy||document.hidden)return;
+  if(document.getElementById("gex-source")?.value!=="webull")return;
+  const ticker=document.getElementById("gex-ticker").value;
+  const sym=GEX_FUT_SYM[ticker]||"MNQ";
+  const spotRaw=document.getElementById("gex-spot-input")?.value.trim();
+  if(ticker==="SPX"&&!spotRaw){gexPullStatus("Timed pull paused for MES: type the SPX index spot above.");return;}
+  const price=gexLivePrice(sym);
+  if(price==null){gexPullStatus("Waiting for a live "+sym+" price. The cached price is not used, because it can be stale.");return;}
+  gexPullBusy=true;
+  try{
+    const params=new URLSearchParams({provider:"webull",source:"webull",ticker:ticker,futures_price:String(price)});
+    if(spotRaw)params.set("spot",spotRaw);
+    const days=[...document.querySelectorAll("#gex-expiries input:checked")].map(function(x){return x.value;});
+    if(days.length)params.set("expiries",days.join(","));
+    const r=await fetch("/api/gex?"+params.toString());
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.detail||("HTTP "+r.status));
+    gexRenderAuto(data,ticker,"webull");
+    gexPullStatus("Pulled · "+sym+" "+price.toFixed(2)+" live · "+new Date().toLocaleTimeString()+" · chain age "+data.cache_age_seconds+"s");
+  }catch(e){
+    gexPullStatus("Pull error: "+(e.message||e));
+  }finally{gexPullBusy=false;}
+}
+async function gexAutoStep(){
+  const toggle=document.getElementById("gex-auto");
+  if(!toggle||!toggle.checked||document.hidden)return;
+  if(gexAutoBusy||Date.now()-gexAutoLast<1000)return;
+  const ticker=document.getElementById("gex-ticker").value;
+  if(ticker==="SPX"&&!(document.getElementById("gex-spot-input")?.value.trim())){gexAutoSetStatus("Auto paused for MES: type the SPX index spot above (Webull has no SPX quote).");return;}
+  const sym=GEX_FUT_SYM[ticker]||"MNQ";
+  const price=gexLivePrice(sym);
+  if(price==null){gexAutoSetStatus("Auto waiting for a live "+sym+" price: select "+sym+" in the picker and run the 1-second option.");return;}
+  gexAutoBusy=true;gexAutoLast=Date.now();
+  try{
+    let source=document.getElementById("gex-source").value;
+    const spotRaw=document.getElementById("gex-spot-input")?.value.trim();
+    if(source==="webull"&&ticker==="NDX"&&!spotRaw)source="cboe";
+    const params=new URLSearchParams({provider:"webull",source:source,ticker:ticker,futures_price:String(price)});
+    if(spotRaw)params.set("spot",spotRaw);
+    const days=[...document.querySelectorAll("#gex-expiries input:checked")].map(function(x){return x.value;});
+    if(days.length)params.set("expiries",days.join(","));
+    const r=await fetch("/api/gex?"+params.toString());
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.detail||("HTTP "+r.status));
+    gexAutoFails=0;
+    gexRenderAuto(data,ticker,source);
+    gexAutoSetStatus("Auto · "+sym+" "+price.toFixed(2)+" · refreshed "+new Date().toLocaleTimeString());
+  }catch(e){
+    gexAutoFails++;
+    gexAutoSetStatus("Auto error ("+gexAutoFails+"/5): "+(e.message||e));
+    if(gexAutoFails>=5){toggle.checked=false;gexAutoSetStatus("Auto update stopped after 5 errors. Turn it on again to retry.");}
+  }finally{gexAutoBusy=false;}
+}
+setInterval(gexAutoStep,1000);
+setInterval(gexColorHome,1500);
+gexColorHome();// ---- Home GEX panel (homeGexLive): condensed mirror of the GEX tab's last result. No requests. ----
+// Later declarations replace the older Home functions, so their leftover timers do nothing.
+let homeGexLast=null,homeGexTicker="",homeGexSource="",homeGexAt=0;
+function gexHomeCards(){return [];}
+function gexHomeNote(){}
+function gexHomeEnsure(){
+  const spot=document.getElementById("home-gex-spot");
+  const old=spot&&spot.closest(".panel");
+  if(!old||!old.parentElement)return null;
+  if(!old.dataset.homeGexHidden){old.style.display="none";old.dataset.homeGexHidden="1";}
+  let panel=document.getElementById("home-gex-panel");
+  if(!panel){
+    panel=document.createElement("div");
+    panel.id="home-gex-panel";
+    panel.className="panel";
+    old.parentElement.insertBefore(panel,old);
+  }
+  return panel;
+}
+function gexHomeTile(label,value,color){
+  return '<div style="background:#0a1421;border:1px solid #1e2d40;border-radius:8px;padding:8px 10px"><div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8da1ba">'+label+'</div><div style="font-size:18px;font-weight:700;color:'+color+';margin-top:2px">'+value+'</div></div>';
+}
+function gexHomeRender(){
+  const panel=gexHomeEnsure();if(!panel)return;
+  document.getElementById("home-gex-note")?.remove();
+  const data=(typeof lastGex!=="undefined")?lastGex:null;
+  if(data&&data!==homeGexLast){
+    homeGexLast=data;homeGexAt=Date.now();
+    homeGexTicker=document.getElementById("gex-ticker")?.value||"NDX";
+    homeGexSource=document.getElementById("gex-source")?.value||"cboe";
+  }
+  const pick=document.getElementById("gex-ticker")?.value||"NDX";
+  const shown=homeGexTicker||pick;
+  const map=GEX_LABELS[shown]||GEX_LABELS.NDX;
+  const src=homeGexSource==="webull"?"Webull":"Cboe delayed";
+  const ms=gexPullMs();
+  const rate=document.getElementById("gex-auto")?.checked?"live price every 1 s":(ms?"chain every "+Math.round(ms/1000)+" s":"manual");
+  const head='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><div style="font-size:18px;font-weight:700">GEX · <span style="color:'+GEX_C.spot+'">'+shown+'</span> to <span style="color:'+GEX_C.spot+'">'+map.fut+'</span></div><div style="font-size:12px;color:#8da1ba">'+src+' · '+rate+'</div></div>';
+  if(!data){
+    panel.innerHTML=head+'<div class="muted small" style="margin-top:10px">No GEX result yet. Load or pull on the GEX tab; this card then shows that result.</div>';
+    return;
+  }
+  const f=function(v){const n=gexNum(v);return n===null?"-":fmt(n);};
+  const net=gexNum(data.net_gex_per_1pct_move);
+  const flip=gexNum(data.gamma_flip_futures);
+  const c1=data.call_levels&&data.call_levels[0]?gexNum(data.call_levels[0].futures_level):null;
+  const p1=data.put_levels&&data.put_levels[0]?gexNum(data.put_levels[0].futures_level):null;
+  const em=data.expected_move||{};
+  const emOk=em.status==="ready"&&gexNum(data.expected_move_lower_futures)!==null;
+  const emTxt=emOk?f(data.expected_move_lower_futures)+" to "+f(data.expected_move_upper_futures)+" (+/-"+Number(data.expected_move_pct).toFixed(2)+"%)":"-";
+  const ivTxt=emOk?Number(data.expected_move_atm_iv_pct).toFixed(2)+"% · "+data.expected_move_expiration:"-";
+  const statusColor=data.status==="stale"?"#f5c542":"#46d6a0";
+  const tiles=[
+    gexHomeTile("Spot",f(data.underlying_spot),GEX_C.spot),
+    gexHomeTile(map.fut+" price",f(data.futures_price),GEX_C.spot),
+    gexHomeTile("Net GEX / 1%",net===null?"-":gexMoney(net),net===null?GEX_C.text:(net>=0?GEX_C.pos:GEX_C.neg)),
+    gexHomeTile("Gamma flip",flip===null?"Not detected":fmt(flip),GEX_C.flip),
+    gexHomeTile("Call wall",f(data.call_wall_futures),GEX_C.callWall),
+    gexHomeTile("Put wall",f(data.put_wall_futures),GEX_C.putWall),
+    gexHomeTile("C1 / P1",'<span style="color:'+GEX_C.callLevel+'">'+f(c1)+'</span> <span style="color:#8da1ba">/</span> <span style="color:'+GEX_C.putLevel+'">'+f(p1)+'</span>',GEX_C.text),
+    gexHomeTile("Expected move",emTxt,GEX_C.em)
+  ].join("");
+  const foot='<div style="font-size:12px;color:#8da1ba;margin-top:8px">IV / expiry: <span style="color:'+GEX_C.em+'">'+ivTxt+'</span> · <span style="color:'+statusColor+'">'+String(data.status||"").toUpperCase()+'</span> · chain age '+data.cache_age_seconds+'s · price: '+(data.futures_price_source||"unknown")+' · updated '+new Date(homeGexAt).toLocaleTimeString()+'</div>';
+  const warn=(pick!==shown)?'<div style="font-size:12px;color:#f5c542;margin-top:6px">GEX tab now shows '+pick+'. Load or pull it to update this card.</div>':'';
+  panel.innerHTML=head+'<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px">'+tiles+'</div>'+foot+warn;
+}
+setInterval(gexHomeRender,1000);
+gexHomeRender();function formatNewsTime(value){
   if(!value)return "Time unavailable";
   const date=new Date(value);
   if(Number.isNaN(date.getTime()))return "Time unavailable";
