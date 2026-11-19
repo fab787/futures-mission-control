@@ -29,3 +29,5 @@ Thumbs.db
 *.before_*.bak
 *.egg-info/
 *.disabled
+
+.venv_ci/
