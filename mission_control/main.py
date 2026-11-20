@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import ipaddress
 import os
@@ -1212,6 +1212,34 @@ def economic_calendar() -> dict[str, Any]:
             "No events or timestamps are synthesized by this dashboard."
         ),
     }
+
+
+@app.get("/api/agents/news-analyst")
+def news_analyst_desk() -> dict[str, Any]:
+    """News Analyst desk: one recommendation per instrument, from cached inputs only."""
+    from mission_control.calendar_snapshot import load_latest
+    from mission_control.news_analyst_desk import build_news_analyst_desk
+
+    now = datetime.now(UTC)
+    yahoo = yahoo_news_service.peek_news()
+    webull = webull_news_service.peek_news()
+    calendar = load_latest(ROOT / "data" / "calendar", now)
+    market = market_data_manager.peek_snapshot("1m")
+    return build_news_analyst_desk(
+        yahoo_items=yahoo.get("items", []) or [],
+        webull_items=webull.get("items", []) or [],
+        calendar_events=calendar.get("events", []) or [],
+        market_snapshot=market,
+        now=now,
+        calendar_status={
+            "status": calendar.get("status"),
+            "pulled_at": calendar.get("pulled_at"),
+            "age_hours": calendar.get("age_hours"),
+            "window": calendar.get("window"),
+            "event_count": calendar.get("event_count", 0),
+            "failures": calendar.get("failures", []),
+        },
+    )
 
 
 @app.get("/welcome", response_class=HTMLResponse)

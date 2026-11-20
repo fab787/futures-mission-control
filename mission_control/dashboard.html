@@ -4250,6 +4250,357 @@ async function lvSlowMinute() {
   }
 })();
 </script>
+<script>
+(function () {
+  if (window.__fmcMoveAgents) return;
+  window.__fmcMoveAgents = true;
+
+  var COL = { ok: "#43d39a", warn: "#e8b45c", block: "#ef727b", cool: "#7b9cff", muted: "#8da1ba" };
+
+  var css = "@media(max-width:900px){.fmc-ni-grid{grid-template-columns:1fr 1fr!important}}";
+  var style = document.createElement("style");
+  style.textContent = css;
+  document.head.appendChild(style);
+
+  function el(tag, css, text) {
+    var e = document.createElement(tag);
+    if (css) e.style.cssText = css;
+    if (text !== undefined && text !== null) e.textContent = text;
+    return e;
+  }
+
+  function line(text, color) {
+    return el("div", "font-size:11px;color:" + (color || "#c8d6e6") + ";line-height:1.45;margin:3px 0", text);
+  }
+
+  function card(title, nodes) {
+    var c = el("div", "border:1px solid #23415c;border-radius:12px;padding:12px;background:linear-gradient(145deg,#12263a,#0b1421);min-width:0");
+    c.appendChild(el("div", "font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9ee8ff;margin-bottom:6px;font-weight:700", title));
+    nodes.forEach(function (n) { c.appendChild(n); });
+    return c;
+  }
+
+  function legendRow(label, color, text) {
+    var r = el("div", "display:flex;gap:8px;align-items:flex-start;font-size:11px;color:#c8d6e6;margin:4px 0;line-height:1.4");
+    r.appendChild(el("span", "flex:0 0 auto;font-size:10px;font-weight:800;letter-spacing:.06em;padding:2px 8px;border-radius:999px;border:1px solid " + color + ";color:" + color, label));
+    r.appendChild(el("span", "", text));
+    return r;
+  }
+
+  function fmtET(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "unknown time";
+    var parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric",
+      hour: "numeric", minute: "2-digit", hour12: true
+    }).formatToParts(d);
+    function get(type) {
+      var p = parts.find(function (x) { return x.type === type; });
+      return p ? p.value : "";
+    }
+    return get("weekday") + " " + get("month") + " " + get("day") + ", " +
+      get("hour") + ":" + get("minute") + " " + get("dayPeriod") + " ET";
+  }
+
+  function buildInfo() {
+    var box = el("div", "border:1px solid #2f6b8a;border-radius:14px;padding:16px;margin:0 0 14px;background:linear-gradient(160deg,#0f2a40 0%,#0a1624 55%,#101c2c 100%);box-shadow:0 8px 24px rgba(0,0,0,.35)");
+    box.id = "fmc-news-analyst-info";
+
+    var head = el("div", "display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px");
+    var titles = el("div");
+    titles.appendChild(el("div", "font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#58c9e9", "Per instrument · evidence-adjusted"));
+    titles.appendChild(el("div", "font-size:14px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#e8f8ff", "News Analyst"));
+    head.appendChild(titles);
+    head.appendChild(el("span", "font-size:10px;font-weight:800;letter-spacing:.08em;padding:3px 9px;border-radius:999px;border:1px solid " + COL.warn + ";color:" + COL.warn, "RULES LIVE · SCORE NEXT"));
+    box.appendChild(head);
+
+    var grid = el("div", "display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px");
+    grid.className = "fmc-ni-grid";
+    grid.appendChild(card("Inputs", [
+      line("Webull headlines: QQQ → MNQ, SPY → MES, GLD → MGC"),
+      line("Yahoo headlines (ticker RSS)"),
+      line("Webull macro calendar: Friday pull plus daily refresh"),
+      line("TradingView ratings: 5-minute and 1-minute")
+    ]));
+    grid.appendChild(card("Scoring rule", [
+      line("Score = 100 × Σ(w·s) ÷ (Σw + 2)"),
+      line("One fresh, medium item moves it about 20 points"),
+      line("Reaching −100 takes about 20 strong, agreeing items"),
+      line("Weight halves every 6 hours. Single-company movers are dropped.")
+    ]));
+    grid.appendChild(card("Event gate (scalping)", [
+      legendRow("BLOCK", COL.block, "No new entries (high: 10 min before to 3 min after)"),
+      legendRow("COOL", COL.cool, "Entry only after a closed-bar confirmation"),
+      legendRow("WARN", COL.warn, "Warning shown; entries allowed"),
+      legendRow("OPEN", COL.ok, "No event gate")
+    ]));
+    var status = card("Calendar status", [line("Checking calendar snapshot…", COL.muted)]);
+    status.id = "fmc-ni-cal";
+    grid.appendChild(status);
+    box.appendChild(grid);
+
+    box.appendChild(el("div", "font-size:10px;color:#6f8399;margin-top:10px;line-height:1.5", "The analyst confirms or warns. It never sends, approves, or sizes a trade. Its score appears here once the analyst feed is connected."));
+    return box;
+  }
+
+  function fillStatus() {
+    var target = document.getElementById("fmc-ni-cal");
+    if (!target) return;
+    fetch("/api/calendar/snapshot", { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (s) {
+        var nodes = [];
+        if (!s || s.status === "not_loaded") {
+          nodes.push(line("Not pulled yet. Friday 4:10 PM ET (retry 4:30 PM), daily 8:00 AM ET.", COL.muted));
+        } else {
+          nodes.push(line("Pulled from Webull macro calendar · " + fmtET(s.pulled_at), COL.ok));
+          var window = s.window ? s.window.start + " to " + s.window.end : "no window";
+          nodes.push(line((s.event_count || 0) + " events · " + window + " · status " + s.status));
+          if (s.failures && s.failures.length) nodes.push(line(s.failures.length + " day(s) failed", COL.warn));
+        }
+        Array.prototype.slice.call(target.children, 1).forEach(function (k) { target.removeChild(k); });
+        nodes.forEach(function (n) { target.appendChild(n); });
+      })
+      .catch(function () {
+        Array.prototype.slice.call(target.children, 1).forEach(function (k) { target.removeChild(k); });
+        target.appendChild(line("Calendar status could not be read.", COL.warn));
+      });
+  }
+
+  function attempt() {
+    var pending = document.getElementById("news-analyst-box");
+    if (pending) pending.remove();
+    var tv = document.getElementById("tradingview-calendar-link");
+    if (tv) tv.remove();
+
+    var agents = document.getElementById("agents");
+    if (!agents) return true;
+    var desk = document.getElementById("fmc-agents");
+
+    if (!document.getElementById("fmc-news-analyst-info")) {
+      agents.insertBefore(buildInfo(), agents.firstChild);
+      fillStatus();
+    }
+    var info = document.getElementById("fmc-news-analyst-info");
+    if (desk && desk.parentNode !== agents) {
+      agents.insertBefore(desk, info.nextSibling);
+    }
+    return !!desk && desk.parentNode === agents;
+  }
+
+  var tries = 0;
+  attempt();
+  var timer = setInterval(function () {
+    tries += 1;
+    if (attempt() || tries > 60) clearInterval(timer);
+  }, 500);
+})();
+</script>
+<script>
+﻿(function () {
+  if (window.__fmcDesk6) return;
+  window.__fmcDesk6 = true;
+
+  var BIAS_COL = { "LONG BIAS": "#43d39a", "SHORT BIAS": "#ef727b", "WAIT": "#e8b45c", "NEUTRAL": "#8da1ba", "NO NEW ENTRIES": "#ef727b", "INSUFFICIENT DATA": "#4a5a70" };
+  var STATE_COL = { BLOCK: "#ef727b", COOL: "#7b9cff", WARN: "#e8b45c", UPCOMING: "#58c9e9", RECENT: "#8da1ba", BACKGROUND: "#4a5a70" };
+  var STATE_TXT = { BLOCK: "BLOCK", COOL: "CONFIRM", WARN: "WARN", UPCOMING: "UPCOMING", RECENT: "RECENT", BACKGROUND: "LATER" };
+  var PANEL = "border:1px solid #2f6b8a;border-radius:14px;padding:16px;margin:0 0 14px;background:linear-gradient(160deg,#0f2a40 0%,#0a1624 55%,#101c2c 100%);box-shadow:0 8px 24px rgba(0,0,0,.35)";
+  var lastData = null;
+
+  var style = document.createElement("style");
+  style.textContent = "@media(max-width:1100px){#fmc-desk6 .d6-grid{grid-template-columns:1fr!important}}";
+  document.head.appendChild(style);
+
+  function el(tag, css, text) {
+    var e = document.createElement(tag);
+    if (css) e.style.cssText = css;
+    if (text !== undefined && text !== null) e.textContent = text;
+    return e;
+  }
+
+  function chip(text, color) {
+    return el("span", "display:inline-block;font-size:10px;font-weight:800;letter-spacing:.06em;padding:2px 9px;border-radius:999px;border:1px solid " + color + ";color:" + color + ";white-space:nowrap", text);
+  }
+
+  function fmtET(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "time not confirmed";
+    var parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }).formatToParts(d);
+    function get(t) { var p = parts.find(function (x) { return x.type === t; }); return p ? p.value : ""; }
+    return get("weekday") + " " + get("month") + " " + get("day") + ", " + get("hour") + ":" + get("minute") + " " + get("dayPeriod") + " ET";
+  }
+
+  function minsTo(iso) { return (Date.parse(iso) - Date.now()) / 60000; }
+
+  function countdown(m) {
+    if (m >= 0) {
+      if (m < 60) return "in " + Math.round(m) + " min";
+      if (m < 1440) return "in " + Math.round(m / 60) + " h";
+      return "in " + Math.round(m / 1440) + " d";
+    }
+    var a = -m;
+    if (a < 60) return Math.round(a) + " min ago";
+    return Math.round(a / 60) + " h ago";
+  }
+
+  function sessionLabel() {
+    var parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "numeric", hour12: false }).formatToParts(new Date());
+    var h = Number(parts.find(function (p) { return p.type === "hour"; }).value) % 24;
+    var m = Number(parts.find(function (p) { return p.type === "minute"; }).value);
+    var t = h * 60 + m;
+    if (t >= 570 && t < 960) return "New York session · 9:30 AM–4:00 PM ET";
+    if (t >= 960 && t < 1080) return "Daily break · 4:00–6:00 PM ET";
+    if (t >= 180 && t < 570) return "London session · 3:00–9:30 AM ET";
+    return "Globex / Tokyo · 6:00 PM–3:00 AM ET";
+  }
+
+  function catalystRow(c) {
+    var col = STATE_COL[c.state] || "#8da1ba";
+    var row = el("div", "display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:7px 9px;border-left:3px solid " + col + ";border-radius:8px;background:rgba(255,255,255,.02);margin:0 0 6px");
+    row.appendChild(chip(STATE_TXT[c.state] || c.state, col));
+    row.appendChild(el("span", "font-size:11px;color:#8da1ba", fmtET(c.time_utc)));
+    row.appendChild(el("span", "font-size:12px;color:#e8f0fa;font-weight:600;flex:1 1 220px", c.name));
+    row.appendChild(el("span", "font-size:11px;color:" + col, countdown(minsTo(c.time_utc))));
+    return row;
+  }
+
+  function headlineRow(h) {
+    var arrow = h.stance > 0 ? "▲" : h.stance < 0 ? "▼" : "–";
+    var col = h.stance > 0 ? "#43d39a" : h.stance < 0 ? "#ef727b" : "#8da1ba";
+    var row = el("div", "font-size:11px;color:#c8d6e6;margin:5px 0;line-height:1.4;display:flex;gap:6px");
+    row.appendChild(el("span", "color:" + col + ";font-weight:800;flex:0 0 auto", arrow));
+    var body = el("span", "");
+    body.appendChild(el("span", "color:#58c9e9;font-size:10px;margin-right:6px", h.source === "webull" ? "WEBULL" : "YAHOO"));
+    body.appendChild(el("span", "", h.title));
+    row.appendChild(body);
+    return row;
+  }
+
+  function instrumentCard(d) {
+    var card = el("div", "border:1px solid #23415c;border-radius:12px;padding:12px;background:linear-gradient(145deg,#12263a,#0b1421);min-width:0");
+    var head = el("div", "display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px");
+    head.appendChild(el("span", "font-size:15px;font-weight:800;letter-spacing:.08em;color:#e8f0fa", d.instrument));
+    head.appendChild(chip(d.bias, BIAS_COL[d.bias] || "#8da1ba"));
+    card.appendChild(head);
+    card.appendChild(el("div", "font-size:12px;color:#e8f0fa;line-height:1.45;margin-bottom:8px", d.recommendation));
+    card.appendChild(el("div", "font-size:11px;color:#8da1ba;margin-bottom:6px", "Score " + d.score + " · " + d.stance + " · confidence " + d.confidence.label + " · " + d.headline_count + " headlines"));
+    card.appendChild(el("div", "font-size:11px;color:#8da1ba;margin-bottom:6px", "Price check: " + (d.price.detail || "no price data")));
+    var gateCol = d.event_gate === "block" ? "#ef727b" : d.event_gate === "confirm" ? "#7b9cff" : d.event_gate === "warn" ? "#e8b45c" : "#43d39a";
+    var gateRow = el("div", "margin-bottom:8px");
+    gateRow.appendChild(chip("EVENT GATE · " + String(d.event_gate).toUpperCase(), gateCol));
+    card.appendChild(gateRow);
+    if (d.top_headlines && d.top_headlines.length) {
+      d.top_headlines.forEach(function (h) { card.appendChild(headlineRow(h)); });
+    } else {
+      card.appendChild(el("div", "font-size:11px;color:#6f8399", "No headlines drive this read yet."));
+    }
+    return card;
+  }
+
+  function renderDesk(data) {
+    var root = document.getElementById("fmc-desk6");
+    if (!root) return;
+    root.replaceChildren();
+    var head = el("div", "display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px");
+    var titles = el("div");
+    titles.appendChild(el("div", "font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#58c9e9", "Sentiment per instrument · news compared with price"));
+    titles.appendChild(el("div", "font-size:14px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#e8f8ff", "News Analyst"));
+    head.appendChild(titles);
+    head.appendChild(el("span", "font-size:11px;color:#8da1ba", sessionLabel() + " · updated " + fmtET(data.generated_at)));
+    root.appendChild(head);
+
+    var grid = el("div", "display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px");
+    grid.className = "d6-grid";
+    (data.instruments || []).forEach(function (d) { grid.appendChild(instrumentCard(d)); });
+    root.appendChild(grid);
+    root.appendChild(el("div", "font-size:10px;color:#6f8399;margin-top:10px;line-height:1.5", "Price check uses the last 20 one-minute closes. Session VWAP is the next addition. The analyst confirms or warns. It never sends, approves, or sizes a trade."));
+  }
+
+  function renderCalendar(data) {
+    var box = document.getElementById("fmc-cal6");
+    if (!box) return;
+    box.replaceChildren();
+    var cal = data.calendar || {};
+    var head = el("div", "display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px");
+    head.appendChild(el("div", "font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#e8f8ff", "Economic calendar · next 72 h"));
+    var status = cal.pulled_at
+      ? "Source: Webull US macro calendar · pulled " + fmtET(cal.pulled_at) + " · " + (cal.event_count || 0) + " events in snapshot"
+      : "Source: Webull US macro calendar · not pulled yet (Friday 4:10 PM ET, daily 8:00 AM ET)";
+    head.appendChild(el("span", "font-size:11px;color:#8da1ba", status));
+    box.appendChild(head);
+    if (!data.catalysts || !data.catalysts.length) {
+      box.appendChild(el("div", "font-size:11px;color:#6f8399", "No confirmed events in the next 72 hours. Unconfirmed times are listed without a block."));
+    } else {
+      data.catalysts.slice(0, 10).forEach(function (c) { box.appendChild(catalystRow(c)); });
+    }
+    box.appendChild(el("div", "font-size:10px;color:#6f8399;margin-top:8px", "Red block · blue confirm · amber warn · teal upcoming · grey later. Times in New York."));
+  }
+
+  function mount() {
+    var news = document.getElementById("news");
+    var agents = document.getElementById("agents");
+    if (!news) return false;
+
+    var links = news.querySelector(".news-links-row");
+    if (links && links.parentNode === news && links !== news.firstElementChild) {
+      news.insertBefore(links, news.firstElementChild);
+    }
+    if (links && !document.getElementById("tradingview-calendar-link")) {
+      var tv = document.createElement("a");
+      tv.id = "tradingview-calendar-link";
+      tv.className = "tv-link";
+      tv.href = "https://www.tradingview.com/economic-calendar/";
+      tv.target = "_blank";
+      tv.rel = "noopener noreferrer";
+      tv.textContent = "TradingView economic calendar ↗";
+      links.insertBefore(tv, links.firstChild);
+    }
+
+    var desk = document.getElementById("fmc-desk6") || el("div", PANEL);
+    desk.id = "fmc-desk6";
+    var cal = document.getElementById("fmc-cal6") || el("div", PANEL);
+    cal.id = "fmc-cal6";
+    var refresh = news.querySelector(".news-refresh-row");
+    if (refresh && refresh.nextElementSibling !== desk) refresh.insertAdjacentElement("afterend", desk);
+    if (desk.nextElementSibling !== cal) desk.insertAdjacentElement("afterend", cal);
+
+    ["fmc-desk5", "fmc-cal5", "fmc-news-analyst-info"].forEach(function (id) {
+      var old = document.getElementById(id);
+      if (old) old.remove();
+    });
+
+    var agentDesk = document.getElementById("fmc-agents");
+    if (agents && agentDesk && agentDesk.parentNode !== agents) {
+      agents.insertBefore(agentDesk, agents.firstChild);
+    }
+    return !agents || !!(agentDesk && agentDesk.parentNode === agents);
+  }
+
+  function load() {
+    fetch("/api/agents/news-analyst", { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        lastData = data;
+        renderDesk(data);
+        renderCalendar(data);
+      })
+      .catch(function () {
+        var root = document.getElementById("fmc-desk6");
+        if (root) root.replaceChildren(el("div", "font-size:12px;color:#ef727b", "News Analyst could not be read from the app."));
+      });
+  }
+
+  var tries = 0;
+  mount();
+  var timer = setInterval(function () {
+    tries += 1;
+    if (mount() || tries > 60) clearInterval(timer);
+  }, 500);
+  load();
+  setInterval(load, 60000);
+  setInterval(function () { if (lastData) renderCalendar(lastData); }, 30000);
+})();
+</script>
 </body></html>
 
 
