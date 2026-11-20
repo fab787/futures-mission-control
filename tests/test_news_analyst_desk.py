@@ -1,10 +1,10 @@
-﻿from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from mission_control.news_analyst_desk import build_news_analyst_desk
 
 NOW = datetime(2026, 11, 20, 2, 0, tzinfo=UTC)
-DOWN = [100 - i * 0.5 for i in range(30)]
-UP = [90 + i * 0.5 for i in range(30)]
+DOWN = [100 - i * 0.5 for i in range(130)]
+UP = [90 + i * 0.5 for i in range(130)]
 
 
 def wb(title, label, minutes_ago=10):
