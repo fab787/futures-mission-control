@@ -4555,14 +4555,20 @@ async function lvSlowMinute() {
     if (refresh && refresh.nextElementSibling !== desk) refresh.insertAdjacentElement("afterend", desk);
     if (desk.nextElementSibling !== cal) desk.insertAdjacentElement("afterend", cal);
 
-    ["fmc-desk5", "fmc-cal5", "fmc-news-analyst-info"].forEach(function (id) {
+    ["fmc-desk5", "fmc-cal5"].forEach(function (id) {
       var old = document.getElementById(id);
       if (old) old.remove();
     });
 
     var agentDesk = document.getElementById("fmc-agents");
-    if (agents && agentDesk && agentDesk.parentNode !== agents) {
-      agents.insertBefore(agentDesk, agents.firstChild);
+    var info = document.getElementById("fmc-news-analyst-info");
+    if (agents && agentDesk) {
+      if (info && info.parentNode === agents) {
+        if (info !== agents.firstElementChild) agents.insertBefore(info, agents.firstElementChild);
+        if (agentDesk.previousElementSibling !== info) info.insertAdjacentElement("afterend", agentDesk);
+      } else if (agentDesk.parentNode !== agents) {
+        agents.insertBefore(agentDesk, agents.firstChild);
+      }
     }
     return !agents || !!(agentDesk && agentDesk.parentNode === agents);
   }
