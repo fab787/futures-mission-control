@@ -1,4 +1,4 @@
-"""Transparent per-instrument news sentiment derived only from source labels."""
+﻿"""Transparent per-instrument news sentiment derived only from source labels."""
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -112,7 +112,11 @@ def build_instrument_news_intelligence(
         ]
         yahoo_bias = _stance(yahoo_scoped)
         webull_bias = _stance(webull_scoped)
-        yahoo_bias.update({"status": "available" if yahoo_bias["article_count"] else "not_provided", "source": "Yahoo Finance RSS"})
+        ai_scoped = any(item.get("sentiment_source") == "ai_estimate" for item in yahoo_scoped)
+        yahoo_bias.update({"status": "available" if yahoo_bias["article_count"] else "not_provided", "source": "Yahoo headline AI estimate" if ai_scoped else "Yahoo Finance RSS"})
+        if ai_scoped:
+            yahoo_bias["confidence"] = "low"
+            yahoo_bias["assessment_method"] = "AI reading of Yahoo headline wording; an estimate, not a provider label; capped at low confidence"
         webull_bias.update({"status": "available" if webull_bias["article_count"] else "unavailable_or_stale", "source": "Webull Cloud MCP", "proxy_symbol": proxy})
 
         available = [item for item in (yahoo_bias, webull_bias) if item["stance"] in VALID_AGGREGATED]
@@ -166,7 +170,7 @@ def build_instrument_news_intelligence(
             "webull": {"status": webull_payload.get("status", "not_loaded"), "headline_count": len(webull_items), "proxy_symbols": PROXIES},
         },
         "limitations": [
-            "News bias uses native provider article sentiment labels only; headline text is not assigned a fabricated sentiment.",
+            "News bias uses native provider labels; Yahoo headline sentiment, when shown, is a model estimate with low confidence, not a provider label.",
             "Webull proxy mapping is QQQ to MNQ, SPY to MES, and GLD to MGC; these are related instruments, not futures-native news feeds.",
             "Only articles with valid timestamps no older than 24 hours contribute to bias.",
             "Confidence is capped at medium because this is a single provider's article sentiment, not independent confirmation or a probability.",
@@ -178,3 +182,4 @@ def build_instrument_news_intelligence(
         "execution": "disabled",
         "human_approval_required": True,
     }
+

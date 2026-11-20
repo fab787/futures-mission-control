@@ -3040,124 +3040,6 @@ async function lvSlowMinute() {
 </script>
 <script>
 (function () {
-  if (window.__fmcLayout6) return;
-  window.__fmcLayout6 = true; // fmcLayout6
-
-  var css = [
-    ".fmc-tag{display:inline-block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#58c9e9;background:rgba(88,201,233,.08);border:1px solid rgba(88,201,233,.25);border-radius:6px;padding:3px 8px;margin:0 0 10px}",
-    "#fmc-row2{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important;margin:12px 0!important}",
-    "#fmc-row2 > .panel{margin:0!important;min-width:0!important;display:block!important}",
-    ".fmc-scout{border:1px solid #2c5a7a!important;background:linear-gradient(135deg,#12283f 0%,#0b1624 60%,#15202e 100%)!important;padding:12px 14px!important;box-shadow:0 6px 18px rgba(0,0,0,.3)!important}",
-    ".fmc-scout .panel-title{font-size:11px!important;color:#9ee8ff}",
-    ".fmc-scout .eyebrow{font-size:9px!important}",
-    ".fmc-scout #home-scout-content{font-size:12px;background:linear-gradient(90deg,rgba(67,211,154,.08),rgba(88,201,233,.05));border-left:3px solid #43d39a;padding:8px 10px;border-radius:6px;margin:6px 0}",
-    ".fmc-scout .snapshot-note{font-size:10px;margin:4px 0 0!important;color:#6f8399}",
-    ".fmc-scout .pill{background:rgba(88,201,233,.12);color:#9ee8ff;border-color:#2c5a7a}",
-    ".fmc-health{padding:10px 12px!important;margin:12px 0 0!important;max-width:520px}",
-    ".fmc-health .status-row{padding:4px 0!important;font-size:11px}",
-    ".mode-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}",
-    "@media(max-width:900px){#fmc-row2{grid-template-columns:1fr!important}.fmc-health{max-width:none}}"
-  ].join("");
-  var st = document.createElement("style");
-  st.id = "fmcLayout6-style";
-  st.textContent = css;
-  document.head.appendChild(st);
-
-  function moveControls() {
-    var mode = document.getElementById("mode-bar");
-    if (!mode) return;
-    var prov = document.getElementById("market-data-provider");
-    if (prov) {
-      var tb = prov.closest(".toolbar") || prov.parentElement;
-      if (tb && tb.parentElement !== mode) mode.appendChild(tb);
-    }
-    var rc = document.getElementById("webull-reconnect");
-    if (rc && rc.parentElement !== mode) mode.appendChild(rc);
-  }
-
-  function cleanTags() {
-    document.querySelectorAll(".fmc-tag").forEach(function (t) {
-      if (t.textContent.trim().toLowerCase() === "panel") t.remove();
-    });
-  }
-
-  function addTitles() {
-    document.querySelectorAll(".panel").forEach(function (p) {
-      if (p.style.display === "none") return;
-      if (Array.prototype.some.call(p.children, function (c) { return c.classList && c.classList.contains("fmc-tag"); })) return;
-      var own = Array.prototype.filter.call(p.querySelectorAll(".panel-title"), function (t) {
-        return t.closest(".panel") === p && t.textContent.trim();
-      });
-      if (!own.length) return;
-      var tag = document.createElement("div");
-      tag.className = "fmc-tag";
-      tag.textContent = own[0].textContent.replace(/\s+/g, " ").trim();
-      p.insertBefore(tag, p.firstChild);
-    });
-  }
-
-  function layout() {
-    var ov = document.getElementById("overview");
-    if (!ov) return;
-
-    var sel = document.getElementById("overview-selected");
-    var selPanel = sel && sel.closest(".panel");
-    if (selPanel) selPanel.style.display = "none";
-
-    var tiles = document.getElementById("instrument-cards");
-    var ticker = document.getElementById("live-picker");
-    var pnl = document.getElementById("pnl-panel");
-    var scout = document.querySelector(".home-scout-panel");
-    var gex = document.querySelector(".home-gex-panel");
-    var healthEl = document.getElementById("api-health");
-    var health = healthEl && healthEl.closest(".panel");
-
-    // Make sure GEX is visible (an earlier script may have hidden it)
-    if (gex) gex.style.display = "";
-
-    var row = document.getElementById("fmc-row2");
-    if (!row) {
-      row = document.createElement("div");
-      row.id = "fmc-row2";
-    }
-    if (scout) {
-      scout.classList.add("fmc-scout");
-      if (scout.parentElement !== row) row.appendChild(scout);
-    }
-    if (gex && gex.parentElement !== row) row.appendChild(gex);
-    if (health) health.classList.add("fmc-health");
-
-    var seq = [ticker, pnl, row, health].filter(Boolean);
-    var anchor = tiles;
-    seq.forEach(function (el) {
-      if (!anchor) {
-        if (ov.firstElementChild !== el) ov.insertBefore(el, ov.firstElementChild);
-      } else if (el.previousElementSibling !== anchor) {
-        anchor.insertAdjacentElement("afterend", el);
-      }
-      anchor = el;
-    });
-
-    if (!row.isConnected) console.warn("fmcLayout6: row not placed");
-    if (!gex) console.warn("fmcLayout6: .home-gex-panel not found");
-    if (!scout) console.warn("fmcLayout6: .home-scout-panel not found");
-  }
-
-  function run() {
-    try {
-      moveControls();
-      layout();
-      cleanTags();
-      addTitles();
-    } catch (e) { console.error("fmcLayout6:", e); }
-  }
-
-  run();
-  setInterval(run, 2000);
-})();
-</script>
-<script>
-(function () {
   if (window.__fmcLayout7) return;
   window.__fmcLayout7 = true; // fmcLayout7
 
@@ -3423,7 +3305,773 @@ async function lvSlowMinute() {
   document.head.appendChild(st);
 })();
 </script>
+<script>
+(function () {
+  if (window.__fmcHealth) return;
+  window.__fmcHealth = true; // fmcHealth
+
+  function rowFor(label) {
+    var rows = document.querySelectorAll(".status-row");
+    for (var i = 0; i < rows.length; i++) {
+      var s = rows[i].querySelector("span");
+      if (s && s.textContent.trim().toLowerCase() === label) return rows[i];
+    }
+    return null;
+  }
+
+  function setRow(row, text, color) {
+    var b = row && row.querySelector("b");
+    if (!b) return;
+    b.textContent = text;
+    b.style.color = color || "";
+  }
+
+  function ensureAiRow() {
+    var existing = document.getElementById("fmc-ai-row");
+    if (existing) return existing;
+    var yahoo = rowFor("yahoo news adapter");
+    if (!yahoo) return null;
+    var clone = yahoo.cloneNode(true);
+    clone.id = "fmc-ai-row";
+    clone.querySelector("span").textContent = "AI headline reading";
+    yahoo.parentNode.insertBefore(clone, yahoo.nextSibling);
+    return clone;
+  }
+
+  async function refreshYahoo() {
+    var row = rowFor("yahoo news adapter");
+    try {
+      var d = await (await fetch("/api/news")).json();
+      var status = d.status || "unknown";
+      var n = d.item_count != null ? d.item_count : (d.items || []).length;
+      var text, color;
+      if (status === "fresh") { text = "Connected · fresh"; color = "#43d39a"; }
+      else if (status === "cached") { text = "Connected · cached"; color = "#43d39a"; }
+      else if (status === "stale") { text = "Connected · stale"; color = "#e8b45c"; }
+      else if (status === "unavailable") { text = "Unavailable"; color = "#ef727b"; }
+      else { text = "Awaiting first fetch"; color = "#e8b45c"; }
+      setRow(row, text + " · " + n + " headlines", color);
+    } catch (e) {
+      setRow(row, "Server unreachable", "#ef727b");
+    }
+  }
+
+  async function refreshAi() {
+    var row = ensureAiRow();
+    if (!row) return;
+    try {
+      var ai = await (await fetch("/api/news/intelligence")).json();
+      var h = ai.headline_ai || {};
+      if (h.status === "ready") {
+        var used = (h.providers_used_this_refresh || []).join(", ") || (h.provider_order || [])[0] || "unknown";
+        setRow(row, "On · " + used + " · " + (h.cached_headlines || 0) + " cached", "#43d39a");
+      } else if (h.status === "error") {
+        setRow(row, "Error · see console (F12)", "#ef727b");
+        console.warn("AI headline reading:", h.message);
+      } else {
+        setRow(row, "Off · set API keys to enable", "#e8b45c");
+      }
+    } catch (e) {
+      setRow(row, "Unavailable", "#ef727b");
+    }
+  }
+
+  function run() { refreshYahoo(); refreshAi(); }
+  run();
+  setInterval(run, 60000);
+})();
+</script>
+<script>
+(function () {
+  if (window.__fmcSentDesk) return;
+  window.__fmcSentDesk = true; // fmcSentDesk
+
+  // Adjust source weights here. Each source counts for its weight times its confidence.
+  var WEIGHT = {webull: 0.5, yahoo: 0.3, tradingview: 0.2};
+  var CONF = {high: 1, medium: 0.7, low: 0.4};
+  var COLORS = {bullish: "#43d39a", bearish: "#ef727b", neutral: "#e8b45c", mixed: "#58c9e9", pending: "#5d7089", unavailable: "#5d7089"};
+  var DEFAULT = [
+    {symbol: "MNQ", proxy_symbol: "QQQ"},
+    {symbol: "MES", proxy_symbol: "SPY"},
+    {symbol: "MGC", proxy_symbol: "GLD"}
+  ];
+
+  var css = [
+    "#fmc-sent{border:1px solid #2f6b8a;border-radius:14px;padding:16px;margin:0 0 14px;background:linear-gradient(160deg,#0f2a40 0%,#0a1624 55%,#101c2c 100%);box-shadow:0 8px 24px rgba(0,0,0,.35)}",
+    "#fmc-sent .sd-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}",
+    "#fmc-sent .sd-title{font-size:15px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#e8f8ff}",
+    "#fmc-sent .sd-sub{font-size:11px;color:#8da1ba;margin-top:3px}",
+    "#fmc-sent .sd-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}",
+    "#fmc-sent .sd-card{border:1px solid #23415c;border-radius:12px;padding:12px;background:linear-gradient(145deg,#12263a,#0b1421);min-width:0}",
+    "#fmc-sent .sd-card.overall{border-color:#3a6f8f;background:linear-gradient(145deg,#15395a,#0a1624)}",
+    "#fmc-sent .sd-sym{font-weight:800;letter-spacing:.08em;color:#e8f0fa;font-size:13px}",
+    "#fmc-sent .sd-score{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;margin:6px 0 4px}",
+    "#fmc-sent .sd-chip{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.08em;padding:3px 9px;border-radius:999px;border:1px solid;margin-bottom:8px}",
+    "#fmc-sent .sd-bar{position:relative;height:10px;border-radius:999px;background:linear-gradient(90deg,#ef727b 0%,#e8b45c 50%,#43d39a 100%);margin:6px 0 10px;opacity:.9}",
+    "#fmc-sent .sd-mark{position:absolute;top:-4px;width:4px;height:18px;border-radius:2px;background:#fff;box-shadow:0 0 8px rgba(255,255,255,.7);transform:translateX(-50%)}",
+    "#fmc-sent .sd-row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;color:#8da1ba;padding:6px 0;border-bottom:1px solid rgba(88,201,233,.08)}",
+    "#fmc-sent .sd-row:last-child{border-bottom:0}",
+    "#fmc-sent .sd-row > span:first-child{display:flex;align-items:center;min-width:0}",
+    "#fmc-sent .sd-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;flex:0 0 auto}",
+    "#fmc-sent .sd-foot{margin-top:10px;font-size:10px;color:#6f8399;line-height:1.5}",
+    "#fmc-sent .sd-weights{font-size:11px;color:#9ee8ff;letter-spacing:.04em}",
+    "@media(max-width:900px){#fmc-sent .sd-grid{grid-template-columns:1fr 1fr}}"
+  ].join("");
+  var st = document.createElement("style");
+  st.id = "fmcSentDesk-style";
+  st.textContent = css;
+  document.head.appendChild(st);
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function val(stance) {
+    return stance === "bullish" ? 1 : stance === "bearish" ? -1 : stance === "neutral" ? 0 : null;
+  }
+
+  function sourcesFor(inst) {
+    var wb = inst.webull_bias || {};
+    var yb = inst.yahoo_bias || {};
+    return [
+      {key: "webull", name: "Webull news", stance: wb.stance || "unavailable", conf: wb.confidence, count: wb.article_count || 0},
+      {key: "yahoo", name: "Yahoo headline AI", stance: yb.stance || "unavailable", conf: yb.confidence, count: yb.article_count || 0},
+      {key: "tradingview", name: "TradingView technicals", stance: "pending", conf: null, count: 0}
+    ];
+  }
+
+  function score(sources) {
+    var num = 0, den = 0;
+    sources.forEach(function (s) {
+      var v = val(s.stance), c = CONF[s.conf] || 0;
+      if (v == null || !c) return;
+      num += WEIGHT[s.key] * c * v;
+      den += WEIGHT[s.key] * c;
+    });
+    return den ? Math.round(num / den * 100) : null;
+  }
+
+  function labelOf(sc, sources) {
+    if (sc == null) return {text: "AWAITING DATA", color: COLORS.unavailable};
+    var reads = sources.map(function (s) { return val(s.stance); }).filter(function (v) { return v != null && v !== 0; });
+    if (reads.indexOf(1) > -1 && reads.indexOf(-1) > -1) return {text: "SOURCES DISAGREE", color: COLORS.mixed};
+    var active = sources.filter(function (s) { return val(s.stance) != null && CONF[s.conf]; }).length;
+    var out = sc >= 25 ? {text: "BULLISH", color: COLORS.bullish}
+            : sc <= -25 ? {text: "BEARISH", color: COLORS.bearish}
+            : {text: "NEUTRAL", color: COLORS.neutral};
+    if (active === 1) out.text += " · 1 SOURCE";
+    return out;
+  }
+
+  function chip(text, color) {
+    var c = el("span", "sd-chip", text);
+    c.style.color = color;
+    c.style.borderColor = color;
+    c.style.background = "rgba(255,255,255,.03)";
+    return c;
+  }
+
+  function gauge(sc) {
+    var bar = el("div", "sd-bar");
+    var mark = el("div", "sd-mark");
+    mark.style.left = (sc == null ? 50 : (sc + 100) / 2) + "%";
+    bar.appendChild(mark);
+    return bar;
+  }
+
+  function sourceRow(s) {
+    var row = el("div", "sd-row");
+    var left = el("span");
+    var color = s.stance === "pending" ? COLORS.pending : (COLORS[s.stance] || COLORS.unavailable);
+    var dot = el("span", "sd-dot");
+    dot.style.background = color;
+    left.appendChild(dot);
+    left.appendChild(document.createTextNode(s.name));
+    var right = el("span");
+    right.style.color = color;
+    right.textContent = s.stance === "pending" ? "Coming soon"
+      : s.stance === "unavailable" ? "No data"
+      : s.stance.toUpperCase() + " · " + (s.conf || "n/a") + (s.count ? " · " + s.count + " items" : "");
+    row.appendChild(left);
+    row.appendChild(right);
+    return row;
+  }
+
+  function instrumentCard(inst) {
+    var sources = sourcesFor(inst);
+    var sc = score(sources);
+    var lab = labelOf(sc, sources);
+    var card = el("div", "sd-card");
+    card.appendChild(el("div", "sd-sym", inst.symbol + " · " + (inst.proxy_symbol || "")));
+    var big = el("div", "sd-score", sc == null ? "—" : (sc > 0 ? "+" : "") + sc);
+    big.style.color = lab.color;
+    card.appendChild(big);
+    card.appendChild(chip(lab.text, lab.color));
+    card.appendChild(gauge(sc));
+    sources.forEach(function (s) { card.appendChild(sourceRow(s)); });
+    return {card: card, score: sc};
+  }
+
+  function overallCard(scores) {
+    var valid = scores.filter(function (v) { return v != null; });
+    var avg = valid.length ? Math.round(valid.reduce(function (a, b) { return a + b; }, 0) / valid.length) : null;
+    var color = avg == null ? COLORS.unavailable : avg >= 25 ? COLORS.bullish : avg <= -25 ? COLORS.bearish : COLORS.neutral;
+    var card = el("div", "sd-card overall");
+    card.appendChild(el("div", "sd-sym", "OVERALL"));
+    var big = el("div", "sd-score", avg == null ? "—" : (avg > 0 ? "+" : "") + avg);
+    big.style.color = color;
+    card.appendChild(big);
+    card.appendChild(chip(valid.length + " of 3 instruments reporting", COLORS.mixed));
+    card.appendChild(gauge(avg));
+    card.appendChild(el("div", "sd-foot", "Average of MNQ, MES, and MGC."));
+    return card;
+  }
+
+  function mount() {
+    var news = document.getElementById("news");
+    if (!news || document.getElementById("fmc-sent")) return;
+    var host = el("div");
+    host.id = "fmc-sent";
+    var head = el("div", "sd-head");
+    var left = el("div");
+    left.appendChild(el("div", "sd-title", "Sentiment desk"));
+    left.appendChild(el("div", "sd-sub", "Each source scored on its own, then combined. -100 bearish to +100 bullish."));
+    head.appendChild(left);
+    head.appendChild(el("div", "sd-weights", "Webull 50% · Yahoo AI 30% · TradingView 20%"));
+    host.appendChild(head);
+    host.appendChild(el("div", "sd-grid"));
+    host.appendChild(el("div", "sd-foot", "Webull labels are the main source. Yahoo headlines are an AI estimate (low confidence) when enabled. TradingView is pending. Scores are context, not trade signals."));
+    news.insertBefore(host, news.firstChild);
+  }
+
+  function build(data) {
+    var host = document.getElementById("fmc-sent");
+    if (!host) return;
+    var grid = host.querySelector(".sd-grid");
+    var insts = (data && data.instruments && data.instruments.length) ? data.instruments : DEFAULT;
+    grid.replaceChildren();
+    var scores = [];
+    insts.forEach(function (inst) {
+      var r = instrumentCard(inst);
+      scores.push(r.score);
+      grid.appendChild(r.card);
+    });
+    grid.appendChild(overallCard(scores));
+  }
+
+  async function refresh() {
+    mount();
+    var data = null;
+    try { data = await (await fetch("/api/news/intelligence")).json(); } catch (e) {}
+    build(data);
+  }
+
+  refresh();
+  setInterval(refresh, 15000);
+})();
+</script>
+<script>
+(function () {
+  if (window.__fmcLayout11) return;
+  window.__fmcLayout11 = true; // fmcLayout11
+
+  var css = [
+    "#fmc-row2{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important;margin:12px 0!important}",
+    "#fmc-row2 > .panel{margin:0!important;min-width:0!important;display:block!important}",
+    ".fmc-scout{border:1px solid #2c5a7a!important;background:linear-gradient(135deg,#12283f 0%,#0b1624 60%,#15202e 100%)!important;padding:12px 14px!important;box-shadow:0 6px 18px rgba(0,0,0,.3)!important}",
+    ".fmc-scout .panel-title{font-size:11px!important;color:#9ee8ff}",
+    ".fmc-scout .eyebrow{font-size:9px!important}",
+    ".fmc-scout #home-scout-content{font-size:12px;background:linear-gradient(90deg,rgba(67,211,154,.08),rgba(88,201,233,.05));border-left:3px solid #43d39a;padding:8px 10px;border-radius:6px;margin:6px 0}",
+    ".fmc-scout .snapshot-note{font-size:10px;margin:4px 0 0!important;color:#6f8399}",
+    ".fmc-scout .pill{background:rgba(88,201,233,.12);color:#9ee8ff;border-color:#2c5a7a}",
+    ".fmc-health{padding:10px 12px!important;margin:12px 0 0!important;max-width:520px}",
+    ".fmc-health .status-row{padding:4px 0!important;font-size:11px}",
+    "#instrument-cards .bias-line{display:none!important}",
+    ".fmc-tag{display:inline-block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#58c9e9;background:rgba(88,201,233,.08);border:1px solid rgba(88,201,233,.25);border-radius:6px;padding:3px 8px;margin:0 0 10px}",
+    ".mode-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}",
+    "@media(max-width:900px){#fmc-row2{grid-template-columns:1fr!important}.fmc-health{max-width:none}}"
+  ].join("");
+  var st = document.createElement("style");
+  st.id = "fmcLayout11-style";
+  st.textContent = css;
+  document.head.appendChild(st);
+
+  function moveControls() {
+    var mode = document.getElementById("mode-bar");
+    if (!mode) return;
+    var prov = document.getElementById("market-data-provider");
+    if (prov) {
+      var tb = prov.closest(".toolbar") || prov.parentElement;
+      if (tb && tb.parentElement !== mode) mode.appendChild(tb);
+    }
+    var rc = document.getElementById("webull-reconnect");
+    if (rc && rc.parentElement !== mode) mode.appendChild(rc);
+  }
+
+  function cleanTags() {
+    document.querySelectorAll(".fmc-tag").forEach(function (t) {
+      if (t.textContent.trim().toLowerCase() === "panel") t.remove();
+    });
+  }
+
+  function addTitles() {
+    document.querySelectorAll(".panel").forEach(function (p) {
+      if (p.style.display === "none") return;
+      if (Array.prototype.some.call(p.children, function (c) { return c.classList && c.classList.contains("fmc-tag"); })) return;
+      var own = Array.prototype.filter.call(p.querySelectorAll(".panel-title"), function (t) {
+        return t.closest(".panel") === p && t.textContent.trim();
+      });
+      if (!own.length) return;
+      var tag = document.createElement("div");
+      tag.className = "fmc-tag";
+      tag.textContent = own[0].textContent.replace(/\s+/g, " ").trim();
+      p.insertBefore(tag, p.firstChild);
+    });
+  }
+
+  // Hide duplicates on the News tab and the Overview
+  function tidy() {
+    var grid = document.getElementById("news-bias-grid");
+    var dupPanel = grid && grid.closest(".panel");
+    if (dupPanel) dupPanel.style.display = "none";
+    var newsWatch = document.querySelector(".home-news-panel");
+    if (newsWatch) newsWatch.style.display = "none";
+  }
+
+  function layout() {
+    var ov = document.getElementById("overview");
+    if (!ov) return;
+
+    var sel = document.getElementById("overview-selected");
+    var selPanel = sel && sel.closest(".panel");
+    if (selPanel) selPanel.style.display = "none";
+
+    var tiles = document.getElementById("instrument-cards");
+    var ticker = document.getElementById("live-picker");
+    var desk = null;
+    var pnl = document.getElementById("pnl-panel");
+    var scout = document.querySelector(".home-scout-panel");
+    var gex = document.querySelector(".home-gex-panel");
+    var healthEl = document.getElementById("api-health");
+    var health = healthEl && healthEl.closest(".panel");
+
+    if (gex) gex.style.display = "";
+
+    var row = document.getElementById("fmc-row2");
+    if (!row) {
+      row = document.createElement("div");
+      row.id = "fmc-row2";
+    }
+    if (scout) {
+      scout.classList.add("fmc-scout");
+      if (scout.parentElement !== row) row.appendChild(scout);
+    }
+    if (gex && gex.parentElement !== row) row.appendChild(gex);
+    if (health) health.classList.add("fmc-health");
+
+    // Order: tiles, live ticker, sentiment desk, P&L, bot + GEX row, platform health
+    var seq = [ticker, desk, pnl, row, health].filter(Boolean);
+    var anchor = tiles;
+    seq.forEach(function (el) {
+      if (!anchor) {
+        if (ov.firstElementChild !== el) ov.insertBefore(el, ov.firstElementChild);
+      } else if (el.previousElementSibling !== anchor) {
+        anchor.insertAdjacentElement("afterend", el);
+      }
+      anchor = el;
+    });
+  }
+
+  function run() {
+    try {
+      moveControls();
+      layout();
+      tidy();
+      cleanTags();
+      addTitles();
+    } catch (e) { console.error("fmcLayout11:", e); }
+  }
+
+  run();
+  setInterval(run, 2000);
+})();
+</script>
+<script>
+(function () {
+  if (window.__fmcNews2) return;
+  window.__fmcNews2 = true; // fmcNews2
+
+  var css = [
+    "#news #fmc-sent{display:block!important;margin:0 0 14px!important}",
+    "#news .news-refresh-row{background:linear-gradient(90deg,#0f2740,#0b1a2c 60%,#122a3d);border:1px solid #2c5a7a;border-radius:12px;padding:12px 14px;margin:0 0 12px}",
+    "#news .panel{background:linear-gradient(160deg,#0f2236,#0a1421 70%)!important;border:1px solid #1f3a55!important;border-radius:12px!important}",
+    "#news .panel-title{color:#9ee8ff}",
+    "#news .news-feed{max-height:460px;overflow:auto;padding-right:4px}",
+    "#news .news-item{border:1px solid #1d3349;border-radius:10px;padding:10px 12px;margin:0 0 8px;background:linear-gradient(135deg,#0f2032,#0b1624);transition:border-color .15s,transform .15s}",
+    "#news .news-item:hover{border-color:#3a7ea1;transform:translateY(-1px)}",
+    "#news .news-item .tag{font-size:10px;letter-spacing:.06em;color:#58c9e9}",
+    "#news .news-bias-card{border:1px solid #23415c;border-radius:10px;background:linear-gradient(145deg,#12263a,#0b1421);padding:12px}",
+    "#news .news-bias-card h4{color:#9ee8ff;letter-spacing:.06em;margin:0 0 8px}",
+    "#news .bias-row{font-size:11px;padding:4px 0;border-bottom:1px solid rgba(88,201,233,.08)}",
+    "#news .bias-note{font-size:10px;color:#6f8399}"
+  ].join("");
+  var st = document.createElement("style");
+  st.id = "fmcNews2-style";
+  st.textContent = css;
+  document.head.appendChild(st);
+
+  // Keep the sentiment cards at the top of the News & Events tab
+  function place() {
+    var news = document.getElementById("news");
+    var desk = document.getElementById("fmc-sent");
+    if (news && desk && news.firstElementChild !== desk) {
+      news.insertBefore(desk, news.firstElementChild);
+    }
+  }
+
+  place();
+  setInterval(place, 1500);
+})();
+</script>
+<script>
+(function () {
+  if (window.__fmcTileScore4) return;
+  window.__fmcTileScore4 = true; // fmcTileScore4
+
+  var WEIGHT = {webull: 0.5, yahoo: 0.3, tradingview: 0.2};
+  var CONF = {high: 1, medium: 0.7, low: 0.4};
+  var STANCE = {bullish: 1, bearish: -1, neutral: 0};
+  var TV = {StrongBuy: 1, Buy: 0.5, Neutral: 0, Sell: -0.5, StrongSell: -1};
+  var TVNAME = {StrongBuy: "Strong Buy", Buy: "Buy", Neutral: "Neutral", Sell: "Sell", StrongSell: "Strong Sell"};
+  var COLOR = {bullish: "#43d39a", bearish: "#ef727b", neutral: "#e8b45c", disagree: "#58c9e9", none: "#5d7089"};
+
+  var css = [
+    "#fmc-sent{display:none!important}",
+    "#instrument-cards .instrument .bias-line{display:block!important;margin:8px 0 2px!important;min-height:22px}",
+    "#instrument-cards .fmc-ts{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.04em;padding:3px 10px;border-radius:999px;border:1px solid;background:rgba(255,255,255,.04)}",
+    "#instrument-cards .fmc-src{display:block;font-size:10px;color:#8da1ba;margin-top:6px;line-height:1.5}"
+  ].join("");
+  var st = document.createElement("style");
+  st.id = "fmcTileScore4-style";
+  st.textContent = css;
+  document.head.appendChild(st);
+
+  var tv = {status: "loading", ratings: {}};
+
+  function clock(iso) {
+    if (!iso) return null;
+    var d = new Date(iso);
+    if (isNaN(d)) return null;
+    return d.toLocaleTimeString([], {hour: "numeric", minute: "2-digit"});
+  }
+
+  function tvText(symbol) {
+    if (tv.status === "authorization_required") return "TradingView not authorized";
+    if (tv.status === "loading") return "TradingView loading";
+    var r = (tv.ratings || {})[symbol];
+    if (!r || !r.tf5) {
+      if (tv.status === "quota_limited") return "TradingView rate limited";
+      if (tv.status === "unavailable" || tv.status === "backoff") return "TradingView unavailable";
+      return "TradingView updating";
+    }
+    var text = "TradingView 5m " + TVNAME[r.tf5];
+    if (r.tf1 && TVNAME[r.tf1]) text += " · 1m " + TVNAME[r.tf1];
+    return text;
+  }
+
+  function summarize(inst) {
+    var wb = inst.webull_bias || {};
+    var yb = inst.yahoo_bias || {};
+    var r = (tv.ratings || {})[inst.symbol] || {};
+    var reads = [];
+
+    function addStance(key, stance, conf) {
+      var v = STANCE[stance];
+      var c = CONF[conf] || 0;
+      if (v === undefined || !c) return;
+      reads.push({key: key, v: v, c: c});
+    }
+    addStance("webull", wb.stance, wb.confidence);
+    addStance("yahoo", yb.stance, yb.confidence);
+    if (r.tf5 && TV[r.tf5] !== undefined) reads.push({key: "tradingview", v: TV[r.tf5], c: 1});
+
+    var num = 0, den = 0;
+    reads.forEach(function (x) { num += WEIGHT[x.key] * x.c * x.v; den += WEIGHT[x.key] * x.c; });
+    var score = den ? Math.round(num / den * 100) : null;
+
+    var bull = reads.filter(function (x) { return x.v > 0; }).length;
+    var bear = reads.filter(function (x) { return x.v < 0; }).length;
+    var total = reads.length;
+    var text, color;
+    if (!total) { text = "NO DATA"; color = COLOR.none; }
+    else if (bull && bear) { text = bull + " vs " + bear + " DISAGREE"; color = COLOR.disagree; }
+    else {
+      var dom = bull ? "bullish" : bear ? "bearish" : "neutral";
+      color = COLOR[dom];
+      text = total === 1 ? "1 SOURCE · " + dom.toUpperCase() : (total - (total - (bull || bear || total - bull - bear))) + " of " + total + " AGREE";
+    }
+
+    var wbLine = wb.article_count
+      ? "Webull " + wb.article_count + " articles" + (clock(wb.latest_article_at) ? " · latest " + clock(wb.latest_article_at) : "")
+      : "Webull no items";
+    var ybLine = yb.article_count
+      ? "Yahoo " + yb.article_count + " headlines" + (clock(yb.latest_article_at) ? " · latest " + clock(yb.latest_article_at) : "")
+      : "Yahoo no items";
+
+    return {
+      text: (score == null ? "—" : (score > 0 ? "+" : "") + score) + " · " + text,
+      color: color,
+      sources: [wbLine, ybLine, tvText(inst.symbol)].join("  ·  ")
+    };
+  }
+
+  function paint(host, s) {
+    var key = s.text + "|" + s.sources;
+    if (host.getAttribute("data-fmc") === key) return;
+    host.setAttribute("data-fmc", key);
+    var chip = document.createElement("span");
+    chip.className = "fmc-ts";
+    chip.style.color = s.color;
+    chip.style.borderColor = s.color;
+    chip.textContent = s.text;
+    var src = document.createElement("span");
+    src.className = "fmc-src";
+    src.textContent = s.sources;
+    host.replaceChildren(chip, src);
+  }
+
+  function runNews() {
+    fetch("/api/news/intelligence")
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        (d.instruments || []).forEach(function (inst) {
+          var host = document.getElementById("instrument-bias-" + inst.symbol);
+          if (host) paint(host, summarize(inst));
+        });
+      })
+      .catch(function () {});
+  }
+
+  function runTv() {
+    fetch("/api/tradingview/ratings")
+      .then(function (r) { return r.json(); })
+      .then(function (d) { tv = d; runNews(); })
+      .catch(function () { tv = {status: "unavailable", ratings: {}}; runNews(); });
+  }
+
+  runTv();
+  setInterval(runNews, 5000);
+  setInterval(runTv, 60000);
+})();
+</script>
+<script>
+(function () {
+  if (window.__fmcTvDesk) return;
+  window.__fmcTvDesk = true; // fmcTvDesk
+
+  var NAMES = {StrongBuy: "Strong Buy", Buy: "Buy", Neutral: "Neutral", Sell: "Sell", StrongSell: "Strong Sell"};
+  var COLOR = {StrongBuy: "#43d39a", Buy: "#7fe0b0", Neutral: "#e8b45c", Sell: "#ef9a9f", StrongSell: "#ef727b"};
+  var last = null;
+
+  function apply(d) {
+    var ratings = (d && d.ratings) || {};
+    document.querySelectorAll("#fmc-sent .sd-row").forEach(function (row) {
+      var left = row.firstElementChild;
+      var right = row.lastElementChild;
+      if (!left || !right || left.textContent.indexOf("TradingView") === -1) return;
+
+      var card = row.closest(".sd-card");
+      var symEl = card ? card.querySelector(".sd-sym") : null;
+      var symbol = symEl ? symEl.textContent.split("·")[0].trim() : "";
+      var t = ratings[symbol] || {};
+
+      if (!t.tf5) {
+        right.textContent = "Waiting for data";
+        right.style.color = "#5d7089";
+      } else {
+        right.textContent = "5m " + NAMES[t.tf5] + (t.tf1 && NAMES[t.tf1] ? " · 1m " + NAMES[t.tf1] : "");
+        right.style.color = COLOR[t.tf5] || "#e8b45c";
+      }
+    });
+  }
+
+  function fetchRatings() {
+    fetch("/api/tradingview/ratings")
+      .then(function (r) { return r.json(); })
+      .then(function (d) { last = d; apply(d); })
+      .catch(function () {});
+  }
+
+  // The desk redraws itself, so re-apply the last ratings every 2 seconds.
+  setInterval(function () { if (last) apply(last); }, 2000);
+  fetchRatings();
+  setInterval(fetchRatings, 60000);
+})();
+</script>
+<script>
+(function () {
+  if (window.__fmcCat) return;
+  window.__fmcCat = true; // fmcCat
+
+  var css = [
+    ".fmc-cat{max-height:300px!important;overflow:auto!important;padding:10px 12px!important;margin:0 0 12px!important;grid-column:1/-1!important}",
+    ".fmc-cat article,.fmc-cat .news-item{padding:6px 8px!important;margin:0 0 6px!important}",
+    ".fmc-cat .news-item p,.fmc-cat .tag,.fmc-cat .news-item a{font-size:11px!important;line-height:1.35!important}",
+    ".fmc-chips{display:inline-flex;gap:6px;flex-wrap:wrap;vertical-align:middle;margin-left:8px}",
+    ".fmc-chip{font-size:10px;font-weight:800;letter-spacing:.06em;padding:3px 9px;border-radius:999px;border:1px solid;background:rgba(255,255,255,.04)}",
+    ".fmc-tag{vertical-align:middle}"
+  ].join("");
+  var st = document.createElement("style");
+  st.id = "fmcCat-style";
+  st.textContent = css;
+  document.head.appendChild(st);
+
+  var LABEL = {MNQ: "MNQ · QQQ", MES: "MES · SPY", MGC: "MGC · GLD"};
+  var COLOR = {active: "#ff9f43", watch: "#58c9e9", quiet: "#5d7089"};
+  var headlines = null;
+
+  function feedPanel(id) {
+    var e = document.getElementById(id);
+    return e ? e.closest(".panel") : null;
+  }
+
+  function findCatalyst() {
+    var news = document.getElementById("news");
+    if (!news) return null;
+    var els = news.querySelectorAll("div,span,h2,h3,h4,p,strong,b,small");
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (el.children.length === 0 && el.textContent.trim() === "Catalyst watch") {
+        return el.closest(".panel") || el.parentElement;
+      }
+    }
+    return null;
+  }
+
+  function ensureTag(box, text) {
+    if (!box) return;
+    var has = Array.prototype.some.call(box.children, function (c) {
+      return c.classList && c.classList.contains("fmc-tag");
+    });
+    if (has) return;
+    var t = document.createElement("div");
+    t.className = "fmc-tag";
+    t.textContent = text;
+    box.insertBefore(t, box.firstChild);
+  }
+
+  // Move the catalyst box directly above the Yahoo box
+  function moveCatalyst(cat) {
+    var yahoo = feedPanel("news-feed");
+    if (!cat || !yahoo || cat === yahoo) return;
+    if (cat.nextElementSibling !== yahoo) {
+      yahoo.parentElement.insertBefore(cat, yahoo);
+    }
+  }
+
+  function statusFor(items) {
+    var now = Date.now();
+    var out = {};
+    ["MNQ", "MES", "MGC"].forEach(function (sym) {
+      var count = 0, high = false;
+      (items || []).forEach(function (h) {
+        var t = Date.parse(h.published_at);
+        if (!t) return;
+        var ageHours = (now - t) / 3600000;
+        if (ageHours < 0 || ageHours > 12) return;
+        var tagged = (h.instrument_hints || []).indexOf(sym) > -1;
+        if (!tagged && h.affects !== "broad_macro") return;
+        count++;
+        if (h.priority === "high" && ageHours <= 6) high = true;
+      });
+      out[sym] = {count: count, level: high ? "active" : count ? "watch" : "quiet"};
+    });
+    return out;
+  }
+
+  function renderChips(box, st) {
+    var tag = null, wrap = null;
+    Array.prototype.forEach.call(box.children, function (c) {
+      if (c.classList.contains("fmc-tag")) tag = c;
+      if (c.classList.contains("fmc-chips")) wrap = c;
+    });
+    if (!tag) return;
+    if (!wrap) {
+      wrap = document.createElement("span");
+      wrap.className = "fmc-chips";
+      tag.insertAdjacentElement("afterend", wrap);
+    }
+    var key = JSON.stringify(st);
+    if (wrap.getAttribute("data-k") === key) return;
+    wrap.setAttribute("data-k", key);
+    wrap.replaceChildren();
+    ["MNQ", "MES", "MGC"].forEach(function (sym) {
+      var s = st[sym];
+      var c = COLOR[s.level];
+      var chip = document.createElement("span");
+      chip.className = "fmc-chip";
+      chip.style.color = c;
+      chip.style.borderColor = c;
+      var word = s.level === "active" ? "ACTIVE" : s.level === "watch" ? "WATCH" : "QUIET";
+      chip.textContent = LABEL[sym] + " · " + word + (s.count ? " · " + s.count : "");
+      wrap.appendChild(chip);
+    });
+  }
+
+  function tagOthers() {
+    var news = document.getElementById("news");
+    if (!news) return;
+    ensureTag(document.getElementById("fmc-sent"), "Sentiment desk");
+    ensureTag(news.querySelector(".news-refresh-row"), "News sources");
+    ensureTag(feedPanel("news-feed"), "Yahoo Finance");
+    ensureTag(feedPanel("webull-news-feed"), "Webull News");
+  }
+
+  function paint() {
+    var cat = findCatalyst();
+    if (!cat) return;
+    moveCatalyst(cat);
+    cat.classList.add("fmc-cat");
+    ensureTag(cat, "Catalyst watch");
+    if (headlines) renderChips(cat, statusFor(headlines));
+  }
+
+  function refreshStatus() {
+    fetch("/api/news/intelligence")
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        headlines = (d.catalyst_watch && d.catalyst_watch.headlines) || [];
+        paint();
+      })
+      .catch(function () {});
+  }
+
+  function run() {
+    try { tagOthers(); paint(); } catch (e) { console.error("fmcCat:", e); }
+  }
+
+  run();
+  refreshStatus();
+  setInterval(run, 2000);
+  setInterval(refreshStatus, 5000);
+})();
+</script>
 </body></html>
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

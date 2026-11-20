@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import ipaddress
 import os
@@ -52,7 +52,9 @@ from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
 from mission_control.webull_news import webull_calendar_service, webull_news_service
 from mission_control.webull import last_trades as webull_last_trades
 from mission_control.news_intelligence import build_instrument_news_intelligence
+from mission_control.headline_ai import apply_ai_labels, classify_yahoo_headlines
 from mission_control.news_catalyst import analyze_news_catalysts
+from mission_control.tradingview_rating import get_ratings as get_tradingview_ratings
 from mission_control.opportunity_scout import scout_opportunities
 from mission_control.prop_firm_rules import evaluate_prop_firm_rules
 from mission_control.provider_errors import ProviderCooldownActive, ProviderQuotaExceeded
@@ -808,12 +810,14 @@ async def webull_news(refresh: bool = Query(default=False)) -> dict[str, Any]:
 
 
 @app.get("/api/news/intelligence")
-def news_intelligence() -> dict[str, Any]:
-    """Build combined per-instrument sentiment from existing provider caches only."""
-    return build_instrument_news_intelligence(
-        yahoo_news_service.peek_news(),
-        webull_news_service.peek_news(),
-    )
+async def news_intelligence() -> dict[str, Any]:
+    """Per-instrument sentiment from cached feeds; Yahoo headlines get a model estimate."""
+    yahoo = yahoo_news_service.peek_news()
+    labels, ai_status = await classify_yahoo_headlines(yahoo.get("items", []))
+    yahoo = {**yahoo, "items": apply_ai_labels(yahoo.get("items", []), labels)}
+    result = build_instrument_news_intelligence(yahoo, webull_news_service.peek_news())
+    result["headline_ai"] = ai_status
+    return result
 
 
 @app.get("/api/calendar/events")
@@ -1177,6 +1181,12 @@ def news_catalyst_agent() -> dict[str, Any]:
     return analyze_news_catalysts(yahoo_news_service.peek_news())
 
 
+
+@app.get("/api/tradingview/ratings")
+async def tradingview_ratings() -> dict[str, Any]:
+    """TradingView technical ratings: 5-minute score, 1-minute label. Cached; at most one request per 5 minutes."""
+    return await get_tradingview_ratings()
+
 @app.get("/api/calendar")
 def economic_calendar() -> dict[str, Any]:
     """Link to Yahoo Finance calendar without scraping an unverified schema."""
@@ -1207,3 +1217,7 @@ def welcome_page() -> str:
 def dashboard() -> str:
     template = (ROOT / "mission_control" / "dashboard.html").read_text(encoding="utf-8")
     return build_broker_capabilities_dashboard(build_webhook_dashboard(build_dashboard(template)))
+
+
+
+
