@@ -197,7 +197,7 @@ def build_news_analyst_desk(
             "recommendation": text,
             "score": fused["score"],
             "stance": fused["stance"],
-            "confidence": fused["confidence"],
+            "confidence": {"label": fused["confidence"], "value": {"low": 0.3, "medium": 0.6, "high": 0.85}.get(fused["confidence"], 0.3)},
             "fused": fused,
             "news_state": result["state"],
             "event_gate": gate,
