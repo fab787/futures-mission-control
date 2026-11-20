@@ -103,12 +103,13 @@ def event_gate(catalysts: list[dict]) -> tuple[str, str | None, bool]:
     return worst or "NONE", name, window
 
 
-def price_check(market: dict | None, instrument: str) -> tuple[str | None, str]:
-    item = next(
-        (entry for entry in (market or {}).get("instruments", []) if entry.get("symbol") == instrument),
-        None,
-    )
-    bars = item.get("bars", []) if isinstance(item, dict) else []
+PRICE_LOOKBACK_5M = 20          # five-minute bars, about 100 minutes
+BAND_SIGMAS = 1.0               # a move must exceed this many sigmas of normal noise
+NOISE_FLOOR_PCT = 0.02          # minimum band, in percent
+MIN_FIVE_MINUTE_CLOSES = PRICE_LOOKBACK_5M + 1
+
+
+def _one_minute_closes(bars) -> list[float]:
     closes: list[float] = []
     for bar in bars if isinstance(bars, list) else []:
         try:
@@ -117,17 +118,38 @@ def price_check(market: dict | None, instrument: str) -> tuple[str | None, str]:
             continue
         if value > 0:
             closes.append(value)
-    if len(closes) <= PRICE_LOOKBACK:
-        return None, "Not enough cached one-minute bars for a price check."
-    last, reference = closes[-1], closes[-1 - PRICE_LOOKBACK]
+    return closes
+
+
+def _five_minute_closes(closes_1m: list[float]) -> list[float]:
+    """Last close of each complete five-bar block, aligned so the newest close is included."""
+    offset = len(closes_1m) % 5
+    return closes_1m[offset:][4::5]
+
+
+def price_check(market: dict | None, instrument: str) -> tuple[str | None, str]:
+    item = next(
+        (entry for entry in (market or {}).get("instruments", []) if entry.get("symbol") == instrument),
+        None,
+    )
+    bars = item.get("bars", []) if isinstance(item, dict) else []
+    five = _five_minute_closes(_one_minute_closes(bars))
+    if len(five) < MIN_FIVE_MINUTE_CLOSES:
+        return None, "Not enough cached one-minute bars for a five-minute price check (about 105 needed)."
+    tail = five[-MIN_FIVE_MINUTE_CLOSES:]
+    returns = [abs(b - a) / a for a, b in zip(tail, tail[1:])]
+    mean_abs = sum(returns) / len(returns)
+    sigma_pct = 100.0 * mean_abs * (PRICE_LOOKBACK_5M ** 0.5) * 1.25
+    band = max(NOISE_FLOOR_PCT, BAND_SIGMAS * sigma_pct)
+    last, reference = tail[-1], tail[0]
     move = (last - reference) / reference * 100.0
-    if move > FLAT_PCT:
+    if move > band:
         direction = "up"
-    elif move < -FLAT_PCT:
+    elif move < -band:
         direction = "down"
     else:
         direction = "flat"
-    return direction, f"{direction} {move:+.2f}% over {PRICE_LOOKBACK} one-minute bars (last {last:g})."
+    return direction, f"{direction} {move:+.2f}% over {PRICE_LOOKBACK_5M} five-minute bars; noise band ±{band:.2f}% (last {last:g})."
 
 
 def price_relation(stance: str, direction: str | None) -> str | None:
