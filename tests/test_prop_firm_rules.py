@@ -1,4 +1,4 @@
-﻿import pytest
+import pytest
 from datetime import datetime, timedelta, timezone
 
 from mission_control.prop_firm_rules import evaluate_prop_firm_rules
@@ -20,20 +20,20 @@ def sample_profile(drawdown_type="trailing"):
 
 def history():
     now = datetime.now(timezone.utc)
+    days = [(now - timedelta(days=offset)).date() for offset in range(4, -1, -1)]
     return {
-        "starting_balance": 50000,
-        "equity_observations": [
-            {"timestamp": (now - timedelta(days=2)).isoformat(), "equity": 50000, "observation_type": "intraday"},
-            {"timestamp": (now - timedelta(days=1)).isoformat(), "equity": 51000, "observation_type": "intraday"},
-            {"timestamp": now.isoformat(), "equity": 50500, "observation_type": "intraday"},
+        'starting_balance': 50000,
+        'equity_observations': [
+            {'timestamp': (now - timedelta(days=2)).isoformat(), 'equity': 50000, 'observation_type': 'intraday'},
+            {'timestamp': (now - timedelta(days=1)).isoformat(), 'equity': 51000, 'observation_type': 'intraday'},
+            {'timestamp': now.isoformat(), 'equity': 50500, 'observation_type': 'intraday'},
         ],
-        "daily_results": [
-            {"date": f"2026-11-{day:02d}", "net_pnl": pnl, "trading_day": True}
-            for day, pnl in [(10, 100), (11, 100), (12, 100), (13, 100), (14, 100)]
+        'daily_results': [
+            {'date': day.isoformat(), 'net_pnl': 100, 'trading_day': True} for day in days
         ],
-        "session_results": [
-            {"date": "2026-11-14", "session": "NY", "net_pnl": 100},
-            {"date": "2026-11-14", "session": "GLOBEX", "net_pnl": 0},
+        'session_results': [
+            {'date': days[-1].isoformat(), 'session': 'NY', 'net_pnl': 100},
+            {'date': days[-1].isoformat(), 'session': 'GLOBEX', 'net_pnl': 0},
         ],
     }
 
