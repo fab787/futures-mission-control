@@ -52,6 +52,7 @@ from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
 from mission_control.webull_news import webull_calendar_service, webull_news_service
 from mission_control.webull import last_trades as webull_last_trades
 from mission_control.news_intelligence import build_instrument_news_intelligence
+from mission_control.news_fusion_adapter import attach_fused_scores
 from mission_control.agent_desk import build_agent_desk, tradingview_cache
 from mission_control.headline_ai import apply_ai_labels, classify_yahoo_headlines
 from mission_control.news_catalyst import analyze_news_catalysts
@@ -816,7 +817,9 @@ async def news_intelligence() -> dict[str, Any]:
     yahoo = yahoo_news_service.peek_news()
     labels, ai_status = await classify_yahoo_headlines(yahoo.get("items", []))
     yahoo = {**yahoo, "items": apply_ai_labels(yahoo.get("items", []), labels)}
-    result = build_instrument_news_intelligence(yahoo, webull_news_service.peek_news())
+    webull_payload = webull_news_service.peek_news()
+    result = build_instrument_news_intelligence(yahoo, webull_payload)
+    result = attach_fused_scores(result, yahoo, webull_payload)
     result["headline_ai"] = ai_status
     return result
 
