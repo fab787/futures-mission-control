@@ -10,6 +10,7 @@ from typing import Any
 
 from mission_control.event_windows import catalyst_state, entry_gate
 from mission_control.news_analyst import analyze_instrument
+from mission_control.news_fusion_adapter import fused_for_instrument
 
 INSTRUMENTS = ("MNQ", "MES", "MGC")
 HIGH_LIKE = frozenset({"high", "fomc_statement", "fomc_presser"})
@@ -185,17 +186,19 @@ def build_news_analyst_desk(
     for instrument in INSTRUMENTS:
         items = headline_items(instrument, webull_items, yahoo_items)
         direction, detail = price_check(market_snapshot, instrument)
+        fused = fused_for_instrument(instrument, webull_items, yahoo_items, now_utc)
         result = analyze_instrument(instrument, items, [], now_utc, price_check=None)
-        relation = price_relation(result["stance"], direction)
+        relation = price_relation(fused["stance"], direction)
         headline_count = sum(result["buckets"].values())
-        bias, text = recommendation(result["stance"], relation, worst, block_name, headline_count)
+        bias, text = recommendation(fused["stance"], relation, worst, block_name, headline_count)
         instruments.append({
             "instrument": instrument,
             "bias": bias,
             "recommendation": text,
-            "score": result["score"],
-            "stance": result["stance"],
-            "confidence": result["confidence"],
+            "score": fused["score"],
+            "stance": fused["stance"],
+            "confidence": fused["confidence"],
+            "fused": fused,
             "news_state": result["state"],
             "event_gate": gate,
             "event_window": window,

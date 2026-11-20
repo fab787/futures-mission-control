@@ -69,3 +69,9 @@ def attach_fused_scores(result: dict[str, Any], yahoo_payload: dict[str, Any] | 
         "price_confirmation": "not wired: directional bias stays WAIT until price confirms",
     }
     return result
+
+def fused_for_instrument(instrument: str, webull_items, yahoo_items, now: datetime) -> dict[str, Any]:
+    """One news read per instrument, using the same evidence rules as the Sentiment desk."""
+    evidence = _evidence(list(webull_items or []), instrument, "webull", _webull_scope)
+    evidence += _evidence(list(yahoo_items or []), instrument, "yahoo", _yahoo_scope)
+    return fuse(evidence, now)
