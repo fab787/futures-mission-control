@@ -52,6 +52,7 @@ from mission_control.news import YAHOO_CALENDAR_URL, yahoo_news_service
 from mission_control.webull_news import webull_calendar_service, webull_news_service
 from mission_control.webull import last_trades as webull_last_trades
 from mission_control.news_intelligence import build_instrument_news_intelligence
+from mission_control.agent_desk import build_agent_desk, tradingview_cache
 from mission_control.headline_ai import apply_ai_labels, classify_yahoo_headlines
 from mission_control.news_catalyst import analyze_news_catalysts
 from mission_control.tradingview_rating import get_ratings as get_tradingview_ratings
@@ -1187,6 +1188,12 @@ async def tradingview_ratings() -> dict[str, Any]:
     """TradingView technical ratings: 5-minute score, 1-minute label. Cached; at most one request per 5 minutes."""
     return await get_tradingview_ratings()
 
+@app.get("/api/agents/desk")
+async def agent_desk() -> dict[str, Any]:
+    """Specialist reports and manager signal cards for manual review. Cache-only; no orders."""
+    intel = await news_intelligence()
+    return build_agent_desk(intel, tradingview_cache())
+
 @app.get("/api/calendar")
 def economic_calendar() -> dict[str, Any]:
     """Link to Yahoo Finance calendar without scraping an unverified schema."""
@@ -1217,6 +1224,7 @@ def welcome_page() -> str:
 def dashboard() -> str:
     template = (ROOT / "mission_control" / "dashboard.html").read_text(encoding="utf-8")
     return build_broker_capabilities_dashboard(build_webhook_dashboard(build_dashboard(template)))
+
 
 
 

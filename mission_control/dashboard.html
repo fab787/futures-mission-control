@@ -3727,7 +3727,7 @@ async function lvSlowMinute() {
   function place() {
     var news = document.getElementById("news");
     var desk = document.getElementById("fmc-sent");
-    if (news && desk && news.firstElementChild !== desk) {
+    if (news && desk && news.firstElementChild !== desk && (!news.firstElementChild || news.firstElementChild.id !== "fmc-agents")) {
       news.insertBefore(desk, news.firstElementChild);
     }
   }
@@ -4059,7 +4059,153 @@ async function lvSlowMinute() {
   setInterval(refreshStatus, 5000);
 })();
 </script>
+<script>
+(function () {
+  if (window.__fmcAgents) return;
+  window.__fmcAgents = true; // fmcAgents
+
+  var css = [
+    "#fmc-agents{border:1px solid #2f6b8a;border-radius:14px;padding:16px;margin:0 0 14px;background:linear-gradient(160deg,#0f2a40 0%,#0a1624 55%,#101c2c 100%);box-shadow:0 8px 24px rgba(0,0,0,.35)}",
+    "#fmc-agents .ag-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}",
+    "#fmc-agents .ag-title{font-size:14px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#e8f8ff}",
+    "#fmc-agents .ag-sub{font-size:11px;color:#8da1ba;margin-top:3px}",
+    "#fmc-agents .ag-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}",
+    "#fmc-agents .ag-card{border:1px solid #23415c;border-radius:12px;padding:12px;background:linear-gradient(145deg,#12263a,#0b1421);min-width:0}",
+    "#fmc-agents .ag-sym{font-weight:800;letter-spacing:.08em;color:#e8f0fa;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:8px}",
+    "#fmc-agents .ag-chip{font-size:10px;font-weight:800;letter-spacing:.08em;padding:3px 9px;border-radius:999px;border:1px solid;white-space:nowrap}",
+    "#fmc-agents .ag-reason{font-size:11px;color:#c8d6e6;margin:8px 0;line-height:1.4}",
+    "#fmc-agents .ag-spec{display:grid;grid-template-columns:1fr 1fr;gap:6px}",
+    "#fmc-agents .ag-s{font-size:10px;color:#8da1ba;border:1px solid #1d3349;border-radius:8px;padding:5px 7px;background:rgba(255,255,255,.02)}",
+    "#fmc-agents .ag-s b{display:block;font-size:11px;margin-top:2px}",
+    "#fmc-agents .ag-card-foot{font-size:10px;color:#9ee8ff;margin-top:8px;font-weight:700;letter-spacing:.04em}",
+    "#fmc-agents .ag-foot{font-size:10px;color:#6f8399;margin-top:10px;line-height:1.5}",
+    "@media(max-width:900px){#fmc-agents .ag-grid{grid-template-columns:1fr}}"
+  ].join("");
+  var st = document.createElement("style");
+  st.id = "fmcAgents-style";
+  st.textContent = css;
+  document.head.appendChild(st);
+
+  var SIG = {
+    BUY_CANDIDATE: {t: "BUY CANDIDATE", c: "#43d39a"},
+    SELL_CANDIDATE: {t: "SELL CANDIDATE", c: "#ef727b"},
+    WAIT: {t: "WAIT", c: "#e8b45c"}
+  };
+  var STANCE = {
+    bullish: {t: "▲ Bullish", c: "#43d39a"},
+    bearish: {t: "▼ Bearish", c: "#ef727b"},
+    neutral: {t: "– Neutral", c: "#e8b45c"},
+    conflict: {t: "⚠ Conflict", c: "#58c9e9"},
+    no_data: {t: "No data", c: "#5d7089"}
+  };
+  var LEVEL = {
+    active: {t: "ACTIVE", c: "#ff9f43"},
+    watch: {t: "WATCH", c: "#58c9e9"},
+    quiet: {t: "QUIET", c: "#5d7089"}
+  };
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function chip(text, color) {
+    var c = el("span", "ag-chip", text);
+    c.style.color = color;
+    c.style.borderColor = color;
+    c.style.background = "rgba(255,255,255,.03)";
+    return c;
+  }
+
+  function spec(label, value, color, detail) {
+    var box = el("div", "ag-s", label);
+    var v = el("b", null, value);
+    v.style.color = color;
+    box.appendChild(v);
+    if (detail) box.title = detail;
+    return box;
+  }
+
+  function render(d) {
+    var box = document.getElementById("fmc-agents");
+    if (!box) return;
+    box.replaceChildren();
+
+    var head = el("div", "ag-head");
+    var left = el("div");
+    left.appendChild(el("div", "ag-title", "Agent desk"));
+    left.appendChild(el("div", "ag-sub", "News, technical, and catalyst agents report to the manager. Signals are for manual review only."));
+    head.appendChild(left);
+    var right = el("div");
+    right.style.display = "flex";
+    right.style.gap = "6px";
+    right.style.flexWrap = "wrap";
+    var sum = d.summary || {};
+    Object.keys(SIG).forEach(function (k) {
+      if (sum[k]) right.appendChild(chip(SIG[k].t + " · " + sum[k], SIG[k].c));
+    });
+    head.appendChild(right);
+    box.appendChild(head);
+
+    var grid = el("div", "ag-grid");
+    (d.instruments || []).forEach(function (r) {
+      var card = el("div", "ag-card");
+      var sig = SIG[r.manager.signal] || SIG.WAIT;
+      var top = el("div", "ag-sym");
+      top.appendChild(el("span", null, r.symbol));
+      top.appendChild(chip(sig.t + (r.manager.strength ? " · " + r.manager.strength : ""), sig.c));
+      card.appendChild(top);
+      card.appendChild(el("div", "ag-reason", r.manager.reason));
+
+      var n = r.specialists.news, t = r.specialists.technical, c = r.specialists.catalyst, k = r.specialists.risk;
+      var sp = el("div", "ag-spec");
+      sp.appendChild(spec("News agent", STANCE[n.stance].t + (n.stance !== "no_data" ? " · " + n.confidence : ""), STANCE[n.stance].c, n.evidence));
+      sp.appendChild(spec("Technical agent", STANCE[t.stance].t + (t.stance !== "no_data" ? " · " + t.confidence : ""), STANCE[t.stance].c, t.evidence));
+      sp.appendChild(spec("Catalyst agent", LEVEL[c.level].t + " · " + c.count, LEVEL[c.level].c, c.evidence));
+      sp.appendChild(spec("Risk", "Advisory only", "#8da1ba", k.evidence));
+      card.appendChild(sp);
+
+      card.appendChild(el("div", "ag-card-foot", r.signal_card));
+      grid.appendChild(card);
+    });
+    box.appendChild(grid);
+
+    box.appendChild(el("div", "ag-foot", "Manual trade only. Nothing is sent. The Master Risk Engine and Account Protection are not applied until an account is connected. Reads cached data only; no provider requests."));
+  }
+
+  function ensureBox() {
+    if (document.getElementById("fmc-agents")) return;
+    var news = document.getElementById("news");
+    if (!news) return;
+    var b = el("div");
+    b.id = "fmc-agents";
+    news.insertBefore(b, news.firstElementChild);
+  }
+
+  function placeTop() {
+    var news = document.getElementById("news");
+    var b = document.getElementById("fmc-agents");
+    if (news && b && news.firstElementChild !== b) news.insertBefore(b, news.firstElementChild);
+  }
+
+  function refresh() {
+    ensureBox();
+    placeTop();
+    fetch("/api/agents/desk")
+      .then(function (r) { return r.json(); })
+      .then(render)
+      .catch(function () {});
+  }
+
+  refresh();
+  setInterval(placeTop, 1500);
+  setInterval(refresh, 15000);
+})();
+</script>
 </body></html>
+
 
 
 
