@@ -37,3 +37,7 @@ mission_control/*.bak*
 
 "Start FAB787 Quantum.bat"
 
+
+data/calendar/
+run_calendar.bat
+
