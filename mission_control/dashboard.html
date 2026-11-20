@@ -3443,27 +3443,18 @@ async function lvSlowMinute() {
     ];
   }
 
-  function score(sources) {
-    var num = 0, den = 0;
-    sources.forEach(function (s) {
-      var v = val(s.stance), c = CONF[s.conf] || 0;
-      if (v == null || !c) return;
-      num += WEIGHT[s.key] * c * v;
-      den += WEIGHT[s.key] * c;
-    });
-    return den ? Math.round(num / den * 100) : null;
+  function score(inst) {
+    var f = inst && inst.fused;
+    return f && f.clusters > 0 && f.score != null ? Math.round(f.score) : null;
   }
 
-  function labelOf(sc, sources) {
-    if (sc == null) return {text: "AWAITING DATA", color: COLORS.unavailable};
-    var reads = sources.map(function (s) { return val(s.stance); }).filter(function (v) { return v != null && v !== 0; });
-    if (reads.indexOf(1) > -1 && reads.indexOf(-1) > -1) return {text: "SOURCES DISAGREE", color: COLORS.mixed};
-    var active = sources.filter(function (s) { return val(s.stance) != null && CONF[s.conf]; }).length;
-    var out = sc >= 25 ? {text: "BULLISH", color: COLORS.bullish}
-            : sc <= -25 ? {text: "BEARISH", color: COLORS.bearish}
-            : {text: "NEUTRAL", color: COLORS.neutral};
-    if (active === 1) out.text += " · 1 SOURCE";
-    return out;
+  function labelOf(inst) {
+    var f = inst && inst.fused;
+    if (!f || f.clusters === 0 || f.score == null) return {text: "AWAITING DATA", color: COLORS.unavailable};
+    if (f.stance === "conflict") return {text: "SOURCES DISAGREE", color: COLORS.mixed};
+    if (f.stance === "bullish") return {text: "BULLISH", color: COLORS.bullish};
+    if (f.stance === "bearish") return {text: "BEARISH", color: COLORS.bearish};
+    return {text: f.clusters < 3 ? "NEUTRAL - THIN EVIDENCE" : "NEUTRAL", color: COLORS.neutral};
   }
 
   function chip(text, color) {
@@ -3502,8 +3493,8 @@ async function lvSlowMinute() {
 
   function instrumentCard(inst) {
     var sources = sourcesFor(inst);
-    var sc = score(sources);
-    var lab = labelOf(sc, sources);
+    var sc = score(inst);
+    var lab = labelOf(inst);
     var card = el("div", "sd-card");
     card.appendChild(el("div", "sd-sym", inst.symbol + " · " + (inst.proxy_symbol || "")));
     var big = el("div", "sd-score", sc == null ? "—" : (sc > 0 ? "+" : "") + sc);
@@ -3515,18 +3506,18 @@ async function lvSlowMinute() {
     return {card: card, score: sc};
   }
 
-  function overallCard(scores) {
-    var valid = scores.filter(function (v) { return v != null; });
-    var avg = valid.length ? Math.round(valid.reduce(function (a, b) { return a + b; }, 0) / valid.length) : null;
-    var color = avg == null ? COLORS.unavailable : avg >= 25 ? COLORS.bullish : avg <= -25 ? COLORS.bearish : COLORS.neutral;
+  function overallCard(overall) {
+    var avg = overall && overall.score != null ? Math.round(overall.score) : null;
+    var n = overall ? (overall.instruments_reporting || 0) : 0;
+    var color = avg == null ? COLORS.unavailable : avg >= 15 ? COLORS.bullish : avg <= -15 ? COLORS.bearish : COLORS.neutral;
     var card = el("div", "sd-card overall");
     card.appendChild(el("div", "sd-sym", "OVERALL"));
-    var big = el("div", "sd-score", avg == null ? "—" : (avg > 0 ? "+" : "") + avg);
+    var big = el("div", "sd-score", avg == null ? "\u2014" : (avg > 0 ? "+" : "") + avg);
     big.style.color = color;
     card.appendChild(big);
-    card.appendChild(chip(valid.length + " of 3 instruments reporting", COLORS.mixed));
+    card.appendChild(chip(n + " of 3 instruments reporting", COLORS.mixed));
     card.appendChild(gauge(avg));
-    card.appendChild(el("div", "sd-foot", "Average of MNQ, MES, and MGC."));
+    card.appendChild(el("div", "sd-foot", "Server-fused score per instrument; Overall averages instruments with evidence."));
     return card;
   }
 
@@ -3540,7 +3531,7 @@ async function lvSlowMinute() {
     left.appendChild(el("div", "sd-title", "Sentiment desk"));
     left.appendChild(el("div", "sd-sub", "Each source scored on its own, then combined. -100 bearish to +100 bullish."));
     head.appendChild(left);
-    head.appendChild(el("div", "sd-weights", "Webull 50% · Yahoo AI 30% · TradingView 20%"));
+    head.appendChild(el("div", "sd-weights", "Fused per instrument on the server"));
     host.appendChild(head);
     host.appendChild(el("div", "sd-grid"));
     host.appendChild(el("div", "sd-foot", "Webull labels are the main source. Yahoo headlines are an AI estimate (low confidence) when enabled. TradingView is pending. Scores are context, not trade signals."));
@@ -3559,7 +3550,7 @@ async function lvSlowMinute() {
       scores.push(r.score);
       grid.appendChild(r.card);
     });
-    grid.appendChild(overallCard(scores));
+    grid.appendChild(overallCard(data && data.fused_overall));
   }
 
   async function refresh() {
