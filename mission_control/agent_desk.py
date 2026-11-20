@@ -1,4 +1,4 @@
-﻿"""Agent desk: specialist reports and a conservative manager that prints manual signal cards.
+"""Agent desk: specialist reports and a conservative manager that prints manual signal cards.
 
 Specialists (news, technical, catalyst, risk) read caches only. The manager prints a BUY
 or SELL candidate only when the news and technical reports agree and no high-priority
@@ -33,6 +33,28 @@ def _parse(value: Any) -> datetime | None:
 
 
 def _news(inst: dict[str, Any] | None) -> dict[str, Any]:
+    """Prefer the server-fused read (one score per instrument); fall back to combined labels."""
+    fused = (inst or {}).get("fused")
+    if not isinstance(fused, dict):
+        return _news_combined(inst)
+    if fused.get("clusters", 0) == 0 or fused.get("score") is None:
+        state = "no_data"
+    elif fused.get("stance") == "conflict":
+        state = "conflict"
+    elif fused.get("stance") in {"bullish", "bearish", "neutral"}:
+        state = fused["stance"]
+    else:
+        state = "no_data"
+    sources = ", ".join((fused.get("coverage") or {}).get("sources") or []) or "none"
+    return {
+        "stance": state,
+        "confidence": fused.get("confidence", "low"),
+        "evidence": f"Fused score {fused.get('score')} from {fused.get('clusters', 0)} stories; sources: {sources}.",
+        "changes_mind_if": "Webull or Yahoo labels change, or new articles arrive within 24 hours.",
+    }
+
+
+def _news_combined(inst: dict[str, Any] | None) -> dict[str, Any]:
     combined = (inst or {}).get("combined_bias") or {}
     stance = combined.get("stance")
     if stance in {"bullish", "bearish", "neutral"}:
