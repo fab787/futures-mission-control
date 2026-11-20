@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -213,7 +213,7 @@ select:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,te
 <article class="tile instrument" data-symbol="MES"><div class="symbol">MES</div><div class="contract">Micro E-mini S&amp;P 500</div><div class="price">— — —</div><div class="change">Price awaiting verified feed</div><div class="bias-line" id="instrument-bias-MES"><span class="bias-chip bias-unavailable">Sentiment awaiting sources</span></div><div class="tile-foot"><span>Market data</span><span>NOT CONNECTED</span></div></article>
 <article class="tile instrument" data-symbol="MGC"><div class="symbol">MGC</div><div class="contract">Micro Gold</div><div class="price">— — —</div><div class="change">Price awaiting verified feed</div><div class="bias-line" id="instrument-bias-MGC"><span class="bias-chip bias-unavailable">Sentiment awaiting sources</span></div><div class="tile-foot"><span>Market data</span><span>NOT CONNECTED</span></div></article>
 </div>
-<div class="toolbar" id="live-picker" style="margin:0 0 10px;align-items:center"><span class="muted small">Live ticker</span><button class="btn" data-sym="MNQ">MNQ</button><button class="btn" data-sym="MES">MES</button><button class="btn" data-sym="MGC">MGC</button><select id="live-window" class="control" aria-label="Overview line window" style="margin-left:6px"><option value="5">5 min</option><option value="15">15 min</option><option value="30" selected>30 min</option><option value="45">45 min</option><option value="60">1 hr</option><option value="240">4 hr</option></select> <button class="btn" id="webull-reconnect" style="margin-left:6px">Reconnect Webull</button> <span class="muted small" id="live-status">Live feed idle · choose the 1-second option for continuous updates</span></div><div class="grid2"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Selected instrument</div><div class="panel-title" id="overview-selected">MNQ · Market snapshot</div></div><div class="toolbar"><select id="market-data-provider" aria-label="Market data provider"><option value="tradingview">TradingView</option><option value="webull" selected>Webull</option></select><select id="auto-refresh" aria-label="Auto refresh"><option value="0" selected>Manual only (default)</option><option value="500" data-provider="webull">Webull every 0.5 seconds (test)</option><option value="1000" data-provider="webull">Webull every 1 second (test)</option><option value="15000" data-provider="webull">Webull every 15 seconds</option><option value="45000" data-provider="webull">Webull every 45 seconds</option><option value="60000" data-provider="webull">Webull every 1 minute</option><option value="300000" data-provider="webull">Webull every 5 minutes</option><option value="300000" data-provider="tradingview">TradingView every 5 minutes</option></select><span class="pill off" id="market-data-status">WAITING FOR AUTHORIZATION</span><button class="btn" id="refresh-market">Refresh data</button><button class="btn" data-go="charts">Open chart workspace ↗</button></div></div><div class="cards2"><div class="metric"><small>Latest available close</small><b id="overview-price">—</b></div><div class="metric"><small>Latest bar volume</small><b id="overview-volume">—</b></div><div class="metric"><small>Latest bar high / low</small><b id="overview-range">—</b></div><div class="metric"><small>Bar timestamp (UTC)</small><b id="overview-time">—</b></div></div><p class="muted small" id="overview-source" style="margin:12px 0 0">Select an authorized provider to load historical OHLCV bars.</p></div>
+<div class="toolbar" id="live-picker" style="margin:0 0 10px;align-items:center"><span class="muted small">Live ticker</span><button class="btn" data-sym="MNQ">MNQ</button><button class="btn" data-sym="MES">MES</button><button class="btn" data-sym="MGC">MGC</button><select id="live-window" class="control" aria-label="Overview window" style="margin-left:6px"><option value="45">45 min</option><option value="60" selected>1 hr</option><option value="240">4 hr</option></select> <button class="btn" id="webull-reconnect" style="margin-left:6px">Reconnect Webull</button> <span class="muted small" id="live-status">Live feed idle · choose the 1-second option for continuous updates</span></div><div class="grid2"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Selected instrument</div><div class="panel-title" id="overview-selected">MNQ · Market snapshot</div></div><div class="toolbar"><select id="market-data-provider" aria-label="Market data provider"><option value="tradingview">TradingView</option><option value="webull" selected>Webull</option></select><select id="auto-refresh" aria-label="Auto refresh"><option value="0" selected>Manual only (default)</option><option value="500" data-provider="webull">Webull every 0.5 seconds (test)</option><option value="1000" data-provider="webull">Webull every 1 second (test)</option><option value="15000" data-provider="webull">Webull every 15 seconds</option><option value="45000" data-provider="webull">Webull every 45 seconds</option><option value="60000" data-provider="webull">Webull every 1 minute</option><option value="300000" data-provider="webull">Webull every 5 minutes</option><option value="300000" data-provider="tradingview">TradingView every 5 minutes</option></select><span class="pill off" id="market-data-status">WAITING FOR AUTHORIZATION</span><button class="btn" id="refresh-market">Refresh data</button><button class="btn" data-go="charts">Open chart workspace ↗</button></div></div><div class="cards2"><div class="metric"><small>Latest available close</small><b id="overview-price">—</b></div><div class="metric"><small>Latest bar volume</small><b id="overview-volume">—</b></div><div class="metric"><small>Latest bar high / low</small><b id="overview-range">—</b></div><div class="metric"><small>Bar timestamp (UTC)</small><b id="overview-time">—</b></div></div><p class="muted small" id="overview-source" style="margin:12px 0 0">Select an authorized provider to load historical OHLCV bars.</p></div>
 <aside class="panel"><div class="panel-head"><div class="panel-title">Platform health</div><span class="pill ok" id="api-health">CHECKING</span></div><div class="status-row"><span class="muted">API service</span><b id="api-label">Checking…</b></div><div class="status-row"><span class="muted">TradingView MCP adapter</span><b id="tv-health-label">Checking…</b></div><div class="status-row"><span class="muted">Webull Cloud MCP adapter</span><b id="webull-health-label">Checking?</b></div><div class="status-row"><span class="muted">Yahoo news adapter</span><b>Configured · awaiting first fetch</b></div><div class="status-row"><span class="muted">AI agents</span><b>Not started</b></div><div class="status-row"><span class="muted">Paper account</span><b>Not verified</b></div><div class="status-row"><span class="muted">Order execution</span><b style="color:var(--green)">Disabled</b></div></aside></div>
 
 <div class="grid2 home-intelligence">
@@ -1315,7 +1315,7 @@ function lvTitleTick(){
 setInterval(lvTitleTick,1000);
 lvTitleTick();// ---- Full-width overview lines: fixed 60-minute window, edge to edge, same look on all three tiles ----
 // Later definitions replace the earlier lvLineSvg and lvFastSpark for the whole page.
-let LV_WIN_MS=30*60000;
+let LV_WIN_MS=60*60000;
 function lvLineSvg(points,label,color){
   const now=Date.now(),x0=now-LV_WIN_MS,x1=now;
   const pts=(points||[]).filter(function(p){return p.x>=x0;});
@@ -1367,7 +1367,7 @@ async function lvSlowMinute(){
   }catch(e){}
 }// ---- Selectable overview window (5 min to 4 hr) ----
 // Raw trades are kept for 60 min. Older trades roll up to one close per minute, kept up to 4 hr.
-let LV_RAW_MS=60*60000, LV_ROLL_MS=240*60000;
+let LV_RAW_MS=60*60000, LV_ROLL_MS=480*60000;
 const lvRollup={MNQ:new Map(),MES:new Map(),MGC:new Map()};
 function lvWinLabel(){const m=Math.round(LV_WIN_MS/60000);return m>=60?(m/60)+" hr":m+" min";}
 function lvRecord(sym,ticks){
@@ -2748,4 +2748,693 @@ loadRiskProfiles();loadApprovalQueue();loadAuditEvents();
   });
   paint("signal");
 })();
-</script></body></html>
+</script><script>
+// ---- Overview candles (replaces the overview line charts) ----
+const lvOhlc = {MNQ: new Map(), MES: new Map(), MGC: new Map()}; // per-minute OHLC for older trades
+
+function lvRecord(sym, ticks) {
+  const m = lvTradeBuf[sym]; if (!m) return;
+  (ticks || []).forEach(function (t) { m.set(t.time_ms + "|" + t.price + "|" + t.size + "|" + t.side, t); });
+  const now = Date.now(), rawCut = now - LV_RAW_MS, rollCut = now - LV_ROLL_MS;
+  const roll = lvOhlc[sym];
+  const old = [...m.entries()].filter(function (e) { return e[1].time_ms < rawCut; })
+                              .sort(function (a, b) { return a[1].time_ms - b[1].time_ms; });
+  old.forEach(function ([k, t]) {
+    const minute = Math.floor(t.time_ms / 60000) * 60000;
+    const b = roll.get(minute);
+    if (!b) roll.set(minute, {t: minute, o: t.price, h: t.price, l: t.price, c: t.price});
+    else { b.h = Math.max(b.h, t.price); b.l = Math.min(b.l, t.price); b.c = t.price; }
+    m.delete(k);
+  });
+  for (const k of roll.keys()) { if (k < rollCut) roll.delete(k); }
+  if (sym === lvSymbol) lvFastSpark(sym);
+}
+
+function lvCandleSvg(bars, label) {
+  if (bars.length < 2) return '<div class="muted small">' + label + ' · collecting data…</div>';
+  const W = 400, H = 124, pad = 6;
+  const lo = Math.min.apply(null, bars.map(function (b) { return b.l; }));
+  const hi = Math.max.apply(null, bars.map(function (b) { return b.h; }));
+  const span = (hi - lo) || 1;
+  const y = function (v) { return pad + (hi - v) / span * (H - 2 * pad); };
+  const step = (W - 2 * pad) / bars.length, bw = Math.max(1, step * 0.6);
+  let out = "";
+  bars.forEach(function (b, i) {
+    const x = pad + step * (i + 0.5), col = b.c >= b.o ? "#3ecf8e" : "#ef5b5b";
+    const top = y(Math.max(b.o, b.c)), bot = y(Math.min(b.o, b.c));
+    out += '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + y(b.h).toFixed(1) +
+           '" y2="' + y(b.l).toFixed(1) + '" stroke="' + col + '" stroke-width="1"/>';
+    out += '<rect x="' + (x - bw / 2).toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + bw.toFixed(1) +
+           '" height="' + Math.max(1, bot - top).toFixed(1) + '" fill="' + col + '"/>';
+  });
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '" preserveAspectRatio="none" role="img" aria-label="' + label + '" style="display:block">' + out + '</svg>' +
+         '<div class="muted small" style="margin-top:4px">' + label + ' · low ' + lvFmt(lo) + ' · high ' + lvFmt(hi) + '</div>';
+}
+
+function lvFastSpark(sym) {
+  const s = lvEnsureSpark(sym); if (!s) return;
+  const winMs = LV_WIN_MS, cutoff = Date.now() - winMs;
+  const items = [];
+  (lvBarsBySym[sym] || []).forEach(function (b) {
+    const t = b.t * 1000; if (t >= cutoff) items.push({t: t, o: b.o, h: b.h, l: b.l, c: b.c});
+  });
+  lvOhlc[sym].forEach(function (b) { if (b.t >= cutoff) items.push(b); });
+  const buf = lvTradeBuf[sym];
+  if (buf) [...buf.values()].forEach(function (t) {
+    if (t.time_ms >= cutoff) items.push({t: t.time_ms, o: t.price, h: t.price, l: t.price, c: t.price});
+  });
+  items.sort(function (a, b) { return a.t - b.t; });
+  const bucketMs = 60000; // always 1-minute candles
+  const map = new Map();
+  items.forEach(function (it) {
+    const k = Math.floor(it.t / bucketMs) * bucketMs, b = map.get(k);
+    if (!b) map.set(k, {t: k, o: it.o, h: it.h, l: it.l, c: it.c});
+    else { b.h = Math.max(b.h, it.h); b.l = Math.min(b.l, it.l); b.c = it.c; }
+  });
+  const label = "1-min candles · last " + lvWinLabel();
+  s.innerHTML = lvCandleSvg([...map.values()], label);
+}
+
+async function lvSlowMinute() {
+  try {
+    const r = await fetch("/api/market-data?interval=1m&provider=webull");
+    if (!r.ok) return;
+    const d = await r.json();
+    const now = Date.now();
+    (d.instruments || []).forEach(function (item) {
+      if (!LV_SYMBOLS.includes(item.symbol)) return;
+      lvBarsBySym[item.symbol] = item.bars || [];
+      if (item.latest) lvSetTile(item.symbol, item.latest.c, "1m close " + lvClock(item.latest.t * 1000) + " · refreshed " + lvClock(now));
+      lvFastSpark(item.symbol);
+    });
+  } catch (e) {}
+}
+</script>
+<script>
+(function () {
+  if (window.__fmcPolish) return;
+  window.__fmcPolish = true;
+
+  var css = [
+    ".ph-card{border:1px solid #2c5a7a!important;background:linear-gradient(160deg,#10243a,#0b1421 60%,#14202f)!important;box-shadow:0 0 0 1px rgba(88,201,233,.08),0 10px 30px rgba(0,0,0,.35)!important}",
+    ".ph-card .status-row{border-bottom:1px solid rgba(88,201,233,.12)!important;padding:9px 0!important}",
+    ".ph-card .status-row b{padding:3px 9px;border-radius:12px;font-size:11px;background:rgba(88,201,233,.12);color:#9ee8ff}",
+    ".ph-card .status-row b.ok-tag{background:rgba(67,211,154,.15);color:#43d39a}",
+    ".ph-card .status-row b.warn-tag{background:rgba(232,180,92,.15);color:#e8b45c}",
+    ".ph-card .status-row b.off-tag{background:rgba(239,114,123,.15);color:#ef727b}",
+    ".ph-card .panel-title{color:#9ee8ff}",
+    ".pnl-wrap{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 12px}",
+    ".pnl-card{border:1px solid #1f3650;border-radius:12px;padding:12px;background:linear-gradient(145deg,#0f1d2f,#0a1320)}",
+    ".pnl-card small{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8da1ba}",
+    ".pnl-card b{display:block;margin-top:6px;font-size:18px;font-variant-numeric:tabular-nums;color:#c8d6e6}",
+    ".pnl-card .pnl-sub{font-size:10px;color:#5d7089;margin-top:4px}",
+    ".pnl-card.overall{border-color:#3a6f8f;background:linear-gradient(145deg,#12314a,#0a1624)}",
+    ".vol-chip{display:inline-flex;gap:6px;align-items:center;margin:8px 0 0 0;padding:5px 11px;border-radius:999px;border:1px solid #2c4a66;background:#0b1a2b;font-size:11px;color:#9fb6cc}",
+    ".vol-chip b{color:#e8f0fa;font-size:11px;margin:0}",
+    "@media(max-width:900px){.pnl-wrap{grid-template-columns:repeat(2,minmax(0,1fr))}}"
+  ].join("");
+  var style = document.createElement("style");
+  style.id = "fmcPolish-style";
+  style.textContent = css;
+  document.head.appendChild(style);
+
+  function norm(s) { return (s || "").replace(/\s+/g, " ").trim().toLowerCase(); }
+
+  function findLeafByText(text) {
+    var els = document.querySelectorAll("small,span,div,label,p");
+    for (var i = 0; i < els.length; i++) {
+      if (els[i].children.length === 0 && norm(els[i].textContent) === text) return els[i];
+    }
+    return null;
+  }
+
+  function cardOf(el) {
+    if (!el) return null;
+    return el.closest(".metric,.snapshot-metric,.status-row") || el.parentElement;
+  }
+
+  function panelByTitle(text) {
+    var titles = document.querySelectorAll(".panel-title");
+    for (var i = 0; i < titles.length; i++) {
+      if (norm(titles[i].textContent).indexOf(text) === 0) return titles[i].closest(".panel");
+    }
+    return null;
+  }
+
+  function hide(el) { if (el) el.style.display = "none"; }
+
+  function hideNewsPanel() {
+    hide(panelByTitle("news watch"));
+  }
+
+  function hideTimestamp() {
+    hide(cardOf(findLeafByText("bar timestamp (utc)")));
+  }
+
+  function hideLastTradeLabel() {
+    var price = document.getElementById("overview-price");
+    if (price && price.previousElementSibling) hide(price.previousElementSibling);
+  }
+
+  function syncVolumeChip() {
+    var card = cardOf(findLeafByText("latest bar volume"));
+    var price = document.getElementById("overview-price");
+    if (!card || !price) return;
+    var valueEl = card.querySelector("b") || card.lastElementChild;
+    var value = valueEl ? valueEl.textContent.trim() : "—";
+    hide(card);
+    var chip = document.getElementById("fmc-vol-chip");
+    if (!chip) {
+      chip = document.createElement("div");
+      chip.id = "fmc-vol-chip";
+      chip.className = "vol-chip";
+      price.insertAdjacentElement("afterend", chip);
+    }
+    chip.innerHTML = 'Bar volume <b></b>';
+    chip.querySelector("b").textContent = value;
+  }
+
+  function tagPlatformHealth() {
+    var panel = panelByTitle("platform health");
+    if (!panel) return;
+    panel.classList.add("ph-card");
+    panel.querySelectorAll(".status-row b").forEach(function (b) {
+      var t = norm(b.textContent);
+      b.classList.remove("ok-tag", "warn-tag", "off-tag");
+      if (/not |awaiting|checking|required|idle|not started|not verified/.test(t)) b.classList.add("warn-tag");
+      else if (/disabled|offline|error|unavailable/.test(t)) b.classList.add("off-tag");
+      else if (/online|authorized|enabled|connected|configured|ok/.test(t)) b.classList.add("ok-tag");
+    });
+  }
+
+  function insertPnlPanel() {
+    if (document.getElementById("pnl-panel")) return;
+    var anchor = document.getElementById("live-picker") || document.getElementById("instrument-cards");
+    if (!anchor) return;
+    var wrap = document.createElement("div");
+    wrap.id = "pnl-panel";
+    wrap.className = "panel";
+    wrap.style.margin = "12px 0";
+    wrap.innerHTML =
+      '<div class="panel-head"><div><div class="eyebrow">Trading</div><div class="panel-title">Profit &amp; loss</div></div>' +
+      '<span class="pill off">PLACEHOLDER · NO ACCOUNT</span></div>' +
+      '<div class="pnl-wrap">' +
+      '<div class="pnl-card"><small>MNQ · P&amp;L</small><b>—</b><div class="pnl-sub">Open — · Day —</div></div>' +
+      '<div class="pnl-card"><small>MES · P&amp;L</small><b>—</b><div class="pnl-sub">Open — · Day —</div></div>' +
+      '<div class="pnl-card"><small>MGC · P&amp;L</small><b>—</b><div class="pnl-sub">Open — · Day —</div></div>' +
+      '<div class="pnl-card overall"><small>Overall P&amp;L</small><b>—</b><div class="pnl-sub">Day · Session · Open</div></div>' +
+      '</div>';
+    anchor.insertAdjacentElement("afterend", wrap);
+  }
+
+  function polish() {
+    try {
+      hideNewsPanel();
+      hideTimestamp();
+      hideLastTradeLabel();
+      syncVolumeChip();
+      tagPlatformHealth();
+      insertPnlPanel();
+    } catch (e) {}
+  }
+
+  polish();
+  setInterval(polish, 1500);
+})();
+</script>
+<script>
+(function () {
+  if (window.__fmcPnl2) return;
+  window.__fmcPnl2 = true; // fmcPnl2
+
+  var css = [
+    ".pnl2-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:10px}",
+    ".pnl2-card{border:1px solid #1f3650;border-radius:12px;padding:13px;background:linear-gradient(145deg,#0f1d2f,#0a1320);min-width:0}",
+    ".pnl2-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}",
+    ".pnl2-sym{font-weight:800;letter-spacing:.08em;color:#e8f0fa}",
+    ".pnl2-chip{font-size:10px;padding:3px 8px;border-radius:12px;background:rgba(141,161,186,.12);color:#8da1ba;border:1px solid #2c4a66}",
+    ".pnl2-chip.long{background:rgba(67,211,154,.13);color:#43d39a;border-color:#285a4a}",
+    ".pnl2-chip.short{background:rgba(239,114,123,.13);color:#ef727b;border-color:#6b3138}",
+    ".pnl2-row{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid rgba(88,201,233,.08);font-size:12px}",
+    ".pnl2-row:last-child{border-bottom:0}",
+    ".pnl2-row span{color:#8da1ba}",
+    ".pnl2-row b{font-variant-numeric:tabular-nums;color:#c8d6e6}",
+    ".pnl2-row b.pos{color:#43d39a}.pnl2-row b.neg{color:#ef727b}",
+    ".pnl2-overall{border:1px solid #3a6f8f;border-radius:12px;padding:13px;background:linear-gradient(145deg,#12314a,#0a1624)}",
+    ".pnl2-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:10px}",
+    ".pnl2-stat small{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8da1ba}",
+    ".pnl2-stat b{display:block;margin-top:5px;font-size:15px;color:#e8f0fa;font-variant-numeric:tabular-nums}",
+    ".pnl2-note{margin-top:10px;font-size:10px;color:#5d7089}",
+    "@media(max-width:900px){.pnl2-grid,.pnl2-stats{grid-template-columns:1fr 1fr}}"
+  ].join("");
+  var st = document.createElement("style");
+  st.id = "fmcPnl2-style";
+  st.textContent = css;
+  document.head.appendChild(st);
+
+  function instrumentCard(sym, name) {
+    return '<div class="pnl2-card">' +
+      '<div class="pnl2-head"><span class="pnl2-sym">' + sym + '</span><span class="pnl2-chip">FLAT</span></div>' +
+      '<div class="pnl2-row"><span>Position</span><b>—</b></div>' +
+      '<div class="pnl2-row"><span>Avg entry</span><b>—</b></div>' +
+      '<div class="pnl2-row"><span>Last</span><b>—</b></div>' +
+      '<div class="pnl2-row"><span>Unrealized P&amp;L</span><b>—</b></div>' +
+      '<div class="pnl2-row"><span>Realized today</span><b>—</b></div>' +
+      '<div class="pnl2-row"><span>Stop / Target</span><b>—</b></div>' +
+      '</div>';
+  }
+
+  function buildPanel() {
+    return '<div class="panel" id="pnl-panel" style="margin:12px 0">' +
+      '<div class="panel-head"><div><div class="eyebrow">Trading</div><div class="panel-title">Positions &amp; profit / loss</div></div>' +
+      '<span class="pill off">NO ACCOUNT CONNECTED</span></div>' +
+      '<div class="pnl2-grid">' +
+        instrumentCard("MNQ") + instrumentCard("MES") + instrumentCard("MGC") +
+      '</div>' +
+      '<div class="pnl2-overall">' +
+        '<div class="pnl2-head"><span class="pnl2-sym">OVERALL</span><span class="pnl2-chip">0 OPEN</span></div>' +
+        '<div class="pnl2-stats">' +
+          '<div class="pnl2-stat"><small>Unrealized</small><b>—</b></div>' +
+          '<div class="pnl2-stat"><small>Realized today</small><b>—</b></div>' +
+          '<div class="pnl2-stat"><small>Daily loss limit left</small><b>—</b></div>' +
+          '<div class="pnl2-stat"><small>Exposure</small><b>—</b></div>' +
+        '</div>' +
+        '<div class="pnl2-note">Values fill in once a verified paper or broker account is connected. Read-only. No orders are sent from this panel.</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function swap() {
+    var old = document.getElementById("pnl-panel");
+    if (!old || old.getAttribute("data-v") === "2") return;
+    var wrap = document.createElement("div");
+    wrap.innerHTML = buildPanel();
+    var fresh = wrap.firstElementChild;
+    fresh.setAttribute("data-v", "2");
+    old.replaceWith(fresh);
+  }
+
+  swap();
+  setInterval(swap, 1500);
+})();
+</script>
+<script>
+(function () {
+  if (window.__fmcLayout6) return;
+  window.__fmcLayout6 = true; // fmcLayout6
+
+  var css = [
+    ".fmc-tag{display:inline-block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#58c9e9;background:rgba(88,201,233,.08);border:1px solid rgba(88,201,233,.25);border-radius:6px;padding:3px 8px;margin:0 0 10px}",
+    "#fmc-row2{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important;margin:12px 0!important}",
+    "#fmc-row2 > .panel{margin:0!important;min-width:0!important;display:block!important}",
+    ".fmc-scout{border:1px solid #2c5a7a!important;background:linear-gradient(135deg,#12283f 0%,#0b1624 60%,#15202e 100%)!important;padding:12px 14px!important;box-shadow:0 6px 18px rgba(0,0,0,.3)!important}",
+    ".fmc-scout .panel-title{font-size:11px!important;color:#9ee8ff}",
+    ".fmc-scout .eyebrow{font-size:9px!important}",
+    ".fmc-scout #home-scout-content{font-size:12px;background:linear-gradient(90deg,rgba(67,211,154,.08),rgba(88,201,233,.05));border-left:3px solid #43d39a;padding:8px 10px;border-radius:6px;margin:6px 0}",
+    ".fmc-scout .snapshot-note{font-size:10px;margin:4px 0 0!important;color:#6f8399}",
+    ".fmc-scout .pill{background:rgba(88,201,233,.12);color:#9ee8ff;border-color:#2c5a7a}",
+    ".fmc-health{padding:10px 12px!important;margin:12px 0 0!important;max-width:520px}",
+    ".fmc-health .status-row{padding:4px 0!important;font-size:11px}",
+    ".mode-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}",
+    "@media(max-width:900px){#fmc-row2{grid-template-columns:1fr!important}.fmc-health{max-width:none}}"
+  ].join("");
+  var st = document.createElement("style");
+  st.id = "fmcLayout6-style";
+  st.textContent = css;
+  document.head.appendChild(st);
+
+  function moveControls() {
+    var mode = document.getElementById("mode-bar");
+    if (!mode) return;
+    var prov = document.getElementById("market-data-provider");
+    if (prov) {
+      var tb = prov.closest(".toolbar") || prov.parentElement;
+      if (tb && tb.parentElement !== mode) mode.appendChild(tb);
+    }
+    var rc = document.getElementById("webull-reconnect");
+    if (rc && rc.parentElement !== mode) mode.appendChild(rc);
+  }
+
+  function cleanTags() {
+    document.querySelectorAll(".fmc-tag").forEach(function (t) {
+      if (t.textContent.trim().toLowerCase() === "panel") t.remove();
+    });
+  }
+
+  function addTitles() {
+    document.querySelectorAll(".panel").forEach(function (p) {
+      if (p.style.display === "none") return;
+      if (Array.prototype.some.call(p.children, function (c) { return c.classList && c.classList.contains("fmc-tag"); })) return;
+      var own = Array.prototype.filter.call(p.querySelectorAll(".panel-title"), function (t) {
+        return t.closest(".panel") === p && t.textContent.trim();
+      });
+      if (!own.length) return;
+      var tag = document.createElement("div");
+      tag.className = "fmc-tag";
+      tag.textContent = own[0].textContent.replace(/\s+/g, " ").trim();
+      p.insertBefore(tag, p.firstChild);
+    });
+  }
+
+  function layout() {
+    var ov = document.getElementById("overview");
+    if (!ov) return;
+
+    var sel = document.getElementById("overview-selected");
+    var selPanel = sel && sel.closest(".panel");
+    if (selPanel) selPanel.style.display = "none";
+
+    var tiles = document.getElementById("instrument-cards");
+    var ticker = document.getElementById("live-picker");
+    var pnl = document.getElementById("pnl-panel");
+    var scout = document.querySelector(".home-scout-panel");
+    var gex = document.querySelector(".home-gex-panel");
+    var healthEl = document.getElementById("api-health");
+    var health = healthEl && healthEl.closest(".panel");
+
+    // Make sure GEX is visible (an earlier script may have hidden it)
+    if (gex) gex.style.display = "";
+
+    var row = document.getElementById("fmc-row2");
+    if (!row) {
+      row = document.createElement("div");
+      row.id = "fmc-row2";
+    }
+    if (scout) {
+      scout.classList.add("fmc-scout");
+      if (scout.parentElement !== row) row.appendChild(scout);
+    }
+    if (gex && gex.parentElement !== row) row.appendChild(gex);
+    if (health) health.classList.add("fmc-health");
+
+    var seq = [ticker, pnl, row, health].filter(Boolean);
+    var anchor = tiles;
+    seq.forEach(function (el) {
+      if (!anchor) {
+        if (ov.firstElementChild !== el) ov.insertBefore(el, ov.firstElementChild);
+      } else if (el.previousElementSibling !== anchor) {
+        anchor.insertAdjacentElement("afterend", el);
+      }
+      anchor = el;
+    });
+
+    if (!row.isConnected) console.warn("fmcLayout6: row not placed");
+    if (!gex) console.warn("fmcLayout6: .home-gex-panel not found");
+    if (!scout) console.warn("fmcLayout6: .home-scout-panel not found");
+  }
+
+  function run() {
+    try {
+      moveControls();
+      layout();
+      cleanTags();
+      addTitles();
+    } catch (e) { console.error("fmcLayout6:", e); }
+  }
+
+  run();
+  setInterval(run, 2000);
+})();
+</script>
+<script>
+(function () {
+  if (window.__fmcLayout7) return;
+  window.__fmcLayout7 = true; // fmcLayout7
+
+  var css = [
+    ".fmc-gex{border:1px solid #2f6b8a!important;background:linear-gradient(160deg,#0f2a40 0%,#0a1624 55%,#101c2c 100%)!important;box-shadow:0 8px 24px rgba(0,0,0,.35)!important;padding:16px!important}",
+    ".fmc-gex .panel-title{font-size:16px!important;color:#e8f8ff!important;letter-spacing:.12em}",
+    ".fmc-gex .snapshot-metric{background:linear-gradient(145deg,#12263a,#0b1421)!important;border:1px solid #23415c!important;border-radius:10px!important;padding:12px!important}",
+    ".fmc-gex .snapshot-metric b{font-size:18px!important;font-variant-numeric:tabular-nums}",
+    ".fmc-gex .snapshot-metric.g small{color:#43d39a!important}.fmc-gex .snapshot-metric.g b{color:#7ff0c0!important}",
+    ".fmc-gex .snapshot-metric.r small{color:#ef727b!important}.fmc-gex .snapshot-metric.r b{color:#ff9aa2!important}",
+    ".fmc-gex .snapshot-metric.a small{color:#e8b45c!important}.fmc-gex .snapshot-metric.a b{color:#ffd78a!important}",
+    ".fmc-gex .snapshot-metric.c small{color:#58c9e9!important}.fmc-gex .snapshot-metric.c b{color:#9ee8ff!important}",
+    ".fmc-gex .snapshot-note{font-size:11px!important}",
+    ".fmc-live{background:linear-gradient(90deg,#0f2740,#0b1a2c 60%,#122a3d)!important;border:1px solid #2c5a7a;border-radius:14px;padding:14px 16px!important;box-shadow:0 8px 22px rgba(0,0,0,.3);margin:0 0 14px!important}",
+    ".fmc-live .btn{font-size:14px!important;padding:10px 18px!important;font-weight:700}",
+    ".fmc-live .btn:hover{background:linear-gradient(135deg,#1d5a78,#2a7fa3)!important;color:#fff!important;border-color:#58c9e9!important}",
+    ".fmc-live select.control{font-size:14px!important;padding:9px 12px!important;background:#0a1a2c!important;border-color:#2c5a7a!important;color:#9ee8ff!important}",
+    ".fmc-live #live-status{color:#43d39a!important;font-size:12px!important}",
+    ".fmc-live .muted.small:first-child{color:#58c9e9!important;font-size:13px!important;font-weight:700;letter-spacing:.08em;text-transform:uppercase}",
+    ".fmc-live #webull-reconnect{font-size:13px!important}"
+  ].join("");
+  var st = document.createElement("style");
+  st.id = "fmcLayout7-style";
+  st.textContent = css;
+  document.head.appendChild(st);
+
+  // Hide the extra GEX panel at the bottom of the Overview (not the main GEX box)
+  function hideExtraGex() {
+    document.querySelectorAll("#overview .panel").forEach(function (p) {
+      if (p.classList.contains("home-gex-panel")) return;
+      if (p.querySelector(".home-gex-panel") || p.querySelector(".home-scout-panel") || p.querySelector("#api-health")) return;
+      var t = p.textContent;
+      if (/GEX/.test(t) && /Cboe|No GEX/.test(t)) p.style.display = "none";
+    });
+  }
+
+  // Rename the main GEX box to "GEX" and color its metrics
+  function styleGex() {
+    var g = document.querySelector(".home-gex-panel");
+    if (!g) return;
+    g.classList.add("fmc-gex");
+    var pt = g.querySelector(".panel-title");
+    
+    var tag = g.querySelector(".fmc-tag");
+    
+
+    g.querySelectorAll(".snapshot-metric").forEach(function (m) {
+      var s = m.querySelector("small");
+      var l = s ? s.textContent.toUpperCase() : "";
+      var c = "";
+      if (/^C\d|CALL/.test(l)) c = "g";
+      else if (/^P\d|PUT/.test(l)) c = "r";
+      else if (/FLIP|EXPECTED|MOVE|VOLAT|REALIZED|IV/.test(l)) c = "a";
+      else if (/SPOT|UNDERLYING|MAPPED|NET|FUTURES/.test(l)) c = "c";
+      if (c && !m.classList.contains(c)) m.classList.add(c);
+    });
+  }
+
+  // Bigger, colored Live ticker bar
+  function styleTicker() {
+    var lp = document.getElementById("live-picker");
+    if (lp) lp.classList.add("fmc-live");
+  }
+
+  function run() {
+    try {
+      hideExtraGex();
+      styleGex();
+      styleTicker();
+    } catch (e) { console.error("fmcLayout7:", e); }
+  }
+
+  run();
+  setInterval(run, 2000);
+})();
+</script>
+<script>
+(function () {
+  if (window.__fmcLayout8) return;
+  window.__fmcLayout8 = true; // fmcLayout8
+
+  var css = [
+    ".fmc-kill{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;padding:12px 14px;border-radius:12px;border:1px solid #6b3138;background:linear-gradient(90deg,#2a1218,#1a0d12 60%,#24101a)}",
+    ".fmc-kill .kill-txt{font-size:11px;color:#f3b8bd;line-height:1.5}",
+    ".fmc-kill .kill-txt b{display:block;color:#ff9aa2;font-size:12px;letter-spacing:.08em;text-transform:uppercase}",
+    ".fmc-kill button{font-weight:800;letter-spacing:.08em;font-size:12px;padding:10px 16px;border-radius:10px;border:1px solid #b5434d;background:linear-gradient(135deg,#7a1f28,#c1434f);color:#fff;cursor:pointer;white-space:nowrap}",
+    ".fmc-kill button.armed{background:linear-gradient(135deg,#c1434f,#ff5a66);box-shadow:0 0 14px rgba(255,90,102,.55)}",
+    ".fmc-kill .kill-msg{font-size:11px;color:#e8b45c;margin-top:4px}",
+    ".fmc-gex *{animation:none!important;transition:none!important}"
+  ].join("");
+  var st = document.createElement("style");
+  st.id = "fmcLayout8-style";
+  st.textContent = css;
+  document.head.appendChild(st);
+
+  var armedUntil = 0;
+
+  function killHtml() {
+    return '<div class="kill-txt"><b>Kill switch</b>Flatten all positions across MNQ, MES, and MGC.<div class="kill-msg" id="fmc-kill-msg">No broker account connected. Execution is disabled.</div></div>' +
+           '<button type="button" id="fmc-kill-btn">ARM KILL SWITCH</button>';
+  }
+
+  function addKillSwitch() {
+    var pnl = document.getElementById("pnl-panel");
+    if (!pnl || pnl.querySelector(".fmc-kill")) return;
+    var head = pnl.querySelector(".panel-head");
+    var bar = document.createElement("div");
+    bar.className = "fmc-kill";
+    bar.innerHTML = killHtml();
+    if (head) head.insertAdjacentElement("afterend", bar);
+    else pnl.insertBefore(bar, pnl.firstChild);
+    var btn = document.getElementById("fmc-kill-btn");
+    btn.addEventListener("click", onKill);
+  }
+
+  function setMsg(text) {
+    var m = document.getElementById("fmc-kill-msg");
+    if (m) m.textContent = text;
+  }
+
+  function onKill() {
+    var btn = document.getElementById("fmc-kill-btn");
+    if (!btn) return;
+    if (Date.now() > armedUntil) {
+      armedUntil = Date.now() + 5000;
+      btn.textContent = "CONFIRM FLATTEN ALL";
+      btn.classList.add("armed");
+      setMsg("Click again within 5 seconds to confirm.");
+      setTimeout(function () {
+        if (Date.now() >= armedUntil) {
+          btn.textContent = "ARM KILL SWITCH";
+          btn.classList.remove("armed");
+          setMsg("No broker account connected. Execution is disabled.");
+        }
+      }, 5100);
+      return;
+    }
+    armedUntil = 0;
+    btn.textContent = "ARM KILL SWITCH";
+    btn.classList.remove("armed");
+    var stamp = new Date().toLocaleTimeString();
+    setMsg("Kill switch triggered at " + stamp + ". No broker account connected, so nothing was flattened and no orders were sent.");
+    console.warn("fmcLayout8: kill switch pressed; no broker connected, no orders sent");
+  }
+
+  // Remove the flashing "snapshot" word in the GEX box
+  function fixGex() {
+    var g = document.querySelector(".home-gex-panel");
+    if (!g) return;
+    g.classList.add("fmc-gex");
+    g.querySelectorAll("*").forEach(function (el) {
+      if (el.children.length === 0 && /__never__/.test(el.textContent)) {
+        el.textContent = el.textContent.replace(/\s*snapshot\s*/ig, " ").replace(/\s+/g, " ").trim();
+      }
+    });
+    g.querySelectorAll("[class*='blink'],[class*='flash'],[class*='pulse']").forEach(function (el) {
+      el.style.animation = "none";
+      el.classList.remove("blink", "flash", "pulse");
+    });
+  }
+
+  function run() {
+    try {
+      addKillSwitch();
+      fixGex();
+    } catch (e) { console.error("fmcLayout8:", e); }
+  }
+
+  run();
+  setInterval(run, 2000);
+})();
+</script>
+<script>
+(function () {
+  if (window.__fmcLayout9) return;
+  window.__fmcLayout9 = true; // fmcLayout9
+
+  var css = [
+    ".panel-head .fmc-kill{margin:0 auto!important;padding:0!important;border:0!important;background:none!important;display:flex!important;align-items:center;gap:8px;flex:0 0 auto}",
+    ".fmc-kill .kill-txt{display:none!important}",
+    ".fmc-kill button{font-size:11px;font-weight:800;letter-spacing:.08em;padding:6px 12px;border-radius:8px;border:1px solid #b5434d;background:linear-gradient(135deg,#7a1f28,#c1434f);color:#fff;cursor:pointer;box-shadow:0 0 10px rgba(193,67,79,.35)}",
+    ".fmc-kill button.armed{background:linear-gradient(135deg,#c1434f,#ff5a66);box-shadow:0 0 14px rgba(255,90,102,.6)}",
+    ".fmc-kill .kill-msg{font-size:10px;color:#e8b45c;background:rgba(232,180,92,.1);border:1px solid rgba(232,180,92,.35);padding:3px 9px;border-radius:10px;white-space:nowrap}"
+  ].join("");
+  var st = document.createElement("style");
+  st.id = "fmcLayout9-style";
+  st.textContent = css;
+  document.head.appendChild(st);
+
+  var armedUntil = 0;
+  var IDLE = "No account connected";
+
+  function setMsg(text) {
+    var m = document.getElementById("fmc-kill-msg");
+    if (m) m.textContent = text;
+  }
+
+  function onKill() {
+    var btn = document.getElementById("fmc-kill-btn");
+    if (!btn) return;
+    if (Date.now() > armedUntil) {
+      armedUntil = Date.now() + 5000;
+      btn.textContent = "CONFIRM";
+      btn.classList.add("armed");
+      setMsg("Click again to confirm");
+      setTimeout(function () {
+        if (Date.now() >= armedUntil) {
+          btn.textContent = "KILL SWITCH";
+          btn.classList.remove("armed");
+          setMsg(IDLE);
+        }
+      }, 5100);
+      return;
+    }
+    armedUntil = 0;
+    btn.textContent = "KILL SWITCH";
+    btn.classList.remove("armed");
+    setMsg("Triggered " + new Date().toLocaleTimeString() + " · no account, nothing flattened");
+    console.warn("fmcLayout9: kill switch confirmed; no broker connected, no orders sent");
+  }
+
+  function build(el) {
+    el.innerHTML = '<button type="button" id="fmc-kill-btn" title="Flatten all positions">KILL SWITCH</button>' +
+                   '<span class="kill-msg" id="fmc-kill-msg">' + IDLE + '</span>';
+    document.getElementById("fmc-kill-btn").addEventListener("click", onKill);
+    el.dataset.v9 = "1";
+  }
+
+  function place() {
+    var pnl = document.getElementById("pnl-panel");
+    if (!pnl) return;
+    var el = pnl.querySelector(".fmc-kill");
+    var head = pnl.querySelector(".panel-head");
+    if (!el || !head) return;
+
+    if (el.parentElement !== head) {
+      head.insertBefore(el, head.lastElementChild);
+    }
+    if (!el.dataset.v9) build(el);
+  }
+
+  function run() {
+    try { place(); } catch (e) { console.error("fmcLayout9:", e); }
+  }
+
+  run();
+  setInterval(run, 1500);
+})();
+</script>
+<script>
+(function () {
+  if (window.__fmcLayout10) return;
+  window.__fmcLayout10 = true; // fmcLayout10
+
+  var css = [
+    ".home-gex-panel .panel-title{font-size:0!important;color:transparent!important;display:inline-block;min-height:1em}",
+    ".home-gex-panel .panel-title::after{content:'GEX';font-size:16px;color:#e8f8ff;letter-spacing:.12em;font-weight:800}",
+    ".home-gex-panel .panel-title *{display:none!important}"
+  ].join("");
+  var st = document.createElement("style");
+  st.id = "fmcLayout10-style";
+  st.textContent = css;
+  document.head.appendChild(st);
+})();
+</script>
+</body></html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
