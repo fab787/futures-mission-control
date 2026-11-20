@@ -31,3 +31,6 @@ Thumbs.db
 *.disabled
 
 .venv_ci/
+
+mission_control/*.bak*
+
