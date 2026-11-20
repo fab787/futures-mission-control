@@ -1,4 +1,4 @@
-from mission_control.news_catalyst import analyze_news_catalysts
+﻿from mission_control.news_catalyst import analyze_news_catalysts
 
 
 def test_news_catalyst_classifies_cached_headlines_without_provider_calls():
@@ -33,7 +33,7 @@ def test_news_catalyst_classifies_cached_headlines_without_provider_calls():
     assert result["summary"]["high_priority"] == 1
     assert "monetary_policy" in result["headlines"][0]["themes"]
     assert result["headlines"][0]["directional_bias"] == "not_assessed"
-    assert result["headlines"][0]["instrument_mapping"] == "unavailable_from_combined_feed"
+    assert result["headlines"][0]["instrument_mapping"] == "keyword_hint_only"
     assert result["calendar"]["events"] == []
     assert result["provider_requests_triggered"] == 0
     assert result["trade_authority"] == "none"
@@ -66,3 +66,4 @@ def test_news_catalyst_does_not_invent_calendar_events_or_symbol_mapping():
     assert result["calendar"]["status"] == "page_link_only"
     assert result["calendar"]["events"] == []
     assert "not reliably mapped" in result["headline_scope"]
+
