@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -4202,6 +4202,52 @@ async function lvSlowMinute() {
   refresh();
   setInterval(placeTop, 1500);
   setInterval(refresh, 15000);
+})();
+</script>
+<script>
+(function () {
+  if (window.__fmcNews3) return;
+  window.__fmcNews3 = true;
+  var news = document.getElementById("news");
+  if (!news) return;
+
+  var css = [
+    "#news .feeds-small .news-feed{max-height:150px;font-size:10px}",
+    "#news .feeds-small .news-item{padding:6px 8px;margin:0 0 5px}",
+    "#news .feeds-small .panel-title{font-size:12px}",
+    "#news .feeds-small .panel-head{margin-bottom:4px}",
+    "#news .feeds-small .muted{font-size:10px}",
+    "#news .feeds-label{font-size:10px;letter-spacing:.08em;color:#58c9e9;text-transform:uppercase;margin:14px 0 6px}"
+  ].join("");
+  var style = document.createElement("style");
+  style.textContent = css;
+  document.head.appendChild(style);
+
+  // 1. Move the Yahoo and Webull feeds to the bottom of the section, smaller
+  var cols = news.querySelector(".news-columns");
+  if (cols) {
+    cols.classList.add("feeds-small");
+    var label = document.createElement("div");
+    label.className = "feeds-label";
+    label.textContent = "Raw source feeds (reference)";
+    news.appendChild(label);
+    news.appendChild(cols);
+  }
+
+  // 2. New titled box for the News Analyst, placed under the per-provider comparison
+  var box = document.createElement("div");
+  box.className = "panel";
+  box.id = "news-analyst-box";
+  box.style.marginTop = "12px";
+  box.innerHTML = '<div class="panel-head"><div><div class="eyebrow">Per instrument · evidence-adjusted</div><div class="panel-title">News Analyst</div></div><span class="pill off" id="news-analyst-status">PENDING</span></div>' +
+    '<p class="snapshot-note">Score, confidence, top headlines and price check appear here once the news analyst is connected. Until then, only the raw feeds at the bottom are live.</p>';
+  var bias = news.querySelector("#news-bias-grid");
+  var anchor = bias ? bias.closest(".panel") : null;
+  if (anchor && anchor.parentNode) {
+    anchor.parentNode.insertBefore(box, anchor.nextSibling);
+  } else {
+    news.insertBefore(box, news.firstChild.nextSibling);
+  }
 })();
 </script>
 </body></html>
