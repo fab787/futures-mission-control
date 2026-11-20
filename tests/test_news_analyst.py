@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -102,13 +102,7 @@ def test_naive_timestamp_is_excluded():
     assert analyze_instrument("MNQ", [bad], [], NOW)["counts"]["dropped_no_time"] == 1
 
 
-def test_catalyst_states_by_minutes_to_event():
-    assert catalyst_state(-20) == "ACTIVE"
-    assert catalyst_state(10) == "ACTIVE"
-    assert catalyst_state(40) == "IMMINENT"
-    assert catalyst_state(120) == "UPCOMING"
-    assert catalyst_state(-40) == "RECENT"
-    assert catalyst_state(300) == "BACKGROUND"
+
 
 
 def test_high_importance_event_soon_sets_event_window_and_warns():

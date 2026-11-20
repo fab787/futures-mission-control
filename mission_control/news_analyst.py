@@ -1,4 +1,4 @@
-﻿"""News Analyst: evidence-adjusted score, relevance filter, time buckets, catalyst timing.
+"""News Analyst: evidence-adjusted score, relevance filter, time buckets, catalyst timing.
 
 Pure functions. No network, no cache reads, no order fields. The output confirms or
 warns for the agent desk. It never generates a trade.
@@ -9,6 +9,8 @@ import re
 from datetime import datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
+
+from mission_control.event_windows import catalyst_state
 
 NY = ZoneInfo("America/New_York")
 K = 2.0
@@ -105,16 +107,6 @@ def bucket_of(published: datetime, now: datetime, priority_high: bool) -> str:
     return "earlier"
 
 
-def catalyst_state(minutes_to: float) -> str:
-    if -POST_EVENT_MIN <= minutes_to <= PRE_EVENT_MIN:
-        return "ACTIVE"
-    if PRE_EVENT_MIN < minutes_to <= IMMINENT_MIN:
-        return "IMMINENT"
-    if IMMINENT_MIN < minutes_to <= UPCOMING_MIN:
-        return "UPCOMING"
-    if -UPCOMING_MIN <= minutes_to < -POST_EVENT_MIN:
-        return "RECENT"
-    return "BACKGROUND"
 
 
 def catalysts_for(instrument: str, events: list[dict[str, Any]], now: datetime) -> list[dict[str, Any]]:
@@ -133,7 +125,7 @@ def catalysts_for(instrument: str, events: list[dict[str, Any]], now: datetime) 
             "time_ny": when.astimezone(NY).strftime("%I:%M %p ET"),
             "importance": str(ev.get("importance", "medium")),
             "minutes_to": round(minutes_to, 1),
-            "state": catalyst_state(minutes_to),
+            "state": catalyst_state(minutes_to, str(ev.get("importance", "medium"))),
         })
     return rows
 
@@ -197,7 +189,7 @@ def analyze_instrument(
         stance = "bullish" if score > 0 else "bearish"
 
     catalysts = catalysts_for(instrument, events, now)
-    event_window = any(c["state"] in ("ACTIVE", "IMMINENT") and c["importance"] == "high" for c in catalysts)
+    event_window = any(c["state"] in ("BLOCK", "WARN") and c["importance"] == "high" for c in catalysts)
     recent_w = sum(r["w"] for r in rows if r["s"] != 0 and r["bucket"] == "last_6h")
     if event_window:
         state = "event_window"
