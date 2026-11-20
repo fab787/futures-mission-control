@@ -1221,13 +1221,13 @@ def economic_calendar() -> dict[str, Any]:
 def news_analyst_desk() -> dict[str, Any]:
     """News Analyst desk: one recommendation per instrument, from cached inputs only."""
     from mission_control.calendar_snapshot import load_latest
-    from mission_control.news_analyst_desk import build_news_analyst_desk
+    from mission_control.news_analyst_desk import build_news_analyst_desk, choose_market_snapshot
 
     now = datetime.now(UTC)
     yahoo = yahoo_news_service.peek_news()
     webull = webull_news_service.peek_news()
     calendar = load_latest(ROOT / "data" / "calendar", now)
-    market = market_data_manager.peek_snapshot("1m")
+    market = choose_market_snapshot(webull_market_data_manager.peek_snapshot("1m"), market_data_manager.peek_snapshot("1m"))
     return build_news_analyst_desk(
         yahoo_items=yahoo.get("items", []) or [],
         webull_items=webull.get("items", []) or [],

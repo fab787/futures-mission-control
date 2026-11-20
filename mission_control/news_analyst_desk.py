@@ -220,3 +220,14 @@ def build_news_analyst_desk(
         "order_execution": "disabled",
         "human_approval_required": True,
     }
+
+def _has_bars(snapshot: dict | None) -> bool:
+    for entry in (snapshot or {}).get("instruments", []) or []:
+        if isinstance(entry, dict) and isinstance(entry.get("bars"), list) and entry["bars"]:
+            return True
+    return False
+
+
+def choose_market_snapshot(primary: dict | None, fallback: dict | None) -> dict | None:
+    """Use the primary snapshot (Webull) when it has bars; otherwise the fallback (TradingView)."""
+    return primary if _has_bars(primary) else fallback
