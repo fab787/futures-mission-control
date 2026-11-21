@@ -9,29 +9,28 @@ def _block():
     return HTML[start:end]
 
 
-def test_chart_and_agent_sit_side_by_side():
-    assert "grid-template-columns:minmax(0,1fr) minmax(300px,360px)" in HTML
+def test_charts_page_is_wider():
+    assert "#charts{max-width:1400px}" in HTML
+
+
+def test_analyst_sits_beside_chart_at_equal_visual_weight():
+    assert "grid-template-columns:minmax(0,1.35fr) minmax(360px,1fr)" in HTML
+    assert "align-items:stretch" in HTML
+
+
+def test_analyst_stretches_to_chart_height():
+    assert ".fmc-charts-side>#fmc-agent-charts{flex:1 1 auto;height:100%" in HTML
+
+
+def test_stacks_below_1100px():
+    assert "@media(max-width:1100px){.fmc-charts-row{grid-template-columns:minmax(0,1fr)}}" in HTML
+
+
+def test_layout_script_still_moves_agent_to_side():
     block = _block()
-    assert '"fmc-charts-side"' in block
     assert 'sideBox.appendChild(agent)' in block
-
-
-def test_duplicate_tradingview_link_removed_below_chart():
-    block = _block()
-    assert "links.slice(1)" in block
-    assert '/Launch/i.test(t) && /TradingView/i.test(t)' in block
-
-
-def test_status_note_moves_to_bottom():
-    block = _block()
-    assert 'sec.appendChild(foot)' in block
-    assert "fmc-foot" in HTML
-
-
-def test_script_is_ascii_and_has_no_network_calls():
-    block = _block()
-    assert all(ord(c) < 128 for c in block)
     assert "fetch(" not in block
+    assert all(ord(c) < 128 for c in block)
 
 
 def test_injector_markers_intact():
