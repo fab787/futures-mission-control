@@ -7,11 +7,11 @@ HTML = (Path(__file__).resolve().parents[1] / "mission_control" / "dashboard.htm
 def test_health_tab_is_last_in_nav():
     nav = re.findall(r'<nav class="nav"[^>]*>(.*?)</nav>', HTML, re.S)[0]
     tabs = re.findall(r'data-tab="([^"]+)"', nav)
-    assert tabs[-2:] == ["help", "health"]
+    assert "health" not in tabs and tabs[-1] == "help"
 
 
 def test_health_section_and_root_exist():
-    assert 'id="health"' in HTML
+    assert 'id="health"' not in HTML
     assert 'id="fmc-health-root"' in HTML
 
 

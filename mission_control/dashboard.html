@@ -273,12 +273,26 @@ header.top #mode-bar{order:9}
 .fmc-has-info:hover{color:#8ff0ff}
 .fmc-pop{position:absolute;z-index:80;top:calc(100% + 6px);left:0;max-width:520px;padding:10px 12px;border:1px solid #2c4a66;border-radius:10px;background:#0b1421;color:#c5d7e9;font-size:12px;line-height:1.55;box-shadow:0 10px 24px rgba(0,0,0,.45);font-weight:400;letter-spacing:0}
 </style>
+<style id="fmc-syscheck-css">
+.fmc-sys{font:inherit;font-size:11px;font-weight:800;letter-spacing:.06em;padding:4px 10px;border-radius:999px;border:1px solid #2c4a66;background:#0a1421;color:#8da1ba;cursor:pointer;white-space:nowrap;flex:0 0 auto}
+.fmc-sys:hover{border-color:#58c9e9}
+.fmc-sys-good{color:#43d39a;border-color:#285a4a;background:rgba(67,211,154,.12)}
+.fmc-sys-warn{color:#e8b45c;border-color:#6b5530;background:rgba(232,180,92,.12)}
+.fmc-sys-bad{color:#ef727b;border-color:#6b3138;background:rgba(239,114,123,.12)}
+.fmc-sys-neutral{color:#8da1ba}
+.safety{color:#58c9e9!important;border:1px solid #2c5a7a;background:rgba(88,201,233,.10);padding:3px 10px;border-radius:999px;box-shadow:0 0 10px rgba(88,201,233,.18);font-weight:800;letter-spacing:.04em}
+#fmc-market-light[data-state="live"]{border-color:#285a4a!important;background:rgba(67,211,154,.12)!important;color:#43d39a!important;box-shadow:0 0 12px rgba(67,211,154,.28)}
+#fmc-market-light[data-state="halt"]{border-color:#6b5530!important;background:rgba(232,180,92,.12)!important;color:#e8b45c!important}
+#fmc-market-light[data-state="off"]{border-color:#2c4a66!important;background:#0a1421!important;color:#8da1ba!important}
+#fmc-arm-btn.fmc-arm-on{background:#43d39a!important;color:#04140d!important;border:1px solid #43d39a!important;font-weight:800!important;box-shadow:0 0 10px rgba(67,211,154,.35)}
+#fmc-arm-btn.fmc-arm-off{background:#101a29!important;color:#8da1ba!important;border:1px dashed #4a5a70!important;font-weight:700!important}
+</style>
 </head>
 <body><div class="shell">
 <header class="top"><div class="brand"><img class="fmc-logo" alt="QUANTUM by FAB787" width="48" height="48" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJRVUFOVFVNIiB4bWxuczpjMnBhPSJodHRwOi8vYzJwYS5vcmcvbWFuaWZlc3QiPgogIDx0aXRsZT5RVUFOVFVNPC90aXRsZT4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMGYyYTQ0Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzA0MDkxMyIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ib3JiQ3lhbiIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjAiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMyMmQzZWUiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjM2I4MmY2Ii8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJvcmJWaW9sZXQiIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIwIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZTg3OWY5Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzhiNWNmNiIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ib3JiTWludCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjAiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMzNGQzOTkiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMjJkM2VlIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJjYW5kbGVHcmVlbiIgeDE9IjAiIHkxPSIwIiB4Mj0iMCIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM2ZWU3YjciLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMDU5NjY5Ii8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJjb3JlIiBjeD0iMC41IiBjeT0iMC41IiByPSIwLjUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMyMmQzZWUiIHN0b3Atb3BhY2l0eT0iMC4zOCIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMyMmQzZWUiIHN0b3Atb3BhY2l0eT0iMCIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICAgIDxmaWx0ZXIgaWQ9Imdsb3ciIHg9Ii01MCUiIHk9Ii01MCUiIHdpZHRoPSIyMDAlIiBoZWlnaHQ9IjIwMCUiPgogICAgICA8ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSI1IiByZXN1bHQ9ImJsdXIiLz4KICAgICAgPGZlTWVyZ2U+CiAgICAgICAgPGZlTWVyZ2VOb2RlIGluPSJibHVyIi8+CiAgICAgICAgPGZlTWVyZ2VOb2RlIGluPSJTb3VyY2VHcmFwaGljIi8+CiAgICAgIDwvZmVNZXJnZT4KICAgIDwvZmlsdGVyPgogIDwvZGVmcz4KCiAgPCEtLSBUaWxlIHdpdGggYSBmaW5lIGVkZ2UgaGlnaGxpZ2h0IC0tPgogIDxyZWN0IHg9IjE2IiB5PSIxNiIgd2lkdGg9IjQ4MCIgaGVpZ2h0PSI0ODAiIHJ4PSIxMTAiIGZpbGw9InVybCgjYmcpIi8+CiAgPHJlY3QgeD0iMTYiIHk9IjE2IiB3aWR0aD0iNDgwIiBoZWlnaHQ9IjQ4MCIgcng9IjExMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMjJkM2VlIiBzdHJva2Utb3BhY2l0eT0iMC40NSIgc3Ryb2tlLXdpZHRoPSIzIi8+CiAgPHJlY3QgeD0iMjIiIHk9IjIyIiB3aWR0aD0iNDY4IiBoZWlnaHQ9IjQ2OCIgcng9IjEwNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4wNiIgc3Ryb2tlLXdpZHRoPSIyIi8+CgogIDwhLS0gSW5zdHJ1bWVudCByaW5nIC0tPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMjEyIiBmaWxsPSJub25lIiBzdHJva2U9IiMyMmQzZWUiIHN0cm9rZS1vcGFjaXR5PSIwLjI4IiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1kYXNoYXJyYXk9IjIgMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgoKICA8IS0tIENvcmUgZ2xvdyAtLT4KICA8Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjE1MCIgZmlsbD0idXJsKCNjb3JlKSIvPgoKICA8IS0tIFF1YW50dW0gb3JiaXRzIC0tPgogIDxnIGZpbGw9Im5vbmUiIHN0cm9rZS13aWR0aD0iNyIgZmlsdGVyPSJ1cmwoI2dsb3cpIj4KICAgIDxlbGxpcHNlIGN4PSIyNTYiIGN5PSIyNTYiIHJ4PSIxOTAiIHJ5PSI3MiIgc3Ryb2tlPSJ1cmwoI29yYkN5YW4pIiB0cmFuc2Zvcm09InJvdGF0ZSgtMjggMjU2IDI1NikiLz4KICAgIDxlbGxpcHNlIGN4PSIyNTYiIGN5PSIyNTYiIHJ4PSIxOTAiIHJ5PSI3MiIgc3Ryb2tlPSJ1cmwoI29yYlZpb2xldCkiIHRyYW5zZm9ybT0icm90YXRlKDMyIDI1NiAyNTYpIi8+CiAgICA8ZWxsaXBzZSBjeD0iMjU2IiBjeT0iMjU2IiByeD0iMTkwIiByeT0iNzIiIHN0cm9rZT0idXJsKCNvcmJNaW50KSIgdHJhbnNmb3JtPSJyb3RhdGUoOTAgMjU2IDI1NikiIHN0cm9rZS13aWR0aD0iNSIvPgogIDwvZz4KCiAgPCEtLSBFbGVjdHJvbiBub2RlcyAtLT4KICA8ZyBmaWx0ZXI9InVybCgjZ2xvdykiPgogICAgPGNpcmNsZSBjeD0iNDI0IiBjeT0iMTY3IiByPSIxMCIgZmlsbD0iIzY3ZThmOSIvPgogICAgPGNpcmNsZSBjeD0iOTUiIGN5PSIxNTUiIHI9IjkiIGZpbGw9IiNmMGFiZmMiLz4KICAgIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjQ0NiIgcj0iOSIgZmlsbD0iIzZlZTdiNyIvPgogIDwvZz4KCiAgPCEtLSBQcmljZS1sZXZlbCBsaW5lIHRocm91Z2ggdGhlIGNhbmRsZSAtLT4KICA8bGluZSB4MT0iMTUwIiB5MT0iMjYyIiB4Mj0iMzYyIiB5Mj0iMjYyIiBzdHJva2U9IiMyMmQzZWUiIHN0cm9rZS1vcGFjaXR5PSIwLjU1IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1kYXNoYXJyYXk9IjYgNiIvPgoKICA8IS0tIENhbmRsZXN0aWNrIGF0IHRoZSBjZW50ZXIgLS0+CiAgPGcgZmlsdGVyPSJ1cmwoI2dsb3cpIj4KICAgIDxsaW5lIHgxPSIyNTYiIHkxPSIxNjgiIHgyPSIyNTYiIHkyPSIzNDQiIHN0cm9rZT0iI2UyZThmMCIgc3Ryb2tlLXdpZHRoPSI2IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICAgIDxyZWN0IHg9IjIyMiIgeT0iMjA2IiB3aWR0aD0iNjgiIGhlaWdodD0iMTA0IiByeD0iOCIgZmlsbD0idXJsKCNjYW5kbGVHcmVlbikiLz4KICAgIDxyZWN0IHg9IjIzNiIgeT0iMjE4IiB3aWR0aD0iMTIiIGhlaWdodD0iNjAiIHJ4PSI2IiBmaWxsPSIjZmZmZmZmIiBvcGFjaXR5PSIwLjQ1Ii8+CiAgPC9nPgo8bWV0YWRhdGE+PGMycGE6bWFuaWZlc3Q+QUFBV2dtcDFiV0lBQUFBZWFuVnRaR015Y0dFQUVRQVFnQUFBcWdBNG0zRURZekp3WVFBQUFCWmNhblZ0WWdBQUFFZHFkVzFrWXpKdFlRQVJBQkNBQUFDcUFEaWJjUU4xY200Nll6SndZVHBrT1RrNE9XWmtPUzA0TURoakxUUm1Nak10T1dNMU5DMDBZV016WkdObFlXVTNZallBQUFBRGwycDFiV0lBQUFBcGFuVnRaR015WVhNQUVRQVFnQUFBcWdBNG0zRURZekp3WVM1aGMzTmxjblJwYjI1ekFBQUFBTHhxZFcxaUFBQUFSR3AxYldSalltOXlBQkVBRUlBQUFLb0FPSnR4RTJNeWNHRXVhVzVuY21Wa2FXVnVkQzUyTXdBQUFBQVlZekp6YU1Vei9ncEYxR3gybHB6SHQ2M2RNMUFBQUFCd1kySnZjcU5wWkdNNlptOXliV0YwYldsdFlXZGxMM04yWnl0NGJXeHFhVzV6ZEdGdVkyVkpSSGdzZUcxd09tbHBaRHBoTldReU9ETTVOaTFsTldRNExUUXlaVEF0WWpNMk1TMHlPRFZoWkdJNU9UWmpaREJzY21Wc1lYUnBiMjV6YUdsd2FIQmhjbVZ1ZEU5bUFBQUI0bXAxYldJQUFBQkJhblZ0WkdOaWIzSUFFUUFRZ0FBQXFnQTRtM0VUWXpKd1lTNWhZM1JwYjI1ekxuWXlBQUFBQUJoak1uTm9VbmNJQnppaWxlSDI3a1dRUlc4UW13QUFBWmxqWW05eW9tZGhZM1JwYjI1emdxSm1ZV04wYVc5dWEyTXljR0V1YjNCbGJtVmthbkJoY21GdFpYUmxjbk9oYTJsdVozSmxaR2xsYm5SemdhSmpkWEpzZUMxelpXeG1JMnAxYldKbVBXTXljR0V1WVhOelpYSjBhVzl1Y3k5ak1uQmhMbWx1WjNKbFpHbGxiblF1ZGpOa2FHRnphRmdnZklNa0pNL3ZMS1BORzBhYVRPOFlHUFgvTHRZY2I3bmthbGRDSDhjbUFlMmtabUZqZEdsdmJuZ2RZMjl0TG1GdWRHaHliM0JwWXk1amJHRjFaR1V1Y0hKdmRtbGtaV1JxY0dGeVlXMWxkR1Z5YzZGNEgyTnZiUzVoYm5Sb2NtOXdhV011YjNKcFoybHVMV052Ym1acFpHVnVZMlZuZFc1cmJtOTNibXRrWlhOamNtbHdkR2x2Ym5obVEyeGhkV1JsSUhCeWIzWnBaR1ZrSUhSb2FYTWdabWxzWlNCaGRDQjBhR1VnY21WeGRXVnpkQ0J2WmlCaElIVnpaWElnWVc1a0lHMWhlU0JvWVhabElHTnlaV0YwWldRZ2IzSWdiVzlrYVdacFpXUWdkR2hsSUdacGJHVWdZMjl1ZEdWdWRITXViWE52Wm5SM1lYSmxRV2RsYm5TaFpHNWhiV1ZtUTJ4aGRXUmxjbUZzYkVGamRHbHZibk5KYm1Oc2RXUmxaUFVBQUFESWFuVnRZZ0FBQUVCcWRXMWtZMkp2Y2dBUkFCQ0FBQUNxQURpYmNSTmpNbkJoTG1oaGMyZ3VaR0YwWVFBQUFBQVlZekp6YUthRlVGMDF4dDNGV1liZTJxWU41RHNBQUFDQVkySnZjcVZqWVd4blpuTm9ZVEkxTm1Od1lXUk1BQUFBQUFBQUFBQUFBQUFBWkdoaGMyaFlJRmxSWWVFMDlNQlBhYnhhMkdvMU1QUjVUMXlIcGxqY0lmQ3hRMi9LYlFqMlpHNWhiV1Z1YW5WdFltWWdiV0Z1YVdabGMzUnFaWGhqYkhWemFXOXVjNEdpWlhOMFlYSjBHUTBYWm14bGJtZDBhQmtlQkFBQUFqNXFkVzFpQUFBQUoycDFiV1JqTW1Oc0FCRUFFSUFBQUtvQU9KdHhBMk15Y0dFdVkyeGhhVzB1ZGpJQUFBQUNEMk5pYjNLbFkyRnNaMlp6YUdFeU5UWnBjMmxuYm1GMGRYSmxlRTF6Wld4bUkycDFiV0ptUFM5ak1uQmhMM1Z5Ympwak1uQmhPbVE1T1RnNVptUTVMVGd3T0dNdE5HWXlNeTA1WXpVMExUUmhZek5rWTJWaFpUZGlOaTlqTW5CaExuTnBaMjVoZEhWeVpXcHBibk4wWVc1alpVbEVlQ3g0YlhBNmFXbGtPakJsWm1Zd09UazJMVFF5TjJNdE5HSTJOaTA1TnpaaUxXVTFZek16WW1FNVpUaGhOWEpqY21WaGRHVmtYMkZ6YzJWeWRHbHZibk9Eb21OMWNteDRMWE5sYkdZamFuVnRZbVk5WXpKd1lTNWhjM05sY25ScGIyNXpMMk15Y0dFdWFXNW5jbVZrYVdWdWRDNTJNMlJvWVhOb1dDQjhneVFreis4c284MGJScHBNN3hnWTlmOHUxaHh2dWVScVYwSWZ4eVlCN2FKamRYSnNlQ3B6Wld4bUkycDFiV0ptUFdNeWNHRXVZWE56WlhKMGFXOXVjeTlqTW5CaExtRmpkR2x2Ym5NdWRqSmthR0Z6YUZnZ01tVjAwMVhDTVNlTWo1dnA1MDVBVXhiaHdEdC9TWDVsL0Jicjl2c0FJamFpWTNWeWJIZ3BjMlZzWmlOcWRXMWlaajFqTW5CaExtRnpjMlZ5ZEdsdmJuTXZZekp3WVM1b1lYTm9MbVJoZEdGa2FHRnphRmdnb0dMSWI2SFdiVkRsZ29RMTlEcGtBQjdZSUIveVRyRVFBL2Z3L3k1YnhneDBZMnhoYVcxZloyVnVaWEpoZEc5eVgybHVabStqWkc1aGJXVnZRVzUwYUhKdmNHbGpJRVpwYkdWelozWmxjbk5wYjI1bE1TNHdMakJyYzNCbFkxWmxjbk5wYjI1bE1pNDBMakFBQUJBNGFuVnRZZ0FBQUNocWRXMWtZekpqY3dBUkFCQ0FBQUNxQURpYmNRTmpNbkJoTG5OcFoyNWhkSFZ5WlFBQUFCQUlZMkp2Y3RLRVdRSVNvZ0VtR0NGWkFnb3dnZ0lHTUlJQmphQURBZ0VDQWhSQTVhQUs3c0k1MEw2NGcvb0dRZ1U5WjFVVEFEQUtCZ2dxaGtqT1BRUURBekJKTVJjd0ZRWURWUVFLRXc1QmJuUm9jbTl3YVdNc0lGQkNRekV1TUN3R0ExVUVBeE1sUVc1MGFISnZjR2xqSUVOdmJuUmxiblFnUTNKbFpHVnVkR2xoYkhNZ1VtOXZkQ0JEUVRBZUZ3MHlOakE0TURjeE9EUXpOVFphRncweU9EQTRNRFl4T1RRek5UWmFNRVF4RnpBVkJnTlZCQW9URGtGdWRHaHliM0JwWXl3Z1VFSkRNU2t3SndZRFZRUURFeUJCYm5Sb2NtOXdhV01nUTJ4aGRXUmxJRU52Ym5SbGJuUWdVMmxuYm1sdVp6QlpNQk1HQnlxR1NNNDlBZ0VHQ0NxR1NNNDlBd0VIQTBJQUJKaDZDbXZMVUJnRkZOVTB2VUtsT1Z0RTZkamQxN0w1U3V3WDBMZW1GaXNCTTNka2QvM2N5anhGQTNRbzVTNDZmWDAvaWhZMFZaN21mYjlLRjcwM3Q1T2pXREJXTUE0R0ExVWREd0VCL3dRRUF3SUhnREFWQmdOVkhTVUVEakFNQmdvckJnRUVBWVBvWGdJQk1Bd0dBMVVkRXdFQi93UUNNQUF3SHdZRFZSMGpCQmd3Rm9BVXpsSGlCSUZPWkZzaitPUEV6NW8rbk1IWFhNSXdDZ1lJS29aSXpqMEVBd01EWndBd1pBSXdNWE1kRko0QmV0TExWWTdPUnVFOW5vcWJiQVpPWm4vYUFyWHlUd0ZBWmZLclB6eEYydlBvSk5mMStVQ2RnMVhHQWpCd1gxemQ5V0dxWWtxbUw1U0ZxdzFReVNqcjF6SmZwSk05KzFyZER3U1BMTU9QT2pLdWlYam9VL3BVVWVHOVJ3bWhZM0JoWkZrTm5nQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBUFpZUUtaUlRHN0VWRnc0Ry9YQzFxWk1xMXNmWlZFaUZreDNyT01qYndBaExQL1J0d0VxZXVZbWlGcWg4ZGQySVdFV2pudzA0MElyOVdBRmZmdUlrNHZpZWJFPTwvYzJwYTptYW5pZmVzdD48L21ldGFkYXRhPjwvc3ZnPgo="><div><div class="eyebrow">Futures intelligence platform</div><div class="title"><span class="fmc-word">QUANTUM</span> <span class="fmc-sub">FAB787</span></div></div></div><div class="top-right"><span class="clock" id="clock">LOCAL TIME</span><span class="safety">● READ-ONLY · EXECUTION DISABLED</span></div><div class="session-controls"><span class="session-user" id="session-user">LOCAL SESSION</span><button class="logout-button" id="logout-button" type="button">Sign out</button></div><div id="mode-bar" style="flex-basis:100%;width:100%;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 12px;margin:8px 0 0;border:1px solid #22334a;border-radius:10px;background:#0b1421"><span class="eyebrow">Operating mode</span><button id="mode-signal" type="button" aria-pressed="true" style="padding:8px 18px;border-radius:8px;border:1px solid #43d39a;background:rgba(67,211,154,.16);color:#43d39a;font-weight:700;letter-spacing:.06em;cursor:pointer">SIGNAL</button><button id="mode-trading" type="button" aria-pressed="false" style="padding:8px 18px;border-radius:8px;border:1px solid #22334a;background:#101a29;color:#e8f0fa;font-weight:700;letter-spacing:.06em;cursor:pointer;opacity:.4">TRADING</button><span id="mode-status" class="muted small"></span></div></header>
 <nav class="nav" aria-label="FAB787 QUANTUM workspaces">
 <button class="active" data-tab="overview">Overview</button><button data-tab="charts">Charts</button><button data-tab="gex">GEX</button><button data-tab="news">News & Events</button><button data-tab="agents">AI Desk</button><button data-tab="risk">Risk & Approvals</button><button data-tab="help">Help Center</button>
-<button data-tab="health">System Health</button>
+
 </nav>
 <section class="section active" id="overview">
 <div class="panel-head"><div><div class="eyebrow">Market overview</div><div class="panel-title">Instrument watchlist</div></div><span class="pill off">FEEDS NOT CONNECTED</span></div>
@@ -567,8 +581,8 @@ header.top #mode-bar{order:9}
  <div id="risk-audit-events" class="muted small">Loading local audit events…</div>
 </div>
 </section>
-<section class="section" id="health"><div class="page-intro"><div class="page-intro-title">System Health</div><div class="page-intro-desc">Status of the platform, its data adapters and the AI desk. Read-only checks; nothing is sent or pulled from providers.</div></div><div class="panel" id="fmc-health-root"></div></section>
-<section class="section" id="help"><div class="panel"><div class="panel-head"><div><div class="eyebrow">Data connections</div><div class="panel-title">Integration control center</div></div><span class="pill warn" id="integration-summary">CHECKING CONNECTIONS</span></div><div class="status-row"><div><b>TradingView MCP</b><div class="muted small">Official OAuth connection · read-only market history</div></div><span class="pill warn" id="tv-integration-state">AUTHORIZATION REQUIRED</span></div><div class="status-row"><div><b>Webull Cloud MCP</b><div class="muted small">Separate OAuth ? read-only futures bars, snapshots, depth and contracts</div></div><span class="pill warn" id="webull-integration-state">CHECKING</span></div><div class="status-row"><div><b>Yahoo Finance / News</b><div class="muted small">Combined ticker RSS · ten-minute cache · stale fallback</div></div><span class="pill warn">CONFIGURED · VERIFY ON FETCH</span></div><div class="status-row"><div><b>Economic calendar</b><div class="muted small">Yahoo Finance economic calendar page · structured feed unverified</div></div><span class="pill warn">PAGE LINK ONLY</span></div><div class="status-row"><div><b>Cboe delayed options / GEX</b><div class="muted small">NDX options chain · on-demand · 15-minute cache · MNQ/NQ mapping</div></div><span class="pill off">ON DEMAND</span></div><div class="status-row"><div><b>Broker / paper account</b><div class="muted small">Read-only account verification first</div></div><span class="pill off">NOT CONNECTED</span></div><div class="status-row"><div><b>Market data fallback</b><div class="muted small">Secondary source and data-health comparison</div></div><span class="pill off">FUTURE</span></div></div><div class="notice">The local application uses its own separately authorized provider connections. Webull is restricted to market:read and instrument:read. Credentials remain outside dashboard HTML and Git.</div>
+
+<section class="section" id="help"><div class="panel" id="fmc-health-root"><div class="panel-head"><div><div class="eyebrow">System check</div><div class="panel-title">Platform health</div></div></div></div><div class="panel"><div class="panel-head"><div><div class="eyebrow">Data connections</div><div class="panel-title">Integration control center</div></div><span class="pill warn" id="integration-summary">CHECKING CONNECTIONS</span></div><div class="status-row"><div><b>TradingView MCP</b><div class="muted small">Official OAuth connection · read-only market history</div></div><span class="pill warn" id="tv-integration-state">AUTHORIZATION REQUIRED</span></div><div class="status-row"><div><b>Webull Cloud MCP</b><div class="muted small">Separate OAuth ? read-only futures bars, snapshots, depth and contracts</div></div><span class="pill warn" id="webull-integration-state">CHECKING</span></div><div class="status-row"><div><b>Yahoo Finance / News</b><div class="muted small">Combined ticker RSS · ten-minute cache · stale fallback</div></div><span class="pill warn">CONFIGURED · VERIFY ON FETCH</span></div><div class="status-row"><div><b>Economic calendar</b><div class="muted small">Yahoo Finance economic calendar page · structured feed unverified</div></div><span class="pill warn">PAGE LINK ONLY</span></div><div class="status-row"><div><b>Cboe delayed options / GEX</b><div class="muted small">NDX options chain · on-demand · 15-minute cache · MNQ/NQ mapping</div></div><span class="pill off">ON DEMAND</span></div><div class="status-row"><div><b>Broker / paper account</b><div class="muted small">Read-only account verification first</div></div><span class="pill off">NOT CONNECTED</span></div><div class="status-row"><div><b>Market data fallback</b><div class="muted small">Secondary source and data-health comparison</div></div><span class="pill off">FUTURE</span></div></div><div class="notice">The local application uses its own separately authorized provider connections. Webull is restricted to market:read and instrument:read. Credentials remain outside dashboard HTML and Git.</div>
 <div class="panel" style="margin-top:14px">
  <div class="panel-head">
   <div><div class="eyebrow">System support</div><div class="panel-title">Help Center ? Diagnostics &amp; Troubleshooting</div></div>
@@ -4752,7 +4766,7 @@ async function lvSlowMinute() {
     });
     Object.keys(INTRO).forEach(function (id) {
       var sec = document.getElementById(id);
-      if (!sec || sec.querySelector(":scope > .fmc-intro")) return;
+      return; // page titles removed: the navigation already names each page
       var box = document.createElement("div");
       box.className = "fmc-intro";
       var t = document.createElement("div");
@@ -5100,7 +5114,7 @@ async function lvSlowMinute() {
     try { renderOverview(desk, news); } catch (e) {}
     try { renderDesk(desk, news); } catch (e) {}
     try { renderPages(desk, news); } catch (e) {}
-    try { buildHelpCard(); buildHealth(); } catch (e) {}
+    try { buildHealth(); } catch (e) {}
   }
   function refreshAll(force) {
     if (state.busy) { return; }
@@ -5308,6 +5322,121 @@ async function lvSlowMinute() {
     document.addEventListener("click", closePop);
     var nav = document.querySelector(".nav");
     if (nav) { nav.addEventListener("click", function () { setTimeout(run, 120); }); }
+  }
+  if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", start); } else { start(); }
+})();
+</script>
+<script id="fmc-syscheck">
+(function () {
+  "use strict";
+  var ENDPOINTS = [
+    ["AI Desk", "/api/agents/desk"],
+    ["News Analyst", "/api/agents/news-analyst"],
+    ["News intelligence", "/api/news/intelligence"],
+    ["Market gate", "/api/market/status"],
+    ["TradingView", "/api/tradingview/status"],
+    ["Webull", "/api/webull/status"]
+  ];
+  var pill = null;
+  var busy = false;
+  var tries = 0;
+
+  function timed(url) {
+    var t0 = Date.now();
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 8000) : null;
+    return fetch(url, { cache: "no-store", signal: ctrl ? ctrl.signal : undefined })
+      .then(function (r) { return { ok: r.ok, status: r.status, ms: Date.now() - t0 }; })
+      .catch(function () { return { ok: false, status: 0, ms: Date.now() - t0 }; })
+      .then(function (x) { if (timer) { clearTimeout(timer); } return x; });
+  }
+  function paint(label, tone, title) {
+    pill.className = "fmc-sys fmc-sys-" + tone;
+    pill.textContent = label;
+    pill.title = title;
+  }
+  function run() {
+    if (busy || !pill) { return; }
+    busy = true;
+    Promise.all(ENDPOINTS.map(function (e) { return timed(e[1]); })).then(function (rs) {
+      busy = false;
+      var fails = [], slow = [];
+      rs.forEach(function (r, i) {
+        if (!r.ok) { fails.push(ENDPOINTS[i][0]); }
+        else if (r.ms > 2000) { slow.push(ENDPOINTS[i][0]); }
+      });
+      var when = new Date().toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }) + " ET";
+      if (fails.length) { paint("SYSTEM: " + fails.length + " FAILED", "bad", "Failed: " + fails.join(", ") + " - checked " + when); }
+      else if (slow.length) { paint("SYSTEM: " + slow.length + " SLOW", "warn", "Slow: " + slow.join(", ") + " - checked " + when); }
+      else { paint("SYSTEM: OK " + rs.length + "/" + rs.length, "good", "All status endpoints responding - checked " + when); }
+    });
+  }
+  function mount() {
+    var existing = document.getElementById("fmc-sys");
+    if (existing) { pill = existing; return true; }
+    var h = document.querySelector("header.top");
+    var tr = h ? h.querySelector(".top-right") : null;
+    if (!h || !tr) { return false; }
+    pill = document.createElement("button");
+    pill.type = "button";
+    pill.id = "fmc-sys";
+    pill.className = "fmc-sys fmc-sys-neutral";
+    pill.textContent = "SYSTEM: CHECKING";
+    pill.addEventListener("click", function () {
+      var b = document.querySelector('.nav button[data-tab="help"]');
+      if (b) { b.click(); }
+      setTimeout(function () {
+        var r = document.getElementById("fmc-health-root");
+        if (r && r.scrollIntoView) { r.scrollIntoView({ behavior: "smooth", block: "start" }); }
+        run();
+      }, 250);
+    });
+    h.insertBefore(pill, tr);
+    return true;
+  }
+  function start() {
+    if (!mount()) {
+      tries += 1;
+      if (tries < 40) { setTimeout(start, 500); }
+      return;
+    }
+    run();
+    setInterval(run, 60000);
+  }
+  if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", start); } else { start(); }
+})();
+</script>
+<script id="fmc-state-colors">
+(function () {
+  "use strict";
+  var queued = false;
+  function apply() {
+    queued = false;
+    var light = document.getElementById("fmc-market-light");
+    if (light) {
+      var t = light.textContent || "";
+      var state = "off";
+      if (/HALT/.test(t)) { state = "halt"; }
+      else if (/ARMED/.test(t) && !/DISARMED/.test(t)) { state = /OPEN/.test(t) ? "live" : "halt"; }
+      if (light.getAttribute("data-state") !== state) { light.setAttribute("data-state", state); }
+    }
+    var btn = document.getElementById("fmc-arm-btn");
+    if (btn) {
+      var on = /ARMED/.test(btn.textContent || "") && !/DISARMED/.test(btn.textContent || "");
+      var cls = on ? "btn fmc-arm-on" : "btn fmc-arm-off";
+      if (btn.className !== cls) { btn.className = cls; }
+    }
+  }
+  function schedule() {
+    if (queued) { return; }
+    queued = true;
+    setTimeout(apply, 120);
+  }
+  function start() {
+    apply();
+    if (window.MutationObserver && document.body) {
+      new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true, characterData: true });
+    }
   }
   if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", start); } else { start(); }
 })();
