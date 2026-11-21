@@ -5643,6 +5643,98 @@ async function lvSlowMinute() {
   if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", start); } else { start(); }
 })();
 </script>
+<script id="fmc-chart-trim">
+(function () {
+  "use strict";
+  var pending = false;
+
+  function txt(n) { return (n.textContent || "").replace(/\s+/g, " ").trim(); }
+
+  function leaves(root, test) {
+    var out = [];
+    if (!root) { return out; }
+    var all = root.querySelectorAll("*");
+    for (var i = 0; i < all.length; i++) {
+      var n = all[i];
+      if (n.getAttribute("data-fmc-hidden") === "1") { continue; }
+      if (!test(txt(n))) { continue; }
+      var childHas = Array.prototype.some.call(n.children, function (c) {
+        return c.getAttribute("data-fmc-hidden") !== "1" && test(txt(c));
+      });
+      if (!childHas) { out.push(n); }
+    }
+    return out;
+  }
+  function hide(n) {
+    n.setAttribute("data-fmc-hidden", "1");
+    n.style.display = "none";
+  }
+  function size(n) { return parseFloat(window.getComputedStyle(n).fontSize) || 0; }
+  function keepLargest(list) {
+    if (list.length < 2) { return; }
+    var best = list[0];
+    list.forEach(function (n) { if (size(n) > size(best)) { best = n; } });
+    list.forEach(function (n) { if (n !== best) { hide(n); } });
+  }
+  function keepSmallest(list) {
+    if (list.length < 2) { return; }
+    var best = list[0];
+    list.forEach(function (n) { if (size(n) < size(best)) { best = n; } });
+    list.forEach(function (n) { if (n !== best) { hide(n); } });
+  }
+  function analystPanel() {
+    var c = document.getElementById("charts");
+    if (!c) { return null; }
+    return document.getElementById("fmc-agent-charts") || c.querySelector(".fmc-charts-side") || null;
+  }
+
+  function run() {
+    pending = false;
+    var chart = document.getElementById("charts");
+    var agent = analystPanel();
+    try {
+      if (chart) {
+        keepLargest(leaves(chart, function (t) {
+          return t.length < 80 && /^(MNQ|MES|MGC)\s*\u00B7\s*MICRO/i.test(t);
+        }));
+        leaves(chart, function (t) {
+          return t.length < 80 && /^Launch .*TradingView/i.test(t);
+        }).forEach(hide);
+        leaves(chart, function (t) {
+          return t.length < 300 && /^Local chart uses historical/i.test(t);
+        }).forEach(hide);
+      }
+      if (agent) {
+        keepSmallest(leaves(agent, function (t) {
+          return t.toUpperCase() === "MARKET STRUCTURE ANALYST";
+        }));
+      }
+    } catch (e) {}
+  }
+
+  function schedule() {
+    if (pending) { return; }
+    pending = true;
+    setTimeout(run, 150);
+  }
+  function start() {
+    run();
+    setTimeout(run, 800);
+    setTimeout(run, 2500);
+    setTimeout(run, 5000);
+    if (window.MutationObserver) {
+      var c = document.getElementById("charts");
+      if (c) { new MutationObserver(schedule).observe(c, { childList: true, subtree: true }); }
+    }
+    document.addEventListener("change", function (e) {
+      if (e.target && e.target.closest && e.target.closest("#charts")) { setTimeout(run, 300); }
+    });
+    var nav = document.querySelector(".nav");
+    if (nav) { nav.addEventListener("click", function () { setTimeout(run, 150); }); }
+  }
+  if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", start); } else { start(); }
+})();
+</script>
 </body></html>
 
 
