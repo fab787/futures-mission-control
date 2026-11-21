@@ -13,7 +13,7 @@ def wb(title, sentiment, instrument="MNQ", hours_ago=1):
 
 
 def test_three_negative_webull_stories_are_bearish_for_mnq():
-    items = [wb(f"Fed story {i}", "NEGATIVE") for i in range(3)]
+    items = [wb(f"Nasdaq story {i}", "NEGATIVE") for i in range(3)]
     assert fused_for_instrument("MNQ", items, [], NOW)["stance"] == "bearish"
 
 

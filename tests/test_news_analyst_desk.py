@@ -16,7 +16,7 @@ def wb(title, label, minutes_ago=10):
 
 
 def bearish_three():
-    return [wb(f"Fed hawkish {i}", "bearish") for i in range(3)]
+    return [wb(f"Nasdaq futures hawkish {i}", "bearish") for i in range(3)]
 
 
 def market(closes):

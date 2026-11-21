@@ -23,7 +23,7 @@ def test_each_instrument_gets_one_fused_block():
 
 
 def test_three_negative_stories_are_bearish_and_wait_without_price():
-    items = [webull_item(f"Fed story {i}", "NEGATIVE", ["MNQ"]) for i in range(3)]
+    items = [webull_item(f"Nasdaq story {i}", "NEGATIVE", ["MNQ"]) for i in range(3)]
     result = attach_fused_scores(base_rows(), None, {"items": items}, now=NOW)
     mnq = result["instruments"][0]["fused"]
     assert mnq["stance"] == "bearish"

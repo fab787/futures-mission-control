@@ -57,7 +57,7 @@ def attach_fused_scores(result: dict[str, Any], yahoo_payload: dict[str, Any] | 
         instrument = row.get("symbol")
         evidence = _evidence(webull_items, instrument, "webull", _webull_scope)
         evidence += _evidence(yahoo_items, instrument, "yahoo", _yahoo_scope)
-        fused = fuse(evidence, now)
+        fused = _apply_specificity(instrument, fuse(evidence, now), evidence)
         bias, reason = decide(fused, None)
         row["fused"] = {**fused, "bias": bias, "bias_reason": reason}
         if fused["clusters"]:
@@ -74,4 +74,24 @@ def fused_for_instrument(instrument: str, webull_items, yahoo_items, now: dateti
     """One news read per instrument, using the same evidence rules as the Sentiment desk."""
     evidence = _evidence(list(webull_items or []), instrument, "webull", _webull_scope)
     evidence += _evidence(list(yahoo_items or []), instrument, "yahoo", _yahoo_scope)
-    return fuse(evidence, now)
+    return _apply_specificity(instrument, fuse(evidence, now), evidence)
+
+
+SPECIFIC_TERMS = {
+    "MNQ": r"\b(?:mnq|nasdaq|qqq)\b",
+    "MES": r"\b(?:mes|s&p|spy)\b",
+    "MGC": r"\b(?:mgc|gold|gld)\b",
+}
+
+
+def _apply_specificity(instrument: str, fused: dict[str, Any], evidence: list[dict[str, Any]]) -> dict[str, Any]:
+    """A direction needs at least one story that names the instrument. Generic market headlines are context only."""
+    import re
+
+    pattern = SPECIFIC_TERMS.get(instrument)
+    if pattern is None:
+        return fused
+    if any(re.search(pattern, str(item.get("title", "")).lower()) for item in evidence):
+        return fused
+    return {**fused, "stance": "neutral", "confidence": "low", "score": 0.0,
+            "reason": "No instrument-specific story; generic market headlines are context only."}
