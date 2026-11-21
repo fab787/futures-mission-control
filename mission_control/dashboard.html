@@ -289,15 +289,14 @@ header.top #mode-bar{order:9}
 </style>
 <style id="fmc-charts-layout">
 #charts{max-width:1640px}
-#charts .fmc-foot{margin:14px 0 0;padding:8px 2px 0;border-top:1px solid #1d3349;font-size:11px;line-height:1.5;color:#8da1ba}
+#charts .fmc-foot{margin:12px 0 0;padding:8px 2px 0;border-top:1px solid #1d3349;font-size:11px;line-height:1.5;color:#8da1ba}
 #charts .fmc-foot .eyebrow,#charts .fmc-foot .panel-title{font-size:11px!important;letter-spacing:.04em}
 #charts .panel-head{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
 .fmc-charts-row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(380px,1fr);gap:14px;align-items:start}
 .fmc-charts-main{min-width:0}
-.fmc-charts-main>.panel{min-height:860px;display:flex;flex-direction:column}
-.fmc-charts-side{min-width:0;display:flex;flex-direction:column}
-.fmc-charts-side>#fmc-agent-charts{min-height:620px;margin-top:0}
-@media(max-width:1100px){.fmc-charts-row{grid-template-columns:minmax(0,1fr)}.fmc-charts-main>.panel{min-height:0}.fmc-charts-side>#fmc-agent-charts{min-height:0}}
+.fmc-charts-side{min-width:0}
+.fmc-charts-side>#fmc-agent-charts{margin-top:0}
+@media(max-width:1100px){.fmc-charts-row{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body><div class="shell">

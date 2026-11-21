@@ -9,31 +9,36 @@ def _block():
     return HTML[start:end]
 
 
-def test_charts_page_is_wider():
-    assert "#charts{max-width:1640px}" in HTML
+def _style():
+    start = HTML.index('<style id="fmc-charts-layout">')
+    end = HTML.index('</style>', start)
+    return HTML[start:end]
 
 
-def test_chart_is_larger_than_analyst():
-    assert "minmax(0,1.6fr) minmax(380px,1fr)" in HTML
-    assert ".fmc-charts-main>.panel{min-height:860px" in HTML
+def test_charts_page_width_set():
+    assert "#charts{max-width:1640px}" in _style()
 
 
-def test_analyst_is_taller_but_fits_content():
-    assert ".fmc-charts-side>#fmc-agent-charts{min-height:620px" in HTML
-    assert "height:100%" not in HTML.split('<style id="fmc-charts-layout">')[1].split("</style>")[0]
+def test_no_fixed_heights_leave_empty_space():
+    style = _style()
+    assert "min-height:860px" not in style
+    assert "min-height:620px" not in style
+    assert "height:100%" not in style
 
 
-def test_controls_wrap_on_fewer_lines():
-    assert "#charts .panel-head{display:flex;flex-wrap:wrap" in HTML
+def test_panels_size_to_content_and_align_top():
+    assert "align-items:start" in _style()
 
 
-def test_stacks_below_1100px():
-    assert "@media(max-width:1100px){.fmc-charts-row{grid-template-columns:minmax(0,1fr)}" in HTML
+def test_chart_and_analyst_side_by_side_above_1100px():
+    style = _style()
+    assert "grid-template-columns:minmax(0,1.6fr) minmax(380px,1fr)" in style
+    assert "@media(max-width:1100px){.fmc-charts-row{grid-template-columns:minmax(0,1fr)}}" in style
 
 
 def test_layout_script_still_moves_agent_to_side():
     block = _block()
-    assert 'sideBox.appendChild(agent)' in block
+    assert "sideBox.appendChild(agent)" in block
     assert "fetch(" not in block
     assert all(ord(c) < 128 for c in block)
 
