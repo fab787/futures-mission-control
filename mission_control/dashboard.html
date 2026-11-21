@@ -5104,6 +5104,77 @@ async function lvSlowMinute() {
   if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", start); } else { start(); }
 })();
 </script>
+<script id="fmc-overview-order">
+(function () {
+  "use strict";
+  function overview() { return document.getElementById("overview"); }
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) { n.className = cls; }
+    if (text !== undefined) { n.textContent = text; }
+    return n;
+  }
+  function positionsPanel() {
+    var p = document.getElementById("fmc-positions");
+    if (p) { return p; }
+    p = el("div", "panel");
+    p.id = "fmc-positions";
+    var head = el("div", "panel-head");
+    var left = el("div", "");
+    left.appendChild(el("div", "eyebrow", "Trading"));
+    left.appendChild(el("div", "panel-title", "Positions & profit / loss"));
+    left.appendChild(el("div", "fmc-small", "Account data only. Nothing is estimated."));
+    head.appendChild(left);
+    p.appendChild(head);
+    var rows = ["Daily P&L", "Session P&L", "Realized P&L", "Unrealized P&L", "Open positions", "Account condition"];
+    var t = el("div", "fmc-table");
+    t.style.setProperty("--cols", "3");
+    var hr = el("div", "fmc-tr fmc-th");
+    ["Measure", "Status", "Detail"].forEach(function (h) { hr.appendChild(el("div", "fmc-td", h)); });
+    t.appendChild(hr);
+    rows.forEach(function (label) {
+      var row = el("div", "fmc-tr");
+      row.appendChild(el("div", "fmc-td", label));
+      var st = el("div", "fmc-td");
+      st.appendChild(el("span", "fmc-badge fmc-neutral", "NOT CONNECTED"));
+      row.appendChild(st);
+      row.appendChild(el("div", "fmc-td fmc-small", "Appears after an account is connected"));
+      t.appendChild(row);
+    });
+    p.appendChild(t);
+    p.appendChild(el("p", "fmc-note", "No balance, equity or P&L is shown until a real account is connected. Account controls live in the Accounts tab."));
+    return p;
+  }
+  function arrange() {
+    var o = overview();
+    if (!o) { return; }
+    var intro = o.querySelector(":scope > .page-intro, :scope > .fmc-intro");
+    var watchHead = o.querySelector(":scope > .panel-head");
+    var cards = document.getElementById("instrument-cards");
+    var picker = document.getElementById("live-picker");
+    var sel = document.getElementById("overview-selected");
+    var selGrid = sel ? sel.closest(".grid2") : null;
+    var home = o.querySelector(".home-intelligence");
+    var gex = home ? home.querySelector(".home-gex-panel") : null;
+    var news = home ? home.querySelector(".home-sentiment-panel") : null;
+    var brief = document.getElementById("fmc-overview-brief");
+    var pos = positionsPanel();
+    var ordered = [intro, watchHead, cards, picker, pos, selGrid, gex, brief, news].filter(function (n) { return !!n; });
+    var rest = Array.prototype.slice.call(o.children).filter(function (c) { return ordered.indexOf(c) < 0; });
+    ordered.concat(rest).forEach(function (n) { o.appendChild(n); });
+  }
+  function run() { try { arrange(); } catch (e) {} }
+  function start() {
+    run();
+    setTimeout(run, 1500);
+    setTimeout(run, 4500);
+    setTimeout(run, 8000);
+    var nav = document.querySelector(".nav");
+    if (nav) { nav.addEventListener("click", function () { setTimeout(run, 80); }); }
+  }
+  if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", start); } else { start(); }
+})();
+</script>
 </body></html>
 
 
