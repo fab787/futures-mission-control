@@ -55,6 +55,7 @@ from mission_control.news_intelligence import build_instrument_news_intelligence
 from mission_control.news_fusion_adapter import attach_fused_scores
 from mission_control.agent_desk import build_agent_desk, tradingview_cache
 from mission_control.market_routes import router as market_router
+from mission_control.price_checks import make_router as make_price_router
 from mission_control.headline_ai import apply_ai_labels, classify_yahoo_headlines
 from mission_control.news_catalyst import analyze_news_catalysts
 from mission_control.tradingview_rating import get_ratings as get_tradingview_ratings
@@ -1194,6 +1195,17 @@ async def tradingview_ratings() -> dict[str, Any]:
 
 app.include_router(market_router)
 
+
+def _price_snapshot():
+    from mission_control.news_analyst_desk import choose_market_snapshot
+
+    return choose_market_snapshot(
+        webull_market_data_manager.peek_snapshot("1m"),
+        market_data_manager.peek_snapshot("1m"),
+    )
+
+
+app.include_router(make_price_router(_price_snapshot))
 
 @app.get("/api/agents/desk")
 async def agent_desk() -> dict[str, Any]:

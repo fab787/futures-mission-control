@@ -5536,6 +5536,113 @@ async function lvSlowMinute() {
   if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", start); } else { start(); }
 })();
 </script>
+<script id="fmc-price-rows">
+(function () {
+  "use strict";
+  var SYMS = ["MNQ", "MES", "MGC"];
+  var state = { rows: {}, busy: false, watching: null };
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) { n.className = cls; }
+    if (text !== undefined && text !== null) { n.textContent = String(text); }
+    return n;
+  }
+  function tone(dir) {
+    if (dir === "up") { return "good"; }
+    if (dir === "down") { return "bad"; }
+    return "neutral";
+  }
+  function cell(p) {
+    var dir = p ? p.direction : null;
+    var d = el("div", "fmc-stack");
+    d.appendChild(el("span", "fmc-badge fmc-" + tone(dir), dir ? String(dir).toUpperCase() : "NO DATA"));
+    d.appendChild(el("div", "fmc-small", (p && p.detail) || "Awaiting cached bars"));
+    return d;
+  }
+  function makeRow(label, key) {
+    var r = el("div", "fmc-tr");
+    r.setAttribute("data-fmc-price-row", key);
+    var first = el("div", "fmc-td");
+    first.appendChild(el("strong", "", label));
+    r.appendChild(first);
+    SYMS.forEach(function (s) {
+      var td = el("div", "fmc-td");
+      var item = state.rows[s];
+      td.appendChild(cell(item ? item[key] : null));
+      r.appendChild(td);
+    });
+    return r;
+  }
+  function firstCellText(r) {
+    var f = r.querySelector(".fmc-td");
+    return f ? (f.textContent || "").trim() : "";
+  }
+  function table() {
+    var panel = document.getElementById("fmc-agent-charts");
+    return panel ? panel.querySelector(".fmc-table") : null;
+  }
+  function clearRows(t) {
+    t.querySelectorAll("[data-fmc-price-row]").forEach(function (x) {
+      if (x.parentNode) { x.parentNode.removeChild(x); }
+    });
+  }
+  function place() {
+    var t = table();
+    if (!t) { return; }
+    if (t.querySelector('[data-fmc-price-row="one_minute"]') && t.querySelector('[data-fmc-price-row="fifteen_minute"]')) { return; }
+    clearRows(t);
+    var rows = Array.prototype.slice.call(t.querySelectorAll(".fmc-tr"));
+    var tech = rows.filter(function (r) { return firstCellText(r) === "Technical agent"; })[0];
+    var five = rows.filter(function (r) { return firstCellText(r).indexOf("Price check (5-min)") === 0; })[0];
+    if (!tech || !five) { return; }
+    tech.parentNode.insertBefore(makeRow("Price check (1-min)", "one_minute"), tech.nextSibling);
+    five.parentNode.insertBefore(makeRow("Price check (15-min)", "fifteen_minute"), five.nextSibling);
+  }
+  function rebuild() {
+    var t = table();
+    if (t) { clearRows(t); }
+    place();
+  }
+  function watch() {
+    var panel = document.getElementById("fmc-agent-charts");
+    if (!panel || state.watching === panel || !window.MutationObserver) { return; }
+    state.watching = panel;
+    new MutationObserver(function () { place(); }).observe(panel, { childList: true, subtree: true });
+  }
+  function load() {
+    if (state.busy) { return; }
+    state.busy = true;
+    fetch("/api/agents/price-checks", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        state.rows = {};
+        if (d && Array.isArray(d.instruments)) {
+          d.instruments.forEach(function (x) { if (x && x.symbol) { state.rows[x.symbol] = x; } });
+        }
+        state.busy = false;
+        watch();
+        rebuild();
+      })
+      .catch(function () { state.busy = false; });
+  }
+  function start() {
+    watch();
+    place();
+    load();
+    setTimeout(function () { watch(); place(); }, 1500);
+    setTimeout(function () { watch(); place(); }, 4000);
+    var nav = document.querySelector(".nav");
+    if (nav) {
+      nav.addEventListener("click", function (e) {
+        var b = e.target && e.target.closest ? e.target.closest('button[data-tab="charts"]') : null;
+        if (b) { setTimeout(function () { watch(); load(); }, 400); }
+      });
+    }
+  }
+  if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", start); } else { start(); }
+})();
+</script>
 </body></html>
 
 
