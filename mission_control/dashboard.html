@@ -1076,7 +1076,7 @@ async function lvTick(){
   }finally{lvBusy=false;}
 }
 // Overrides the earlier startFastRefresh: the loop now follows the selected ticker.
-function startFastRefresh(ms){stopFastRefresh();lvFails=0;window.__fmcFast=setInterval(lvTick,ms);lvTick();}
+function startFastRefresh(ms){stopFastRefresh();lvFails=0;window.__fmcFast=setInterval(function(){if(window.fmcMarketGate&&window.fmcMarketGate())lvTick();},ms);if(window.fmcMarketGate&&window.fmcMarketGate())lvTick();}
 async function lvSlow(){
   try{
     const r=await fetch("/api/market-data?interval=1m&provider=webull");
@@ -1740,7 +1740,7 @@ function gexSchedulePull(){
   if(!ms){gexPullStatus("");return;}
   const src=document.getElementById("gex-source")?.value;
   if(src!=="webull"){gexPullStatus("Timed pull needs Webull as the source.");return;}
-  gexPullTimer=setInterval(gexPullOnce,ms);
+  gexPullTimer=setInterval(function(){if(window.fmcMarketGate&&window.fmcMarketGate())gexPullOnce();},ms);
   gexPullOnce();
 }
 async function gexPullOnce(){
@@ -2151,8 +2151,8 @@ async function gexHomeVolPull(){
     gexHomeVolRender(await r.json());
   }catch(e){}
 }
-setInterval(gexHomeVolPull,60000);
-setTimeout(gexHomeVolPull,2500);// ---- Home card colors match the GEX tab; duplicate volatility box removed; source note (gexHomeColors) ----
+setInterval(function(){if(window.fmcMarketGate&&window.fmcMarketGate())gexHomeVolPull();},60000);
+setTimeout(function(){if(window.fmcMarketGate&&window.fmcMarketGate())gexHomeVolPull();},2500);// ---- Home card colors match the GEX tab; duplicate volatility box removed; source note (gexHomeColors) ----
 (function(){
   const box=document.getElementById("home-gex-vol");if(box)box.remove();
   const s=document.createElement("style");
@@ -2580,7 +2580,7 @@ document.getElementById("refresh-news").addEventListener("click",()=>loadNews(tr
 document.getElementById("market-data-provider").addEventListener("change",()=>loadHomeIntelligence());
 loadHomeIntelligence();
 loadNews();
-setInterval(loadNews,600000);
+setInterval(function(){if(window.fmcMarketGate&&window.fmcMarketGate())loadNews();},600000);
 
 const riskProfilesById={};
 function fieldNumber(id){const v=document.getElementById(id).value.trim();return v===""?null:Number(v);}
@@ -3854,8 +3854,8 @@ async function lvSlowMinute() {
   }
 
   runTv();
-  setInterval(runNews, 5000);
-  setInterval(runTv, 60000);
+  setInterval(function(){if(window.fmcMarketGate&&window.fmcMarketGate())runNews();},5000);
+  setInterval(function(){if(window.fmcMarketGate&&window.fmcMarketGate())runTv();},60000);
 })();
 </script>
 <script>
@@ -3899,7 +3899,7 @@ async function lvSlowMinute() {
   // The desk redraws itself, so re-apply the last ratings every 2 seconds.
   setInterval(function () { if (last) apply(last); }, 2000);
   fetchRatings();
-  setInterval(fetchRatings, 60000);
+  setInterval(function(){if(window.fmcMarketGate&&window.fmcMarketGate())fetchRatings();},60000);
 })();
 </script>
 <script>
@@ -4594,8 +4594,61 @@ async function lvSlowMinute() {
     if (mount() || tries > 60) clearInterval(timer);
   }, 500);
   load();
-  setInterval(load, 60000);
+  setInterval(function(){if(window.fmcMarketGate&&window.fmcMarketGate())load();},60000);
   setInterval(function () { if (lastData) renderCalendar(lastData); }, 30000);
+})();
+</script>
+<script id="fmc-market-gate">
+(function () {
+  var state = { allowed: false, armed: false, label: "MARKET STATUS", color: "#8da1ba" };
+  window.fmcMarketGate = function () { return state.allowed === true; };
+
+  function paint() {
+    var light = document.getElementById("fmc-market-light");
+    if (!light) {
+      light = document.createElement("div");
+      light.id = "fmc-market-light";
+      light.style.cssText = "display:flex;align-items:center;gap:10px;font-size:12px;font-weight:800;letter-spacing:.06em;padding:6px 12px;border-radius:999px;border:1px solid #2c4a66;background:#0a1421;margin:8px 0";
+      var host = document.querySelector("header.top") || document.body;
+      host.appendChild(light);
+    }
+    light.replaceChildren();
+    var dot = document.createElement("span");
+    dot.style.cssText = "width:9px;height:9px;border-radius:50%;background:" + state.color + ";box-shadow:0 0 8px " + state.color;
+    var text = document.createElement("span");
+    text.textContent = state.label;
+    var btn = document.createElement("button");
+    btn.id = "fmc-arm-btn";
+    btn.className = "btn";
+    btn.style.cssText = "padding:5px 11px;font-size:11px;font-weight:800";
+    btn.textContent = state.armed ? "ARMED · click to disarm" : "DISARMED · click to arm";
+    btn.onclick = function () {
+      fetch("/api/market/arm", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ armed: !state.armed }) })
+        .then(function () { return refresh(); });
+    };
+    light.append(dot, text, btn);
+  }
+
+  function refresh() {
+    return fetch("/api/market/status", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (s) {
+        if (!s) {
+          state.allowed = false; state.armed = false;
+          state.label = "MARKET STATUS UNAVAILABLE"; state.color = "#8da1ba";
+          paint(); return;
+        }
+        state.armed = !!(s.arm && s.arm.armed);
+        state.allowed = !!s.auto_pull_allowed;
+        state.label = (s.label || s.status || "UNKNOWN") + (state.armed ? "" : " · DISARMED");
+        state.color = s.status === "open" ? "#43d39a" : s.status === "halt" ? "#e8b45c" : "#8da1ba";
+        paint();
+      })
+      .catch(function () { state.allowed = false; paint(); });
+  }
+
+  refresh();
+  setInterval(refresh, 30000);
 })();
 </script>
 </body></html>

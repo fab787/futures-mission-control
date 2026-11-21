@@ -54,6 +54,7 @@ from mission_control.webull import last_trades as webull_last_trades
 from mission_control.news_intelligence import build_instrument_news_intelligence
 from mission_control.news_fusion_adapter import attach_fused_scores
 from mission_control.agent_desk import build_agent_desk, tradingview_cache
+from mission_control.market_routes import router as market_router
 from mission_control.headline_ai import apply_ai_labels, classify_yahoo_headlines
 from mission_control.news_catalyst import analyze_news_catalysts
 from mission_control.tradingview_rating import get_ratings as get_tradingview_ratings
@@ -1190,6 +1191,9 @@ def news_catalyst_agent() -> dict[str, Any]:
 async def tradingview_ratings() -> dict[str, Any]:
     """TradingView technical ratings: 5-minute score, 1-minute label. Cached; at most one request per 5 minutes."""
     return await get_tradingview_ratings()
+
+app.include_router(market_router)
+
 
 @app.get("/api/agents/desk")
 async def agent_desk() -> dict[str, Any]:
