@@ -9,19 +9,23 @@ def _block():
     return HTML[start:end]
 
 
-def test_charts_width_is_limited():
-    assert "#charts{max-width:1180px}" in HTML
-
-
-def test_status_note_styled_as_footer():
-    assert "#charts .fmc-foot{" in HTML
-
-
-def test_agent_moves_below_chart_and_status_to_bottom():
+def test_chart_and_agent_sit_side_by_side():
+    assert "grid-template-columns:minmax(0,1fr) minmax(300px,360px)" in HTML
     block = _block()
-    assert 'document.getElementById("fmc-agent-charts")' in block
-    assert "tail.push(agent)" in block and "tail.push(target)" in block
-    assert "tail.forEach(function (x) { sec.appendChild(x); })" in block
+    assert '"fmc-charts-side"' in block
+    assert 'sideBox.appendChild(agent)' in block
+
+
+def test_duplicate_tradingview_link_removed_below_chart():
+    block = _block()
+    assert "links.slice(1)" in block
+    assert '/Launch/i.test(t) && /TradingView/i.test(t)' in block
+
+
+def test_status_note_moves_to_bottom():
+    block = _block()
+    assert 'sec.appendChild(foot)' in block
+    assert "fmc-foot" in HTML
 
 
 def test_script_is_ascii_and_has_no_network_calls():

@@ -291,7 +291,10 @@ header.top #mode-bar{order:9}
 #charts{max-width:1180px}
 #charts .fmc-foot{margin:14px 0 0;padding:8px 2px 0;border-top:1px solid #1d3349;font-size:11px;line-height:1.5;color:#8da1ba}
 #charts .fmc-foot .eyebrow,#charts .fmc-foot .panel-title{font-size:11px!important;letter-spacing:.04em}
-#fmc-agent-charts{margin-top:14px}
+.fmc-charts-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,360px);gap:12px;align-items:start}
+.fmc-charts-main{min-width:0}
+.fmc-charts-side{min-width:0}
+@media(max-width:1100px){.fmc-charts-row{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body><div class="shell">
@@ -5451,13 +5454,14 @@ async function lvSlowMinute() {
 (function () {
   "use strict";
   var MARK = "Chart data status";
+  var KEEP_SEL = ".page-intro, .fmc-intro, .fmc-foot, .fmc-charts-row";
 
   function findStatus(sec) {
     var found = null;
     var all = sec.querySelectorAll("*");
     for (var i = 0; i < all.length; i++) {
       var n = all[i];
-      if (n.closest && n.closest("#fmc-agent-charts")) { continue; }
+      if (n.closest && n.closest("#fmc-agent-charts, .fmc-charts-row")) { continue; }
       var t = (n.textContent || "").trim();
       if (t.indexOf(MARK) !== 0 || t.length > 900) { continue; }
       var childHas = Array.prototype.some.call(n.children, function (c) {
@@ -5468,26 +5472,53 @@ async function lvSlowMinute() {
     return found;
   }
 
+  function dedupeLinks(sec) {
+    var links = Array.prototype.filter.call(sec.querySelectorAll("a"), function (a) {
+      var t = a.textContent || "";
+      return /Launch/i.test(t) && /TradingView/i.test(t);
+    });
+    links.slice(1).forEach(function (a) {
+      if (a.parentNode) { a.parentNode.removeChild(a); }
+    });
+  }
+
+  function layout(sec) {
+    var foot = findStatus(sec);
+    if (foot) {
+      var panel = foot.closest ? foot.closest(".panel") : null;
+      if (panel && panel.parentNode === sec && (panel.textContent || "").trim().indexOf(MARK) === 0) { foot = panel; }
+      foot.classList.add("fmc-foot");
+    }
+    var agent = document.getElementById("fmc-agent-charts");
+    var row = sec.querySelector(":scope > .fmc-charts-row");
+    var movers = Array.prototype.filter.call(sec.children, function (c) {
+      return !c.matches(KEEP_SEL) && c.id !== "fmc-agent-charts";
+    });
+    if (!row) {
+      row = document.createElement("div");
+      row.className = "fmc-charts-row";
+      var main = document.createElement("div");
+      main.className = "fmc-charts-main";
+      var side = document.createElement("div");
+      side.className = "fmc-charts-side";
+      row.appendChild(main);
+      row.appendChild(side);
+      var first = movers[0] || null;
+      if (first) { sec.insertBefore(row, first); } else { sec.appendChild(row); }
+    }
+    var mainBox = row.querySelector(":scope > .fmc-charts-main");
+    var sideBox = row.querySelector(":scope > .fmc-charts-side");
+    movers.forEach(function (c) {
+      if (c.parentNode !== mainBox) { mainBox.appendChild(c); }
+    });
+    if (agent && agent.parentNode !== sideBox) { sideBox.appendChild(agent); }
+    if (foot && foot.parentNode === sec && sec.lastElementChild !== foot) { sec.appendChild(foot); }
+  }
+
   function run() {
     var sec = document.getElementById("charts");
     if (!sec) { return; }
-    var agent = document.getElementById("fmc-agent-charts");
-    var target = findStatus(sec);
-    if (target) {
-      var panel = target.closest(".panel");
-      if (panel && panel.parentNode === sec && (panel.textContent || "").trim().indexOf(MARK) === 0) {
-        target = panel;
-      }
-      target.classList.add("fmc-foot");
-    }
-    var tail = [];
-    if (agent && agent.parentNode === sec) { tail.push(agent); }
-    if (target && target.parentNode === sec) { tail.push(target); }
-    if (!tail.length) { return; }
-    var kids = sec.children;
-    var n = tail.length;
-    var inPlace = kids.length >= n && tail.every(function (x, i) { return kids[kids.length - n + i] === x; });
-    if (!inPlace) { tail.forEach(function (x) { sec.appendChild(x); }); }
+    try { dedupeLinks(sec); layout(sec); } catch (e) {}
   }
 
   function start() {
