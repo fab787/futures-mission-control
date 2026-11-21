@@ -17,6 +17,12 @@ dependencies = [
   "mcp>=2.3,<3.0",
   "keyring>=25,<26",
   "tzdata>=2024.1",
+  "yfinance>=0.2.40,<2.0",
+  "numpy>=1.26,<3.0",
+  "pandas>=2.2,<4.0",
+  "matplotlib>=3.9,<4.0",
+  "scipy>=1.13,<2.0",
+  "statsmodels>=0.14,<1.0",
 ]
 
 [project.optional-dependencies]
